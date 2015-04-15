@@ -1,7 +1,6 @@
 __author__ = 'peeyush'
 
 import pandas as pd
-import rpy2
 
 
 class Overlaps():
@@ -9,117 +8,50 @@ class Overlaps():
     This class object will hold overlapping data for differential binding analysis
     """
 
-    def __init__(self, overlappinglist, peak_data, filter_peaks):
-        self.overlaps = overlappinglist
-        self.peak_data = peak_data
+    def __init__(self, overlappinglist, filter_peaks):
+        self.samples_names = overlappinglist
         self.filter_peaks = filter_peaks
-        self.chr_pos = None
-        self.db_overlap = None  #holds object from diffBinding calculations
 
 
 def diffBinding(self):
+    import pysam
+    import sys
     print "\nCheck point: diffBinding"
-    iter_overlaps = self.overlaps
-    dataframes = self.peak_data
-    # print type(iter_overlaps)
-    for name, overlap in iter_overlaps.iteritems():
-        print name.split("_vs_")
-        n1 = name.split("_vs_")[0]  # split to get the sample name
-        n2 = name.split("_vs_")[1]
-        for k, v in dataframes.iteritems():
-            if n1 in k:
-                df1 = v  # selecting correct dataframe from the list of all dfs
-                # print 'df 1 selected: ', len(df1)
-            if n2 in k:
-                df2 = v
-                # print 'df 2 selected', len(df2)
-        # print type(df1)
-        # print n1.split(' ')
-        nc1 = n1.split(' ')[0]  # further name splitting for selection of rowname in dataframe
-        nc2 = n2.split(' ')[0]
-        # print nc1
-        colist1 = df1.columns.values.tolist()
-        colist2 = df2.columns.values.tolist()
-        #print colist1
-        indices1 = [i for i, s in enumerate(colist1) if nc1 in s]
-        indices2 = [i for i, s in enumerate(colist2) if nc2 in s]
-        #print enumerate(colist1)
-        #print indices1
-        for row in overlap:
-            #print row
-            row1 = row.get('Sample1_row')
-            #print row1
-            row2 = row.get('Sample2_row')
-            #print row2
-            norm_val1 = df1.iloc[row1][indices1[1]]
-            norm_val2 = df2.iloc[row2][indices2[1]]
-            FC = norm_val1 / norm_val2  #sample one / sample two
-            row['FC_value'] = FC
-            row['Tag_count_norm_'+nc1] = norm_val1
-            row['Tag_count_norm_'+nc2] = norm_val2
-            row['Raw_Tag_count_'+nc1] = df1.iloc[row1][indices1[0]]
-            row['Raw_Tag_count_'+nc2] = df2.iloc[row2][indices2[0]]
-            #print FC
-        self.db_overlaps = {name: overlap}
-        overlap1 = pd.DataFrame(overlap)
-        overlap1.to_csv(
-            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/' + n1 + '_vs_' + n2 + '.csv',
+    sample_name = self.samples_names
+    dataframes = self.filter_peaks
+    # print type(sample_name)
+    df = dataframes.get(sample_name[0]).iloc[:, 0:11]
+    df = pd.concat([df, dataframes.get(sample_name[0])['summit']], axis=1)
+    df['cookiecut_start'] = 0
+    df['cookiecut_stop'] = 0
+    #print ('Size of DataFRame', df.shape)
+    for sample in sample_name:
+        df[sample] = 0
+        #print '\n'+sample
+        sample_bam_path = getBam(sample.split(' vs ')[0])
+        sample_bam = pysam.Samfile(sample_bam_path, "rb")
+        for k, v in df.iterrows():
+            sys.stdout.write("\rNumber of peaks processed:%d" % k)
+            sys.stdout.flush()
+            #print v['start'], v['summit']
+            if v['stop']-v['start'] > 1000:
+                chr = str(v['chr'])
+                summit = v['start']+v['summit']
+                tags = sample_bam.count(chr, summit-500, summit+500)
+                df.loc[k,'cookiecut_start'] = summit-500
+                df.loc[k,'cookiecut_stop'] = summit+500
+                df.loc[k,sample] = tags
+            else:
+                chr = str(v['chr'])
+                tags = sample_bam.count(chr, v['start'], v['stop'])
+                df.loc[k,'cookiecut_start'] = v['start']
+                df.loc[k,'cookiecut_stop'] = v['stop']
+                df.loc[k,sample] = tags
+        sample_bam.close()
+    df.to_csv(
+            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/' + '_'.join(sample_name) + '.csv',
             sep=",", encoding='utf-8', ignore_index=True)
 
-def diffBinding_p6(self):
-    '''
-    This will join the overlapping peak, e.g. min(start, start1) and max(stop, stop1).
-    And will consider the bam files for tag-counts in the region.
-    :return:
-    '''
-    import pysam
-    print "\nCheck point: diffBinding"
-    iter_overlaps = self.overlaps
-    #dataframes = self.peak_data
-
-    for name, overlap in iter_overlaps.iteritems():
-        print name.split("_vs_")
-        n1 = name.split("_vs_")[0]  # split to get the sample name
-        n2 = name.split("_vs_")[1]
-        nc1 = n1.split(' ')[0]  # further name splitting for selection of rowname in dataframe
-        nc2 = n2.split(' ')[0]
-
-        sample1_bam = pysam.Samfile(getBam(nc1), 'rb')
-        sample2_bam = pysam.Samfile(getBam(nc2), 'rb')
-        total_tags_s1 = int(sample1_bam.mapped)
-        total_tags_s2 = int(sample2_bam.mapped)     # get sequencing depth
-        print nc1+': ', total_tags_s1, ', '+nc2+': ', total_tags_s2
-        for row in overlap:
-            #print row2
-            chr = str(row['chr'])
-            #print chr
-            start = int(min(row['start'], row['start1']))
-            #print start
-            stop = int(max(row['stop'], row['stop1']))
-            #print stop
-            tags = sample1_bam.count(chr, start, stop)
-            tags1 = sample2_bam.count(chr, start, stop)
-            #print tags, tags1
-            ntags = (float(tags)/total_tags_s1)*10000000
-            ntags1 = (float(tags1)/total_tags_s2)*10000000
-            FC = float(tags) / tags1  #sample one / sample two
-            #print FC
-            row['FC_value'] = FC
-            row['Tag_count_norm_'+nc1] = tags
-            row['Tag_count_norm_'+nc2] = tags1
-            row['Raw_Tag_count_'+nc1] = ntags
-            row['Raw_Tag_count_'+nc2] = ntags1
-            row['new_start'] = start
-            row['new_stop'] = stop
-            row['lenght'] = stop - start
-            #print FC
-        self.db_overlaps = {name: overlap}
-        overlap1 = pd.DataFrame(overlap)
-        sample1_bam.close()
-        sample2_bam.close()
-        overlap1.to_csv(
-            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/' + n1 + '_vs_' + n2 + '.csv',
-            )
 
 def getBam(name):
     from os import listdir
@@ -135,14 +67,14 @@ def getBam(name):
                 for j in listdir(Dir):
                     if j.endswith('.bam'):
                         file = j
-                        print 'Bam file selected: '+j
+                        print '\nBam file selected: '+j
             if 'RA' not in name and 'RA' not in i:
                 Dir = path+i
                 #print Dir
                 for j in listdir(Dir):
                     if j.endswith('.bam'):
                         file = j
-                        print 'Bam file selected: '+j
+                        print '\nBam file selected: '+j
     if file is None:
         raise KeyError('Bam file cannot be found for '+name)
     else:
@@ -272,15 +204,6 @@ def non_overlapping_peaks(self, overlap_no):
     #        '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/Unchanged_' + n1 + '_vs_' + n2 + '.csv', sep=",", encoding='utf-8')
     return diff_df1, diff_df2, unchanged_df1
 
-
-    # def getDf4OverlappingPeaks(overlappingDF, df1):
-    """
-    Retrieves individual peaks DF for overlapping peaks for PRMT6 and H3K4 peak analysis
-    :return: DataFrame
-    """
-    # df1 = df1.set_index(df1['Unnamed: 0'])
-    #overlapingDF_row1 = overlappingDF['Sample1_row']
-    #df = df1[overlappingDF]
 
 
 

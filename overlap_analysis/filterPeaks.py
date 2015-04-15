@@ -58,6 +58,6 @@ def filterpeaks(peak_data_list):
                 final = df2[df2[condition] >= 50]
         file.write(name.split(' ')[0]+'\t'+str(len(df))+'\t'+str(len(final))+'\n')
         filtered_peak_data[name] = final
-        final.to_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/filtered/filtered'+name+'.csv', sep=",", encoding='utf-8')
+        final.to_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/filtered/filtered_'+name+'.csv', sep=",", encoding='utf-8')
     file.close()
     return filtered_peak_data

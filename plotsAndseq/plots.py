@@ -1,5 +1,4 @@
-import pandas as pd
-from overlapping_analysis import getBam, factor_seperate
+from overlap_analysis.differential_binding import getBam, factor_seperate
 
 
 __author__ = 'peeyush'

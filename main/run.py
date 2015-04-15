@@ -1,9 +1,7 @@
-import overlapping_analysis
+from overlap_analysis import cal_genomic_region, filterPeaks
 
 __author__ = 'peeyush'
 from pandas import read_csv
-import cal_genomic_region
-import filterPeaks
 import os
 
 

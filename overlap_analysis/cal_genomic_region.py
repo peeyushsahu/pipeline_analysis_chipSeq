@@ -152,7 +152,7 @@ def OverlappingPeaks(self, name, name1):
     overlap_list = PeakOverlaps(df1, df2)
     overlap_dict = {name+'_vs_'+name1: overlap_list}
     ddf = pd.DataFrame(overlap_list)
-    #ddf.to_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/check_'+name+'_vs_'+name1+'.csv', sep=",", encoding='utf-8')
+    ddf.to_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/'+name+'_vs_'+name1+'.csv', sep=",", encoding='utf-8')
     return overlap_dict
 
 

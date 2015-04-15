@@ -1,13 +1,12 @@
-import overlapping_analysis
+import os
+
+from pandas import read_csv
+
+from overlap_analysis import cal_genomic_region, differential_binding, filterPeaks
+
 
 __author__ = 'peeyush'
-from pandas import read_csv
-import pandas as pd
-import cal_genomic_region
-import filterPeaks
-import seqOperations
-import os
-import time
+
 
 
 #time.strftime("%d/%m/%y")
@@ -38,14 +37,14 @@ sample_name = [#'YY1_RA_seq3 vs IgG_RA_seq2 filtered',
                #'H3R2me2_17F10_seq7 vs IgG_seq4 filtered',
                #'H3R2me2_17H5_seq7 vs IgG_seq4 filtered',
                #'JARID1A_seq2 vs IgG_seq2 filtered',
-               #'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered',
+               'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered',
                #'JARID1A_RA_seq2 vs IgG_RA_seq1 filtered',
                #'H3K27me3_seq2 vs IgG_seq2 filtered',
                #'PRMT6_2_seq1 vs IgG_seq1 filtered',
-               #'PRMT6_2_seq5 vs IgG_seq2 filtered',
+               'PRMT6_2_seq5 vs IgG_seq2 filtered',
                #'YY1_seq3 vs IgG_seq2 filtered',
                #'PRMT6_2_seq2 vs IgG_seq2 filtered',
-               #'PRMT6_2_RA_seq5 vs IgG_RA_seq2 filtered',
+               'PRMT6_2_RA_seq5 vs IgG_RA_seq2 filtered',
                #'PRMT6_2_RA_seq4 vs IgG_RA_seq4 filtered',
                #'H3K27me3_RA_seq2 vs IgG_RA_seq2 filtered',
                #'H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered',
@@ -98,7 +97,7 @@ for k, v in filtered_peak_data.iteritems():
     peakAnalysis_df[name] = GR_analysis
 
 # Performing motif and CpG analysis on prmt6 sites wrt regions
-
+'''
 sample_dict = {}
 prmt6_df = filtered_peak_data.get('PRMT6_2_seq6 vs IgG_seq6 filtered')
 for i in ['tss', 'exon', 'intron', 'intergenic']:
@@ -106,8 +105,11 @@ for i in ['tss', 'exon', 'intron', 'intergenic']:
 seq = seqOperations.seq4motif(sample_dict)
 db = ["JASPAR_CORE_2014_vertebrates.meme", "uniprobe_mouse.meme"]
 seqOperations.motif_analysis(db, 10, seq)
-
-
+'''
+### Perform differential binding
+sample = ['PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered', 'PRMT6_2_seq6 vs IgG_seq6 filtered', 'PRMT6_2_seq5 vs IgG_seq2 filtered', 'PRMT6_2_RA_seq5 vs IgG_RA_seq2 filtered']
+diffbind = differential_binding.Overlaps(sample, filtered_peak_data)
+differential_binding.diffBinding(diffbind)
 
 '''
 overlapping_samples = {}
@@ -118,25 +120,12 @@ sample_name2 = ['H3K4me3_seq2 vs IgG_seq2 filtered', 'H3K4me3_RA_seq2 vs IgG_RA_
 if len(sample_name1) != len(sample_name2):
     raise ValueError("Unequal sample list for comparison")
 else:
-    overlap = 0
     for i in range(0, len(sample_name1)):
         overlapping_res = cal_genomic_region.OverlappingPeaks(peakAnalysis_df, sample_name1[i], sample_name2[i])
         name = overlapping_res.keys()[0]
         with open("/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/overlapping_peaks.txt", "a") as file:
             file.write(
                 name.split('vs')[0] + '\t' + name.split('vs')[2][1:] + '\t' + str(len(overlapping_res.get(name))) + '\n')
-        if len(overlapping_res.get(name)) >= 1:
-            overlapping_obj = overlapping_analysis.Overlaps(overlapping_res, peak_data, filtered_peak_data)
-            overlapping_analysis.diffBinding(overlapping_obj)
-
-            #if sample_name1[i].split('_')[0] == sample_name2[i].split('_')[0]:
-            unique_peaks = overlapping_analysis.non_overlapping_peaks(overlapping_obj, overlap)
-            overlapping_samples['Unique_'+str(overlap)+'_'+sample_name1[i]] = unique_peaks[0]
-            overlapping_samples['Unique_'+str(overlap)+'_'+sample_name2[i]] = unique_peaks[1]
-            #overlapping_samples['Unchanged_'+sample_name1[i]+'_vs_'+sample_name2[i]] = unique_peaks[2]
-            print overlapping_res.keys()[0]
-            overlapping_samples.update({overlapping_res.keys()[0]: pd.DataFrame(overlapping_res.get(overlapping_res.keys()[0]))})
-        overlap += 1
 
 
 sample_name3 = ['PRMT6_2_seq6 vs IgG_seq6 filtered_vs_H3K4me3_seq2 vs IgG_seq2 filtered']
