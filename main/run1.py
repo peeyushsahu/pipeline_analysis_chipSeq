@@ -3,6 +3,7 @@ import os
 from pandas import read_csv
 
 from overlap_analysis import cal_genomic_region, differential_binding, filterPeaks
+from plotsAndseq.plots import GR_heatmaps_DF_for_peaks
 
 
 __author__ = 'peeyush'
@@ -37,14 +38,14 @@ sample_name = [#'YY1_RA_seq3 vs IgG_RA_seq2 filtered',
                #'H3R2me2_17F10_seq7 vs IgG_seq4 filtered',
                #'H3R2me2_17H5_seq7 vs IgG_seq4 filtered',
                #'JARID1A_seq2 vs IgG_seq2 filtered',
-               'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered',
+               #'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered',
                #'JARID1A_RA_seq2 vs IgG_RA_seq1 filtered',
                #'H3K27me3_seq2 vs IgG_seq2 filtered',
                #'PRMT6_2_seq1 vs IgG_seq1 filtered',
-               'PRMT6_2_seq5 vs IgG_seq2 filtered',
-               #'YY1_seq3 vs IgG_seq2 filtered',
+               #'PRMT6_2_seq5 vs IgG_seq2 filtered',
+               'YY1_seq3 vs IgG_seq2 filtered',
                #'PRMT6_2_seq2 vs IgG_seq2 filtered',
-               'PRMT6_2_RA_seq5 vs IgG_RA_seq2 filtered',
+               #'PRMT6_2_RA_seq5 vs IgG_RA_seq2 filtered',
                #'PRMT6_2_RA_seq4 vs IgG_RA_seq4 filtered',
                #'H3K27me3_RA_seq2 vs IgG_RA_seq2 filtered',
                #'H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered',
@@ -64,7 +65,7 @@ sample_name = [#'YY1_RA_seq3 vs IgG_RA_seq2 filtered',
                #'Sample_K4me1_RA vs IgG_RA_seq6 filtered',
                #'Sample_K4me1 vs Sample_8C9 filtered',
                #'Sample_K9me3_RA vs IgG_RA_seq6 filtered',
-               #'Sample_K9me3 vs Sample_8C9 filtered',
+               'Sample_K9me3 vs Sample_8C9 filtered',
                #'Sample_K27ac_RA vs IgG_RA_seq6 filtered',
                #'Sample_K27me3_RA vs IgG_RA_seq6 filtered',
                #'Sample_K27me3 vs Sample_8C9 filtered',
@@ -96,7 +97,22 @@ for k, v in filtered_peak_data.iteritems():
     cal_genomic_region.genomic_regions(GR_analysis)
     peakAnalysis_df[name] = GR_analysis
 
-# Performing motif and CpG analysis on prmt6 sites wrt regions
+
+### Performs differential binding calulation
+'''
+sample = ['PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered', 'PRMT6_2_seq6 vs IgG_seq6 filtered',
+          'PRMT6_2_seq5 vs IgG_seq2 filtered', 'PRMT6_2_RA_seq5 vs IgG_RA_seq2 filtered']
+diffbind = differential_binding.Overlaps(sample, filtered_peak_data)
+differential_binding.diffBinding(diffbind)
+'''
+### Compares multiple ChIP-Seq profile using peaks from on sample
+for i in ['tss', 'exon', 'intron', 'intergenic']:
+
+    bam_list = ['PRMT6_2_seq6', 'YY1_seq3', 'Sample_K9me3']
+    peak_df = filtered_peak_data.get('PRMT6_2_seq6 vs IgG_seq6 filtered')
+    GR_heatmaps_DF_for_peaks(bam_list, peak_df, region=i)
+
+# Performing motif and CpG analysis on prmt6 sites wrt regions eg. TSS, Exon
 '''
 sample_dict = {}
 prmt6_df = filtered_peak_data.get('PRMT6_2_seq6 vs IgG_seq6 filtered')
@@ -106,11 +122,8 @@ seq = seqOperations.seq4motif(sample_dict)
 db = ["JASPAR_CORE_2014_vertebrates.meme", "uniprobe_mouse.meme"]
 seqOperations.motif_analysis(db, 10, seq)
 '''
-### Perform differential binding
-sample = ['PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered', 'PRMT6_2_seq6 vs IgG_seq6 filtered', 'PRMT6_2_seq5 vs IgG_seq2 filtered', 'PRMT6_2_RA_seq5 vs IgG_RA_seq2 filtered']
-diffbind = differential_binding.Overlaps(sample, filtered_peak_data)
-differential_binding.diffBinding(diffbind)
 
+### calculate overlaps between peaks
 '''
 overlapping_samples = {}
 

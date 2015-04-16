@@ -3,7 +3,7 @@ from overlap_analysis.differential_binding import getBam, factor_seperate
 
 __author__ = 'peeyush'
 
-def make_dir(bam_order, region):
+def make_dir(bam_order, region='All'):
     import os
     #print 'Directory_for_result: ' + '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/'+folder
     path = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/'+bam_order+'/'+region+'/'
@@ -26,7 +26,6 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     import pandas as pd
 
     big_df = pd.DataFrame()
-    #df_list = []
     region = region
     sort = sort
     sort_column = sort_column
@@ -59,28 +58,28 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
 
     for v in bam_name_list:
         name = v
-        path = getBam(name)
-        sample_bam = pysam.Samfile(path, "rb")
+        bam_path = getBam(name)
+        sample_bam = pysam.Samfile(bam_path, "rb")
         df = overlapping_peaks_distribution(sample_bam, peak_df)
         df = scale_dataframe(df)
-        #df_list = df_list.append(df)
         big_df = pd.concat([big_df, df], axis=1)
         big_df.columns = range(0, big_df.shape[1])
+        sample_bam.close()
 
 
     bam_order = ','.join(bam_name_list)
-    path = make_dir(bam_order, region)
-    divide_peaks_in_strength(big_df, bam_order, path)         # plotting line plots
+    path = make_dir(bam_order, region+str(len(peak_df)))
+    #divide_peaks_in_strength(big_df, bam_order, path)         # plotting line plots
     big_df = kmeans_clustering(big_df, 10, 100)         # performing k-means clustering
     dict_of_df = factor_seperate(big_df, 'cluster')     # divide df in smaller dfs basis in clustering
     line_plot_peak_distribution(dict_of_df, bam_order, path)  # plotting individual clusters
     if len(bam_name_list) == 3:
-        plot_cluster_overlapping_peaks(dict_of_df, bam_order, path)   # plotting cluster for different bam in overlapping plot
+        plot_clustered_peaks_4_three_samples(dict_of_df, bam_order, path)   # plotting cluster for different bam in overlapping plot
 
     peak_df['Next transcript gene name'].index = range(0, len(peak_df['Next transcript gene name']))
     big_df.insert(0, 'GeneNames', peak_df['Next transcript gene name']) # adding gene names to heatmap df
     big_df.to_csv(path+bam_order+region+'.csv', sep=",", encoding='utf-8', ignore_index=True)
-    return big_df, dict_of_df
+    #return big_df, dict_of_df
 
 
 def kmeans_clustering(df, nClus, iter):
@@ -260,7 +259,7 @@ def line_plot_peak_distribution(dict_of_df, name, path):
         plt.savefig(path+name+':datapoints:'+str(size[0])+'_cluster:'+str(Cluster)+'.png')
         plt.clf()
 
-def plot_cluster_overlapping_peaks(dict_df, name, path):
+def plot_clustered_peaks_4_three_samples(dict_df, name, path):
     '''
     Plots result of divided_cluster_peaks_in_strength.
     :param dict_df:
@@ -270,19 +269,26 @@ def plot_cluster_overlapping_peaks(dict_df, name, path):
     import matplotlib.pyplot as plt
     from scipy.interpolate import spline
     import numpy as np
+    import scipy as sp
     #print 'shape', dict_list[0].shape
     for k,v in dict_df.iteritems():
         size = v.shape
         df1 = v.iloc[:, 1:81]
         df2 = v.iloc[:, 81:161]
         df3 = v.iloc[:, 161:241]
-
         x = np.array(range(-2000, 2000, 50))
         #print x
         s = np.array(df1.sum(axis=0))
-        l = np.array(df2.sum(axis=0))
-        m = np.array(df3.sum(axis=0))
+        #s = np.subtract(s, sp.median(s))           ### Normalizing with median
+        s = np.subtract(s, np.percentile(s, 25))    ### Normalizing with 25 percentile
 
+        l = np.array(df2.sum(axis=0))
+        #l = np.subtract(l, sp.median(l))
+        l = np.subtract(l, np.percentile(l, 25))
+
+        m = np.array(df3.sum(axis=0))
+        #m = np.subtract(m, sp.median(m))
+        m = np.subtract(m, np.percentile(m, 25))
 
         plt.ylim(0, max(max(m), max(s), max(l))+100)
         plt.xlabel('Binding profile cluster'+str(k))

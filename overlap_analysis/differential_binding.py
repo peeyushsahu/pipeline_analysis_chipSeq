@@ -5,7 +5,7 @@ import pandas as pd
 
 class Overlaps():
     """
-    This class object will hold overlapping data for differential binding analysis
+    This class object will hold filteredPeaks data and peaksList for calculation differential binding.
     """
 
     def __init__(self, overlappinglist, filter_peaks):
@@ -14,13 +14,18 @@ class Overlaps():
 
 
 def diffBinding(self):
+    '''
+    This function will extract summit (+-500) peak data if peak length is >1000 from provided peaks.
+    This dataframe can be used with DESeq for differential bound calculation.
+    :return:
+    '''
     import pysam
     import sys
     print "\nCheck point: diffBinding"
     sample_name = self.samples_names
     dataframes = self.filter_peaks
     # print type(sample_name)
-    df = dataframes.get(sample_name[0]).iloc[:, 0:11]
+    df = dataframes.get(sample_name[0]).iloc[:, 0:13]
     df = pd.concat([df, dataframes.get(sample_name[0])['summit']], axis=1)
     df['cookiecut_start'] = 0
     df['cookiecut_stop'] = 0
@@ -54,6 +59,11 @@ def diffBinding(self):
 
 
 def getBam(name):
+    '''
+    This function takes the sample name and return the path of its associated bam file.
+    :param name:
+    :return:
+    '''
     from os import listdir
     path = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/'
     bam_list = listdir('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane')
@@ -85,7 +95,7 @@ def getBam(name):
 
 def factor_seperate(dataframe, factor):
     """
-    This function will return reletive positions of chromosomes in peak table
+    This function will sort the dataframe and return reletive positions of factor (eg. chromosome, genomic region) in peak table.
     :param overlapsObj:
     :return:
     """
