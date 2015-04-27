@@ -30,7 +30,7 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     sort = sort
     sort_column = sort_column
     peak_df = peak_df
-    if region.strip():
+    if region.strip() != 'all':
         peak_df = peak_df[peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'] == region]
 
         if region == 'tss':     # Reduce peaks based on their distance from TSS
@@ -73,11 +73,31 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     big_df = kmeans_clustering(big_df, 10, 100)         # performing k-means clustering
     dict_of_df = factor_seperate(big_df, 'cluster')     # divide df in smaller dfs basis in clustering
     line_plot_peak_distribution(dict_of_df, bam_order, path)  # plotting individual clusters
-    if len(bam_name_list) == 3:
-        plot_clustered_peaks_4_three_samples(dict_of_df, bam_order, path)   # plotting cluster for different bam in overlapping plot
 
+    if len(bam_name_list) == 4:
+        print 'No. of sample to plot: 4'
+        plot_clustered_peaks_4_four_samples(dict_of_df, bam_order, path)    # plotting cluster for different bam in overlapping plot
+    if len(bam_name_list) == 3:
+        plot_clustered_peaks_4_three_samples(dict_of_df, bam_order, path)
+    if len(bam_name_list) == 2:
+        plot_clustered_peaks_4_two_samples(dict_of_df, bam_order, path)
+
+# adding columns to heatmap df
     peak_df['Next transcript gene name'].index = range(0, len(peak_df['Next transcript gene name']))
-    big_df.insert(0, 'GeneNames', peak_df['Next transcript gene name']) # adding gene names to heatmap df
+    big_df.insert(0, 'Next transcript gene name', peak_df['Next transcript gene name'])
+    peak_df['Next transcript strand'].index = range(0, len(peak_df['Next transcript strand']))
+    big_df.insert(0, 'Next transcript strand', peak_df['Next transcript strand'])
+    peak_df['summit'].index = range(0, len(peak_df['summit']))
+    big_df.insert(0, 'summit', peak_df['summit'])
+    peak_df['stop'].index = range(0, len(peak_df['stop']))
+    big_df.insert(0, 'stop', peak_df['stop'])
+    peak_df['start'].index = range(0, len(peak_df['start']))
+    big_df.insert(0, 'start', peak_df['start'])
+    peak_df['chr'].index = range(0, len(peak_df['chr']))
+    big_df.insert(0, 'chr', peak_df['chr'])
+
+
+
     big_df.to_csv(path+bam_order+region+'.csv', sep=",", encoding='utf-8', ignore_index=True)
     #return big_df, dict_of_df
 
@@ -116,12 +136,12 @@ def overlapping_peaks_distribution(bam_peak1, overlap_df):
         #print type(orientation)
         #print 'orientation',orientation
         middle = row['start'] + row['summit']
-        start = middle - 2000
+        start = middle - 3000
         stop = start + 50
         list_sample1 = []
         #total_tags = int(bam_peak1.mapped) will get total no of mapped reads
 
-        for i in range(0, 80):
+        for i in range(0, 120):
             tags1 = bam_peak1.count(chr, start, stop)
             start = stop
             stop = start + 50  # divide peaks into length of 25 bp
@@ -247,8 +267,8 @@ def line_plot_peak_distribution(dict_of_df, name, path):
         #print len(s)
         plt.ylim(0, max(s)+200)
         plt.xlabel('Distribution of cluster: '+str(Cluster))
-        plt.ylabel('Normalized tag density')
-        plt.title('Cluster associated peak distribution')
+        plt.ylabel('Binding profile cluster '+str(Cluster))
+        plt.title('Cluster associated peak distribution with datapoints:'+str(size[0]))
         plt.gca().set_color_cycle(['r'])
         xnew = np.linspace(x.min(),x.max(),300)
         smooth = spline(x,s,xnew)
@@ -256,7 +276,56 @@ def line_plot_peak_distribution(dict_of_df, name, path):
 
         #plt.legend([names[1], names[3]], loc='upper left')
         #plt.show()
-        plt.savefig(path+name+':datapoints:'+str(size[0])+'_cluster:'+str(Cluster)+'.png')
+        plt.savefig(path+name+'_cluster:'+str(Cluster)+'.png')
+        plt.clf()
+
+
+def plot_clustered_peaks_4_two_samples(dict_df, name, path):
+    '''
+    Plots result of divided_cluster_peaks_in_strength.
+    :param dict_df:
+    :param name:
+    :return:
+    '''
+    import matplotlib.pyplot as plt
+    from scipy.interpolate import spline
+    import numpy as np
+    import scipy as sp
+    #print 'shape', dict_list[0].shape
+    for k,v in dict_df.iteritems():
+        size = v.shape
+        df1 = v.iloc[:, 1:121]
+        df2 = v.iloc[:, 121:241]
+        x = np.array(range(-3000, 3000, 50))
+        #print x
+        s = np.array(df1.sum(axis=0))
+        #s = np.subtract(s, sp.median(s))           ### Normalizing with median
+        #s = np.subtract(s, np.percentile(s, 25))    ### Normalizing with 25 percentile
+        s = np.subtract(s, min(s))
+
+        l = np.array(df2.sum(axis=0))
+        #l = np.subtract(l, sp.median(l))
+        #l = np.subtract(l, np.percentile(l, 25))
+        l = np.subtract(l, min(l))
+
+        plt.ylim(0, max(max(s), max(l))+100)
+        plt.xlabel('Binding profile cluster'+str(k))
+        plt.ylabel('Combined tag density')
+        plt.title('Genomic distribution of peaks with datapoints: '+str(size[0]))
+        plt.gca().set_color_cycle(['mediumorchid', 'r', 'dodgerblue'])  #'mediumorchid', 'coral',
+
+        xnew = np.linspace(x.min(),x.max(),300)
+        smooth = spline(x,s,xnew)
+        plt.plot(xnew, smooth, linewidth=3)
+
+        xnew1 = np.linspace(x.min(),x.max(),300)
+        smooth1 = spline(x,l,xnew1)
+        plt.plot(xnew1, smooth1, linewidth=3)
+
+        sname = name.split(',')
+        plt.legend([sname[0], sname[1]], loc='upper left')  #'Low', 'Medium',
+        #plt.show()
+        plt.savefig(path+'overlap_'+name+'_cluster:'+str(k)+'.png')
         plt.clf()
 
 def plot_clustered_peaks_4_three_samples(dict_df, name, path):
@@ -273,26 +342,29 @@ def plot_clustered_peaks_4_three_samples(dict_df, name, path):
     #print 'shape', dict_list[0].shape
     for k,v in dict_df.iteritems():
         size = v.shape
-        df1 = v.iloc[:, 1:81]
-        df2 = v.iloc[:, 81:161]
-        df3 = v.iloc[:, 161:241]
-        x = np.array(range(-2000, 2000, 50))
+        df1 = v.iloc[:, 1:121]
+        df2 = v.iloc[:, 121:241]
+        df3 = v.iloc[:, 241:361]
+        x = np.array(range(-3000, 3000, 50))
         #print x
         s = np.array(df1.sum(axis=0))
         #s = np.subtract(s, sp.median(s))           ### Normalizing with median
-        s = np.subtract(s, np.percentile(s, 25))    ### Normalizing with 25 percentile
+        #s = np.subtract(s, np.percentile(s, 25))    ### Normalizing with 25 percentile
+        s = np.subtract(s, min(s))
 
         l = np.array(df2.sum(axis=0))
         #l = np.subtract(l, sp.median(l))
-        l = np.subtract(l, np.percentile(l, 25))
+        #l = np.subtract(l, np.percentile(l, 25))
+        l = np.subtract(l, min(l))
 
         m = np.array(df3.sum(axis=0))
         #m = np.subtract(m, sp.median(m))
-        m = np.subtract(m, np.percentile(m, 25))
+        #m = np.subtract(m, np.percentile(m, 25))
+        m = np.subtract(m, min(m))
 
         plt.ylim(0, max(max(m), max(s), max(l))+100)
         plt.xlabel('Binding profile cluster'+str(k))
-        plt.ylabel('Normalized tag density')
+        plt.ylabel('Combined tag density')
         plt.title('Genomic distribution of peaks with datapoints: '+str(size[0]))
         plt.gca().set_color_cycle(['mediumorchid', 'r', 'dodgerblue'])  #'mediumorchid', 'coral',
 
@@ -310,6 +382,72 @@ def plot_clustered_peaks_4_three_samples(dict_df, name, path):
 
         sname = name.split(',')
         plt.legend([sname[0], sname[1], sname[2]], loc='upper left')  #'Low', 'Medium',
+        #plt.show()
+        plt.savefig(path+'overlap_'+name+'_cluster:'+str(k)+'.png')
+        plt.clf()
+
+def plot_clustered_peaks_4_four_samples(dict_df, name, path):
+    '''
+    Plots result of divided_cluster_peaks_in_strength.
+    :param dict_df:
+    :param name:
+    :return:
+    '''
+    import matplotlib.pyplot as plt
+    from scipy.interpolate import spline
+    import numpy as np
+    import scipy as sp
+    #print 'shape', dict_list[0].shape
+    for k,v in dict_df.iteritems():
+        size = v.shape
+        df1 = v.iloc[:, 1:121]
+        df2 = v.iloc[:, 121:241]
+        df3 = v.iloc[:, 241:361]
+        df4 = v.iloc[:, 361:481]
+        x = np.array(range(-3000, 3000, 50))
+        #print x
+        s = np.array(df1.sum(axis=0))
+        #s = np.subtract(s, sp.median(s))           ### Normalizing with median
+        #s = np.subtract(s, np.percentile(s, 25))    ### Normalizing with 25 percentile
+        s = np.subtract(s, min(s))
+
+        l = np.array(df2.sum(axis=0))
+        #l = np.subtract(l, sp.median(l))
+        #l = np.subtract(l, np.percentile(l, 25))
+        l = np.subtract(l, min(l))
+
+        m = np.array(df3.sum(axis=0))
+        #m = np.subtract(m, sp.median(m))
+        #m = np.subtract(m, np.percentile(m, 25))
+        m = np.subtract(m, min(m))
+
+        n = np.array(df4.sum(axis=0))
+        n = np.subtract(n, min(n))
+
+        plt.ylim(0, max(max(m), max(s), max(l), max(n))+100)
+        plt.xlabel('Binding profile cluster'+str(k))
+        plt.ylabel('Combined tag density')
+        plt.title('Genomic distribution of peaks with datapoints: '+str(size[0]))
+        plt.gca().set_color_cycle(['mediumorchid', 'r', 'dodgerblue', 'green'])  #'mediumorchid', 'coral',
+
+        xnew = np.linspace(x.min(),x.max(),300)
+        smooth = spline(x,s,xnew)
+        plt.plot(xnew, smooth, linewidth=3)
+
+        xnew1 = np.linspace(x.min(),x.max(),300)
+        smooth1 = spline(x,l,xnew1)
+        plt.plot(xnew1, smooth1, linewidth=3)
+
+        xnew2 = np.linspace(x.min(),x.max(),300)
+        smooth2 = spline(x,m,xnew2)
+        plt.plot(xnew2, smooth2, linewidth=3)
+
+        xnew3 = np.linspace(x.min(),x.max(),300)
+        smooth3 = spline(x,n,xnew3)
+        plt.plot(xnew3, smooth3, linewidth=3)
+
+        sname = name.split(',')
+        plt.legend([sname[0], sname[1], sname[2], sname[3]], loc='upper left')  #'Low', 'Medium',
         #plt.show()
         plt.savefig(path+'overlap_'+name+'_cluster:'+str(k)+'.png')
         plt.clf()
