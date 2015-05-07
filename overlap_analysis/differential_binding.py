@@ -13,7 +13,7 @@ class Overlaps():
         self.filter_peaks = filter_peaks
 
 
-def diffBinding(self):
+def diffBinding(self, basepeakfile):
     '''
     This function will extract summit (+-500) peak data if peak length is >1000 from provided peaks.
     This dataframe can be used with DESeq for differential bound calculation.
@@ -25,15 +25,23 @@ def diffBinding(self):
     sample_name = self.samples_names
     dataframes = self.filter_peaks
     # print type(sample_name)
-    df = dataframes.get(sample_name[0]).iloc[:, 0:13]
-    df = pd.concat([df, dataframes.get(sample_name[0])['summit']], axis=1)
+    #df = dataframes.get(sample_name[0]).iloc[:, 0:1]
+    df = pd.DataFrame()
+    df = pd.concat([df, dataframes.get(basepeakfile)['chr']], axis=1)
+    df = pd.concat([df, dataframes.get(basepeakfile)['start']], axis=1)
+    df = pd.concat([df, dataframes.get(basepeakfile)['stop']], axis=1)
+    df = pd.concat([df, dataframes.get(basepeakfile)['GenomicPosition TSS=1250 bp, upstream=5000 bp']], axis=1)
+    df = pd.concat([df, dataframes.get(basepeakfile)['Next transcript gene name']], axis=1)
+    df = pd.concat([df, dataframes.get(basepeakfile)['Next transcript strand']], axis=1)
+    df = pd.concat([df, dataframes.get(basepeakfile)['summit']], axis=1)
     df['cookiecut_start'] = 0
     df['cookiecut_stop'] = 0
-    #print ('Size of DataFRame', df.shape)
+    #print df.head()
+    print df.dtypes
     for sample in sample_name:
         df[sample] = 0
         #print '\n'+sample
-        sample_bam_path = getBam(sample.split(' vs ')[0])
+        sample_bam_path = getBam(sample) #.split(' vs ')[0]
         sample_bam = pysam.Samfile(sample_bam_path, "rb")
         for k, v in df.iterrows():
             sys.stdout.write("\rNumber of peaks processed:%d" % k)
@@ -56,7 +64,6 @@ def diffBinding(self):
     df.to_csv(
             '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/' + '_'.join(sample_name) + '.csv',
             sep=",", encoding='utf-8', ignore_index=True)
-
 
 def getBam(name):
     '''

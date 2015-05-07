@@ -3,8 +3,8 @@ import os
 from pandas import read_csv
 
 from overlap_analysis import cal_genomic_region, differential_binding, filterPeaks
-from plotsAndseq import seqOperations
 from plotsAndseq.plots import GR_heatmaps_DF_for_peaks
+from plotsAndseq.seqOperations import density_based_motif_comparision
 
 
 __author__ = 'peeyush'
@@ -19,7 +19,8 @@ folders = ["overlap",
            "plots",
            "seq4motif",
            "valley_peaks",
-           "CpG"]
+           "CpG",
+           "density_based_motif"]
 for folder in folders:
     print 'Directory_for_result: ' + '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/'+folder
     path = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/'+folder
@@ -32,14 +33,14 @@ sample_name = [#'YY1_RA_seq3 vs IgG_RA_seq2 filtered',
                #'PRMT6_2_seq4 vs IgG_seq4 filtered',
                #'H3R2me2_18F3_seq7 vs IgG_seq4 filtered',
                #'H3R2me2_17E2_seq7 vs IgG_seq4 filtered',
-               'PRMT6_2_seq6 vs IgG_seq6 filtered',
+               #'PRMT6_2_seq6 vs IgG_seq6 filtered',
                #'PRMT6_2_RA_seq2 vs IgG_RA_seq2 filtered',
                #'PRMT6_2_seq3 vs IgG_seq2 filtered',
                #'PRMT6_2_RA_seq3 vs IgG_seq2 filtered',
                #'H3R2me2_17F10_seq7 vs IgG_seq4 filtered',
                #'H3R2me2_17H5_seq7 vs IgG_seq4 filtered',
                #'JARID1A_seq2 vs IgG_seq2 filtered',
-               #'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered',
+               'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered',
                #'JARID1A_RA_seq2 vs IgG_RA_seq1 filtered',
                #'H3K27me3_seq2 vs IgG_seq2 filtered',
                #'PRMT6_2_seq1 vs IgG_seq1 filtered',
@@ -102,31 +103,52 @@ for k, v in filtered_peak_data.iteritems():
 ### Performs differential binding calulation
 '''
 sample = ['PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered', 'PRMT6_2_seq6 vs IgG_seq6 filtered',
-          'PRMT6_2_seq5 vs IgG_seq2 filtered', 'PRMT6_2_RA_seq5 vs IgG_RA_seq2 filtered']
+          'H3K4me3_seq2 vs IgG_seq2 filtered', 'H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered']
 diffbind = differential_binding.Overlaps(sample, filtered_peak_data)
 differential_binding.diffBinding(diffbind)
 '''
+### Diff. Binding calculation from outside sample
+sample = ['PRMT6_2_seq6', 'PRMT6_2_RA_seq6',
+          'Sample_K27ac', 'Sample_K27ac_RA',
+          'H3K4me3_seq2', 'H3K4me3_RA_seq2',
+          'Sample_K4me1', 'Sample_K4me1_RA',
+          'Sample_EZH1', 'Sample_EZH1_RA',
+          'Sample_K9me3', 'Sample_K9me3_RA']
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/All_PRMT6_peaks_unique.csv',
+    header=0, sep=',')
+filtered_peak = {'PRMT6_2_seq6 vs IgG_seq6 filtered': peak_df}
+diffbind = differential_binding.Overlaps(sample, filtered_peak)
+differential_binding.diffBinding(diffbind, 'PRMT6_2_seq6 vs IgG_seq6 filtered')
+
 ### Compares multiple ChIP-Seq profile using peaks from on sample
 '''
-for i in ['tss', 'exon', 'intron', 'intergenic']:
-
-    bam_list = ['PRMT6_2_seq6', 'Sample_K36me3', 'Sample_pol-2']
-    peak_df = filtered_peak_data.get('PRMT6_2_seq6 vs IgG_seq6 filtered')
-    GR_heatmaps_DF_for_peaks(bam_list, peak_df, region=i)
+#peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/PRMT6_RA_K27ac_RA.csv',
+    #header=0, sep=',')
+#peak_df = peak_df[(peak_df['log2FoldChange'] > 1) | (peak_df['log2FoldChange'] < -1)]
+#print peak_df.shape
+for i in ['tss', 'exon', 'intron', 'intergenic', 'upstream']: #'tss', 'exon', 'intron', 'intergenic', 'upstream'
+    bam_list = ['Sample_K27ac', 'Sample_K27ac_RA', 'Sample_K4me1', 'Sample_K4me1_RA']
+    peak_df = filtered_peak_data.get('PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered')
+    GR_heatmaps_DF_for_peaks(bam_list, peak_df, region='all')
 '''
-
-bam_list = ['PRMT6_2_seq6', 'Sample_K27me3']
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/PRMT6_2_seq6,Sample_K36me3,Sample_pol-2/tss2032/PRMT6_2_seq6,Sample_K36me3,Sample_pol-2tss.csv',
+'''
+bam_list = ['PRMT6_2_seq6', 'PRMT6_2_RA_seq6', 'Sample_K9me3', 'Sample_K9me3_RA'] #'Sample_K4me1', 'Sample_K4me1_RA', 'Sample_K27ac', 'Sample_K27ac_RA', 'H3K4me3_seq2', 'H3K4me3_RA_seq2'
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/All_PRMT6_DB_peaks_unique.csv',
     header=0, sep=',')
-peak_df = peak_df[(peak_df['cluster'] == 4) | (peak_df['cluster'] == 5) | (peak_df['cluster'] == 7)]
-GR_heatmaps_DF_for_peaks(bam_list, peak_df, region='all')
-
-
+#peak_df = peak_df[(peak_df['cluster'] == 4) | (peak_df['cluster'] == 5) | (peak_df['cluster'] == 7)]
+GR_heatmaps_DF_for_peaks(bam_list, peak_df, region='all', sort=True, sort_column='foldChange')
+'''
+# Density based motif analysis
+'''
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered_PRMT6_2_seq6 vs IgG_seq6 filtered_PRMT6_2_seq5 vs IgG_seq2 filtered_PRMT6_2_RA_seq5 vs IgG_RA_seq2 filtered.csv',
+    header=0, sep=',')
+density_based_motif_comparision(peak_df, 'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered')
+'''
 # Performing motif and CpG analysis on prmt6 sites wrt regions eg. TSS, Exon
 '''
 sample_dict = {}
 prmt6_df = filtered_peak_data.get('PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered')
-for i in ['tss', 'exon', 'intron', 'intergenic']:
+for i in ['tss', 'exon', 'intron', 'intergenic', 'upstream']:
     sample_dict['PRMT6_2_RA_seq6_'+i] = prmt6_df[prmt6_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'] == i]
 seq = seqOperations.seq4motif(sample_dict)
 db = ["JASPAR_CORE_2014_vertebrates.meme", "uniprobe_mouse.meme"]

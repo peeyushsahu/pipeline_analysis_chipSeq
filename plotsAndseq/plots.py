@@ -41,27 +41,27 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
                 raise ValueError('selected region does not contain any peaks')
         print region+' found in dataframe: ',len(peak_df)
 
-        if sort:
-            colnames = peak_df.columns.tolist()
-            indices1 = [i for i, s in enumerate(colnames) if sort_column in s]
-            for i in indices1:
-                if "RA" not in colnames[i] and "RA" not in sort_column and "norm" not in colnames[i]:
-                    condition = colnames[i]
-                    print 'Sorted on column: '+condition
-                    peak_df = peak_df.sort(condition, ascending=True)
-                    break
-                elif "RA" in colnames[i] and "RA" in sort_column and "norm" not in colnames[i]:
-                    condition = colnames[i]
-                    print 'Sorted on column: '+condition
-                    peak_df = peak_df.sort(condition, ascending=True)
-                    break
+    if sort:
+        colnames = peak_df.columns.tolist()
+        indices1 = [i for i, s in enumerate(colnames) if sort_column in s]
+        for i in indices1:
+            if "RA" not in colnames[i] and "RA" not in sort_column and "norm" not in colnames[i]:
+                condition = colnames[i]
+                print 'Sorted on column: '+condition
+                peak_df = peak_df.sort(condition, ascending=True)
+                break
+            elif "RA" in colnames[i] and "RA" in sort_column and "norm" not in colnames[i]:
+                condition = colnames[i]
+                print 'Sorted on column: '+condition
+                peak_df = peak_df.sort(condition, ascending=True)
+                break
 
     for v in bam_name_list:
         name = v
         bam_path = getBam(name)
         sample_bam = pysam.Samfile(bam_path, "rb")
         df = overlapping_peaks_distribution(sample_bam, peak_df)
-        df = scale_dataframe(df)
+        #df = scale_dataframe(df)   # scaling of dataframe
         big_df = pd.concat([big_df, df], axis=1)
         big_df.columns = range(0, big_df.shape[1])
         sample_bam.close()
@@ -69,8 +69,9 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
 
     bam_order = ','.join(bam_name_list)
     path = make_dir(bam_order, region+str(len(peak_df)))
+    #big_df.to_csv(path+bam_order+region+'.csv', sep=",", encoding='utf-8', ignore_index=True)
     #divide_peaks_in_strength(big_df, bam_order, path)         # plotting line plots
-    big_df = kmeans_clustering(big_df, 10, 100)         # performing k-means clustering
+    big_df = kmeans_clustering(big_df, 9, 100)         # performing k-means clustering
     dict_of_df = factor_seperate(big_df, 'cluster')     # divide df in smaller dfs basis in clustering
     line_plot_peak_distribution(dict_of_df, bam_order, path)  # plotting individual clusters
 
@@ -83,6 +84,8 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
         plot_clustered_peaks_4_two_samples(dict_of_df, bam_order, path)
 
 # adding columns to heatmap df
+    peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'].index = range(0, len(peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp']))
+    big_df.insert(0, 'GenomicPosition TSS=1250 bp, upstream=5000 bp', peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'])
     peak_df['Next transcript gene name'].index = range(0, len(peak_df['Next transcript gene name']))
     big_df.insert(0, 'Next transcript gene name', peak_df['Next transcript gene name'])
     peak_df['Next transcript strand'].index = range(0, len(peak_df['Next transcript strand']))
