@@ -133,6 +133,7 @@ def overlapping_peaks_distribution(bam_peak1, overlap_df):
     '''
     import pandas as pd
     peak_distribution_sample = pd.DataFrame()
+    print 'Process: Feature extraction from BAM started'
     for ind, row in overlap_df.iterrows():
         chr = str(row['chr'])
         orientation = row['Next transcript strand']
@@ -156,7 +157,6 @@ def overlapping_peaks_distribution(bam_peak1, overlap_df):
             #print 'Towards 3 prime'
             peak_distribution_sample = peak_distribution_sample.append(pd.Series(list_sample1[::-1]), ignore_index=True)
     #print peak_distribution_sample
-    print 'Process: Features extraction from BAM finished'
     bam_peak1.close()
     return peak_distribution_sample
 
