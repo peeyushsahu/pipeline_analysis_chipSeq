@@ -92,6 +92,12 @@ def annotate_intronexon_junction(df, chr_vector):
 
 
 def next5genes_annotator(dataframe, path):
+    '''
+    This method will take a dtatframe and compute its 5 nearest genes from middle of the peak.
+    :param dataframe:
+    :param path: To GTF file
+    :return:
+    '''
     import sys
     import timeit
     print 'Process: Reading GTF file'
@@ -117,12 +123,20 @@ def next5genes_annotator(dataframe, path):
     stop = timeit.default_timer()
     print '\nTime elapsed:', stop-start,' sec'
     dataframe.to_csv(
-            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/diffPeaks_P6.csv',
+            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/Annotated_diffPeaks_P6.csv',
             sep=",", encoding='utf-8', ignore_index=True)
     return dataframe
 
 
 def gtf_binary_search(List, key, imin, imax):
+    '''
+    Binary search function uses recursive method to search the position/index of peak-summit in the GTF database.
+    :param List: DF of sorted GTF file only with 'start'.
+    :param key: Position to be searched in the data
+    :param imin: First index
+    :param imax: Last index
+    :return:
+    '''
     if key < List[imin] or key > List[imax]:
         return 'KEY OUT OF BOUND'
     if imax < imin:
@@ -140,6 +154,12 @@ def gtf_binary_search(List, key, imin, imax):
 
 
 def next5genes(gtffile, position):
+    '''
+    This method actually search for five nearest genes in GTF file.
+    :param gtffile:
+    :param position:
+    :return:
+    '''
     import re
     geneList = []
     minusGene = ''
@@ -151,7 +171,7 @@ def next5genes(gtffile, position):
         minus = re.split(';| |"', gtffile.iloc[minusStrandindex]['further_information'])
         mgene_pos = minus.index('gene_name')
         mGene = minus[mgene_pos+2]
-        if gtffile.iloc[minusStrandindex]['region'] == 'transcript' and minusGene != mGene:
+        if gtffile.iloc[minusStrandindex]['region'] == 'transcript' and minusGene != mGene and not mGene in geneList:
             geneList.append(mGene)
             minusGene = mGene
             minusStrandindex -= 1
@@ -160,7 +180,7 @@ def next5genes(gtffile, position):
         plus = re.split(';| |"', gtffile.iloc[plusStrandindex]['further_information'])
         pgene_pos = plus.index('gene_name')
         pGene = plus[pgene_pos+2]
-        if gtffile.iloc[plusStrandindex]['region'] == 'transcript' and plusGene != pGene:
+        if gtffile.iloc[plusStrandindex]['region'] == 'transcript' and plusGene != pGene and not pGene in geneList:
             geneList.append(pGene)
             plusGene = pGene
             plusStrandindex += 1

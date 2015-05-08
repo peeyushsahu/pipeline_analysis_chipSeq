@@ -40,7 +40,7 @@ sample_name = [#'YY1_RA_seq3 vs IgG_RA_seq2 filtered',
                #'H3R2me2_17F10_seq7 vs IgG_seq4 filtered',
                #'H3R2me2_17H5_seq7 vs IgG_seq4 filtered',
                #'JARID1A_seq2 vs IgG_seq2 filtered',
-               'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered',
+               #'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered',
                #'JARID1A_RA_seq2 vs IgG_RA_seq1 filtered',
                #'H3K27me3_seq2 vs IgG_seq2 filtered',
                #'PRMT6_2_seq1 vs IgG_seq1 filtered',
@@ -50,7 +50,7 @@ sample_name = [#'YY1_RA_seq3 vs IgG_RA_seq2 filtered',
                #'PRMT6_2_RA_seq5 vs IgG_RA_seq2 filtered',
                #'PRMT6_2_RA_seq4 vs IgG_RA_seq4 filtered',
                #'H3K27me3_RA_seq2 vs IgG_RA_seq2 filtered',
-               #'H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered',
+               'H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered',
                #'PRMT6_2_RA_seq1 vs IgG_RA_seq1 filtered',
                #'H3K4me3_seq2 vs IgG_seq2 filtered',
                #'Encode_NT2D1_H3K36me3',
@@ -122,14 +122,14 @@ diffbind = differential_binding.Overlaps(sample, filtered_peak)
 differential_binding.diffBinding(diffbind, 'PRMT6_2_seq6 vs IgG_seq6 filtered')
 '''
 ### Compares multiple ChIP-Seq profile using peaks from on sample
-'''
-for i in ['tss', 'exon', 'intron', 'intergenic', 'upstream']:
-    bam_list = ['Sample_K27ac', 'Sample_K27ac_RA', 'Sample_K4me1', 'Sample_K4me1_RA']
-    peak_df = filtered_peak_data.get('PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered')
-    GR_heatmaps_DF_for_peaks(bam_list, peak_df, region='all')
-'''
-### Comapre ChIP-Seq profile from altered sample (external)
 
+for i in ['tss', 'exon', 'intron', 'intergenic', 'upstream']:
+    bam_list = ['H3K4me3_seq2', 'H3K4me3_RA_seq2']
+    peak_df = filtered_peak_data.get('H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered')
+    GR_heatmaps_DF_for_peaks(bam_list, peak_df, region='all')
+
+### Comapre ChIP-Seq profile from altered sample (external)
+'''
 bam_list = ['PRMT6_2_seq6', 'PRMT6_2_RA_seq6', 'Sample_EZH1', 'Sample_EZH1_RA'] #'Sample_K4me1', 'Sample_K4me1_RA', 'Sample_K27ac', 'Sample_K27ac_RA', 'H3K4me3_seq2', 'H3K4me3_RA_seq2'
 peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/DiffBind_P6_vs_all.csv',
     header=0, sep=',')
@@ -138,7 +138,7 @@ GR_heatmaps_DF_for_peaks(bam_list, peak_df, region='all', sort=True, sort_column
 #GPcount = peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'].value_counts()
 #GPcount = zip(GPcount.index, GPcount.values)
 #cal_genomic_region.plotGenomicregions(GPcount, 'DiffBind_P6_vs_all')
-
+'''
 ### Density based motif analysis
 '''
 peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered_PRMT6_2_seq6 vs IgG_seq6 filtered_PRMT6_2_seq5 vs IgG_seq2 filtered_PRMT6_2_RA_seq5 vs IgG_RA_seq2 filtered.csv',
