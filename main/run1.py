@@ -1,10 +1,13 @@
 import os
 
 from pandas import read_csv
+from annotate.Annotate import next5genes_annotator
 
 from overlap_analysis import cal_genomic_region, differential_binding, filterPeaks
+from plotsAndseq import seqOperations
 from plotsAndseq.plots import GR_heatmaps_DF_for_peaks
 from plotsAndseq.seqOperations import density_based_motif_comparision
+import pandas as pd
 
 
 __author__ = 'peeyush'
@@ -114,27 +117,30 @@ sample = ['PRMT6_2_seq6', 'PRMT6_2_RA_seq6',
           'H3K4me3_seq2', 'H3K4me3_RA_seq2',
           'Sample_K4me1', 'Sample_K4me1_RA',
           'Sample_EZH1', 'Sample_EZH1_RA',
-          'Sample_K9me3', 'Sample_K9me3_RA']
+          'Sample_K9me3', 'Sample_K9me3_RA',
+          'Sample_K27me3', 'Sample_K27me3_RA']
 peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/All_PRMT6_peaks_unique.csv',
     header=0, sep=',')
 filtered_peak = {'PRMT6_2_seq6 vs IgG_seq6 filtered': peak_df}
 diffbind = differential_binding.Overlaps(sample, filtered_peak)
 differential_binding.diffBinding(diffbind, 'PRMT6_2_seq6 vs IgG_seq6 filtered')
 '''
-### Compares multiple ChIP-Seq profile using peaks from on sample
-
+### Compares multiple ChIP-Seq profile using peaks (heatmap) from on sample
+'''
 for i in ['tss', 'exon', 'intron', 'intergenic', 'upstream']:
     bam_list = ['H3K4me3_seq2', 'H3K4me3_RA_seq2']
     peak_df = filtered_peak_data.get('H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered')
-    GR_heatmaps_DF_for_peaks(bam_list, peak_df, region='all')
-
+    GR_heatmaps_DF_for_peaks(bam_list, peak_df, region=i)
+'''
 ### Comapre ChIP-Seq profile from altered sample (external)
 '''
-bam_list = ['PRMT6_2_seq6', 'PRMT6_2_RA_seq6', 'Sample_EZH1', 'Sample_EZH1_RA'] #'Sample_K4me1', 'Sample_K4me1_RA', 'Sample_K27ac', 'Sample_K27ac_RA', 'H3K4me3_seq2', 'H3K4me3_RA_seq2'
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/DiffBind_P6_vs_all.csv',
+bam_list = ['PRMT6_2_seq6', 'PRMT6_2_RA_seq6', 'Sample_K36me3', 'Sample_K36me3_RA','Sample_K4me1', 'Sample_K4me1_RA', 'Sample_K27ac', 'Sample_K27ac_RA', 'H3K4me3_seq2', 'H3K4me3_RA_seq2'] #'Sample_K4me1', 'Sample_K4me1_RA', 'Sample_K27ac', 'Sample_K27ac_RA', 'H3K4me3_seq2', 'H3K4me3_RA_seq2'
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/PRMT6_2_seq6,Sample_K36me3,Sample_pol-2/tss2032/PRMT6_2_seq6,Sample_K36me3,Sample_pol-2tss.csv',
     header=0, sep=',')
+peak_df['cluster'] = pd.Categorical(peak_df['cluster'], [7,5,4,0,1,2,3,9,8,6])
+peak_df = peak_df.sort('cluster')
 #peak_df = peak_df[(peak_df['cluster'] == 4) | (peak_df['cluster'] == 5) | (peak_df['cluster'] == 7)]
-GR_heatmaps_DF_for_peaks(bam_list, peak_df, region='all', sort=True, sort_column='foldChange_P6')
+GR_heatmaps_DF_for_peaks(bam_list, peak_df, region='all', sort=False, sort_column='foldChange_P6')
 #GPcount = peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'].value_counts()
 #GPcount = zip(GPcount.index, GPcount.values)
 #cal_genomic_region.plotGenomicregions(GPcount, 'DiffBind_P6_vs_all')
@@ -154,7 +160,20 @@ for i in ['tss', 'exon', 'intron', 'intergenic', 'upstream']:
 seq = seqOperations.seq4motif(sample_dict)
 db = ["JASPAR_CORE_2014_vertebrates.meme", "uniprobe_mouse.meme"]
 seqOperations.motif_analysis(db, 10, seq)
+
+sample_dict = {}
+prmt6_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/DiffBind_P6_vs_all.csv',
+    header=0, sep=',')
+sample_dict['PRMT6_2_RA_seq6_DB_low'] = prmt6_df[prmt6_df['log2FoldChange_P6'] < -1]
+seq = seqOperations.seq4motif(sample_dict)
+db = ["JASPAR_CORE_2014_vertebrates.meme", "uniprobe_mouse.meme"]
+seqOperations.motif_analysis(db, 10, seq)
 '''
+### Annotate peaks with 5 nearest genes (+,-) strand
+diffpeaks = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/DiffBind_P6_vs_all.csv',
+    header=0, sep=',')
+gtf_path = '/ps/imt/genome/human/Homo_sapiens_Ensembl_GRCh37/Homo_sapiens/Ensembl/GRCh37/Annotation/Genes/genes.gtf'
+next5genes_annotator(diffpeaks, gtf_path)
 
 ### calculate overlaps between peaks
 '''

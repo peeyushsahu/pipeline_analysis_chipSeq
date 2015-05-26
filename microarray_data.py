@@ -49,3 +49,32 @@ for i in range(0, len(df1)-1):
 new_df.columns = column
 new_df.to_csv('/home/peeyush/Desktop/HW_diff_exp/FC_table.csv', sep=',', header=True, index_label=False, index=False)
 
+
+expressiondf = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/until72_HW.csv', sep=',')
+peakdf = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/nearest_gene_diffPeaks_P6.csv', sep=',')
+
+def expression4peaks(peakdf, expressiondf):
+    '''
+    This function will take a dataframe consisting genenames and the expression dataframe.
+    :return:
+    '''
+    expressiondf = expressiondf.set_index(expressiondf['SYMBOL'].str.lower())
+    newDF = pd.DataFrame(peakdf[['chr', 'start', 'stop', 'Next transcript gene name', 'log2FoldChange_P6', 'next5genes']])
+    newDF['next5genes_expr'] = 0
+    newDF['expression'] = 0
+    for index, cols in newDF.iterrows():
+        neargene = cols['next5genes'].split(',')
+        for gene in neargene:
+            print gene
+            if gene.lower() in expressiondf.index:
+                expr = expressiondf.loc[gene.lower(), 'FC_72'].tolist()
+                if type(expr) == list:
+                    expr = sum(expr)/2
+                if newDF.loc[index, 'next5genes_expr'] == 0:
+                    newDF.loc[index, 'next5genes_expr'] = gene+':'+str(expr)
+                    newDF.loc[index, 'expression'] = expr
+                else:
+                    newDF.loc[index, 'next5genes_expr'] = newDF.loc[index, 'next5genes_expr'] + ';' + gene + ':' + str(expr)
+                    #newDF.loc[index, 'expression'] = str(newDF.loc[index, 'expression']) + ';' + str(expr)
+    newDF.to_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/peaks2expression.csv', sep=',', header=True, index_label=False, index=False)
+    return newDF

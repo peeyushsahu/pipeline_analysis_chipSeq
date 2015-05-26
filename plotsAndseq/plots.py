@@ -26,11 +26,11 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     import pandas as pd
 
     big_df = pd.DataFrame()
-    region = region
+    region = region.strip()
     sort = sort
     sort_column = sort_column
     peak_df = peak_df
-    if region.strip() != 'all':
+    if region != 'all':
         peak_df = peak_df[peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'] == region]
 
         if region == 'tss':     # Reduce peaks based on their distance from TSS
@@ -39,7 +39,7 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
             peak_df = peak_df[peak_df['Next Transcript tss distance'] < 300]
             if len(peak_df) == 0:
                 raise ValueError('selected region does not contain any peaks')
-        print region+' found in dataframe: ',len(peak_df)
+    print region+' found in dataframe: ',len(peak_df)
 
     if sort:
         colnames = peak_df.columns.tolist()
@@ -84,8 +84,8 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
         plot_clustered_peaks_4_two_samples(dict_of_df, bam_order, path)
 
 # adding columns to heatmap df
-    peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'].index = range(0, len(peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp']))
-    big_df.insert(0, 'GenomicPosition TSS=1250 bp, upstream=5000 bp', peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'])
+    #peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'].index = range(0, len(peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp']))
+    #big_df.insert(0, 'GenomicPosition TSS=1250 bp, upstream=5000 bp', peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'])
     peak_df['Next transcript gene name'].index = range(0, len(peak_df['Next transcript gene name']))
     big_df.insert(0, 'Next transcript gene name', peak_df['Next transcript gene name'])
     peak_df['Next transcript strand'].index = range(0, len(peak_df['Next transcript strand']))
@@ -115,7 +115,7 @@ def kmeans_clustering(df, nClus, iter):
     '''
     import scipy.cluster.vq as cluster
     import pandas as pd
-    print 'Process: Clustering of DataFrame'
+    print '\nProcess: Clustering of DataFrame'
     df_fin = df
     df_mat = df.as_matrix()
     res = cluster.kmeans2(df_mat, nClus, iter)
@@ -132,9 +132,12 @@ def overlapping_peaks_distribution(bam_peak1, overlap_df):
     :return:
     '''
     import pandas as pd
+    import sys
     peak_distribution_sample = pd.DataFrame()
     print 'Process: Feature extraction from BAM started'
     for ind, row in overlap_df.iterrows():
+        sys.stdout.write("\rFeature extraction for peak:%d" % ind)
+        sys.stdout.flush()
         chr = str(row['chr'])
         orientation = row['Next transcript strand']
         #print type(orientation)
