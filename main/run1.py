@@ -1,17 +1,20 @@
 import os
 
 from pandas import read_csv
+from Bowtie import retroT_analysis
 from annotate.Annotate import next5genes_annotator
 
 from overlap_analysis import cal_genomic_region, differential_binding, filterPeaks
+from overlap_analysis.differential_binding import modification4nearestgenes
 from plotsAndseq import seqOperations
 from plotsAndseq.plots import GR_heatmaps_DF_for_peaks
 from plotsAndseq.seqOperations import density_based_motif_comparision
 import pandas as pd
+#import pdb; pdb.set_trace()
+import gc
 
 
 __author__ = 'peeyush'
-
 
 
 #time.strftime("%d/%m/%y")
@@ -25,10 +28,11 @@ folders = ["overlap",
            "CpG",
            "density_based_motif"]
 for folder in folders:
-    print 'Directory_for_result: ' + '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/'+folder
+    #print 'Directory_for_result: ' + '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/'+folder
     path = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/'+folder
     if not os.path.exists(path):
         os.makedirs(path)
+print 'Output folder created'
 
 sample_name = [#'YY1_RA_seq3 vs IgG_RA_seq2 filtered',
                #'YY1_seq2 vs IgG_seq2 filtered',
@@ -53,7 +57,7 @@ sample_name = [#'YY1_RA_seq3 vs IgG_RA_seq2 filtered',
                #'PRMT6_2_RA_seq5 vs IgG_RA_seq2 filtered',
                #'PRMT6_2_RA_seq4 vs IgG_RA_seq4 filtered',
                #'H3K27me3_RA_seq2 vs IgG_RA_seq2 filtered',
-               'H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered',
+               #'H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered',
                #'PRMT6_2_RA_seq1 vs IgG_RA_seq1 filtered',
                #'H3K4me3_seq2 vs IgG_seq2 filtered',
                #'Encode_NT2D1_H3K36me3',
@@ -78,7 +82,9 @@ sample_name = [#'YY1_RA_seq3 vs IgG_RA_seq2 filtered',
                #'Sample_K36me3 vs Sample_8C9 filtered',
                #'Sample_pol-2_RA vs IgG_RA_seq6 filtered',
                #'Sample_pol-2 vs Sample_8C9 filtered',
-               #'Sample_PRMT6_3_RA vs IgG_RA_seq6 filtered'
+               #'Sample_PRMT6_3_RA vs IgG_RA_seq6 filtered',
+               #'Sample_K27me1 vs IgG_seq6 filtered',
+               #'Sample_K27me1_RA vs IgG_RA_seq6 filtered'
                ]
 
 # Here import peak called data in a list....
@@ -88,7 +94,7 @@ for a in sample_name:
         '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/csv/' + a + '.csv',
         header=0, sep='\t')
     df = df.rename(columns={'Next Gene name': 'Next transcript gene name'})
-    peak_data[a] = df
+    peak_data[a] = df #[df['Next Transcript tss distance'] < 200]
 print "Number of sample are being analysed: ", peak_data.__len__()
 
 print "Filtering peaks."
@@ -99,17 +105,29 @@ for k, v in filtered_peak_data.iteritems():
     name = k
     df = v
     GR_analysis = cal_genomic_region.PeaksAnalysis(df, name)
-    cal_genomic_region.genomic_regions(GR_analysis)
+    GR_analysis.genomic_regions()
     peakAnalysis_df[name] = GR_analysis
+    GR_analysis.plot_factors('Next Gene biotype')
 
 
 ### Performs differential binding calulation from full sample
 '''
-sample = ['PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered', 'PRMT6_2_seq6 vs IgG_seq6 filtered',
-          'H3K4me3_seq2 vs IgG_seq2 filtered', 'H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered']
+sample = ['PRMT6_2_RA_seq6']
 diffbind = differential_binding.Overlaps(sample, filtered_peak_data)
-differential_binding.diffBinding(diffbind)
+diffbind.diffBinding('PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered')
 '''
+### Diff. binding for nearest genes
+'''
+sample = ['Sample_K36me3', 'Sample_K36me3_RA',
+          'Sample_pol-2', 'Sample_pol-2_RA',
+          'H3K4me3_seq2', 'H3K4me3_RA_seq2',
+          'Sample_K27me3', 'Sample_K27me3_RA']
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/diffPeaks_P6_nearest_5_genes.csv',
+    header=0, sep=',')
+
+modification4nearestgenes(peak_df, 'prmt6_nearest5genes', sample)
+'''
+
 ### Diff. Binding calculation from altered sample (external)
 '''
 sample = ['PRMT6_2_seq6', 'PRMT6_2_RA_seq6',
@@ -125,31 +143,88 @@ filtered_peak = {'PRMT6_2_seq6 vs IgG_seq6 filtered': peak_df}
 diffbind = differential_binding.Overlaps(sample, filtered_peak)
 differential_binding.diffBinding(diffbind, 'PRMT6_2_seq6 vs IgG_seq6 filtered')
 '''
+### Transposone analysis
+'''
+trans = retroT_analysis.Transposones()
+trans.read_repeat_pos('/ps/imt/e/RepBase20.05.fasta/rtro_human/transposone_db.csv')
+trans.get_transposition_position(['SVA_D'])
+region = ['all'] #'all', 'tss', 'exon', 'intron', 'intergenic', 'upstream'
+bam_list = [['PRMT6_2_seq6', 'H3K4me3_seq2', 'Sample_K27ac', 'Sample_K4me1', 'Sample_K9me3']]
+for bams in bam_list:
+    for i in region:
+        GR_heatmaps_DF_for_peaks(bams, trans.repeat_pos_db.get('SVA_D'), region=i,
+                                 sort=False, sort_column='H3K4me3_RA_seq2')
+'''
+### Calculate overlap of Diff peaks with transposon
+diff_peaks = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/DiffBind_P6_vs_all.csv',
+    header=0, sep=',')
+TE_df = read_csv('/ps/imt/e/RepBase20.05.fasta/rtro_human/transposone_db.csv',
+    header=0, sep=',')
+TE_df['chr'] = map(lambda x: x[3:], TE_df['chr'])
+filtered_peak_data['diff_peaks'] = diff_peaks
+filtered_peak_data['TE_df'] = TE_df
+
+peakAnalysis_df = {}
+for k, v in filtered_peak_data.iteritems():
+    name = k
+    df = v
+    GR_analysis = cal_genomic_region.PeaksAnalysis(df, name)
+    peakAnalysis_df[name] = GR_analysis
+
+sample_name1 = ['diff_peaks']#, 'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered']
+sample_name2 = ['TE_df']#, 'Sample_18F3_RA vs IgG_RA_seq6 filtered']
+
+if len(sample_name1) != len(sample_name2):
+    raise ValueError("Unequal sample list for comparison")
+else:
+    for i in range(0, len(sample_name1)):
+        overlapping_res = cal_genomic_region.OverlappingPeaks(peakAnalysis_df, sample_name1[i], sample_name2[i])
+
 ### Compares multiple ChIP-Seq profile using peaks (heatmap) from on sample
 '''
-for i in ['tss', 'exon', 'intron', 'intergenic', 'upstream']:
-    bam_list = ['H3K4me3_seq2', 'H3K4me3_RA_seq2']
-    peak_df = filtered_peak_data.get('H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered')
-    GR_heatmaps_DF_for_peaks(bam_list, peak_df, region=i)
+region = ['all'] #'all', 'tss', 'exon', 'intron', 'intergenic', 'upstream'
+bam_list = [['Sample_18F3', 'H3K4me3_seq2', 'PRMT6_2_seq6']]
+for bams in bam_list:
+    for i in region:
+        GR_heatmaps_DF_for_peaks(bams, filtered_peak_data.get('Sample_18F3 vs Sample_8C9 filtered'), region=i,
+                                 sort=False, sort_column='H3K4me3_RA_seq2')
 '''
+
 ### Comapre ChIP-Seq profile from altered sample (external)
 '''
-bam_list = ['PRMT6_2_seq6', 'PRMT6_2_RA_seq6', 'Sample_K36me3', 'Sample_K36me3_RA','Sample_K4me1', 'Sample_K4me1_RA', 'Sample_K27ac', 'Sample_K27ac_RA', 'H3K4me3_seq2', 'H3K4me3_RA_seq2'] #'Sample_K4me1', 'Sample_K4me1_RA', 'Sample_K27ac', 'Sample_K27ac_RA', 'H3K4me3_seq2', 'H3K4me3_RA_seq2'
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/PRMT6_2_seq6,Sample_K36me3,Sample_pol-2/tss2032/PRMT6_2_seq6,Sample_K36me3,Sample_pol-2tss.csv',
-    header=0, sep=',')
-peak_df['cluster'] = pd.Categorical(peak_df['cluster'], [7,5,4,0,1,2,3,9,8,6])
-peak_df = peak_df.sort('cluster')
-#peak_df = peak_df[(peak_df['cluster'] == 4) | (peak_df['cluster'] == 5) | (peak_df['cluster'] == 7)]
-GR_heatmaps_DF_for_peaks(bam_list, peak_df, region='all', sort=False, sort_column='foldChange_P6')
-#GPcount = peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'].value_counts()
-#GPcount = zip(GPcount.index, GPcount.values)
-#cal_genomic_region.plotGenomicregions(GPcount, 'DiffBind_P6_vs_all')
+#bam_list = [['PRMT6_2_RA_seq6', 'Sample_pol-2_RA', 'Sample_K36me3_RA', 'H3K4me3_RA_seq2', 'Sample_K27me1_RA',
+#             'Sample_K27ac_RA', 'Sample_K4me1_RA', 'Sample_K9me3_RA', 'Sample_K27me3_RA', 'Sample_18F3_RA', 'YY1_RA_seq3'],
+#           ['PRMT6_2_seq6', 'Sample_pol-2', 'Sample_K36me3', 'H3K4me3_seq2', 'Sample_K27me1', 'Sample_K27ac',
+#             'Sample_K4me1', 'Sample_K9me3', 'Sample_K27me3', 'Sample_18F3', 'YY1_seq3']]
+
+
+bam_list = [['PRMT6_2_seq6', 'H3K4me3_seq2']]
+
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/PRMT6_2_seq6 vs IgG_seq6 filtered_vs_H3K4me3_seq2 vs IgG_seq2 filtered.csv', header=0, sep=',')
+
+for List in bam_list:
+    region = ['tss', 'exon', 'intron', 'intergenic', 'upstream'] #'all', 'tss', 'exon', 'intron', 'intergenic', 'upstream'
+    for i in region:
+        #peak_df['cluster'] = pd.Categorical(peak_df['cluster'], [6,7,4,3,0,1,5,8,2]) #7,5,4,0,1,2,3,9,8,6
+        #peak_df = peak_df.sort('cluster')
+        #peak_df = peak_df[(peak_df['cluster'] == 4) | (peak_df['cluster'] == 5) | (peak_df['cluster'] == 7)]
+        GR_heatmaps_DF_for_peaks(List, peak_df, region=i, sort=False, sort_column='PRMT6_2_RA_seq6')
+        #GPcount = peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'].value_counts()
+        #GPcount = zip(GPcount.index, GPcount.values)
+        #cal_genomic_region.plotGenomicregions(GPcount, 'DiffBind_P6_vs_all')
+gc.collect()
 '''
 ### Density based motif analysis
 '''
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered_PRMT6_2_seq6 vs IgG_seq6 filtered_PRMT6_2_seq5 vs IgG_seq2 filtered_PRMT6_2_RA_seq5 vs IgG_RA_seq2 filtered.csv',
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/PRMT6_2_seq6,Sample_pol-2,Sample_K36me3,H3K4me3_seq2,Sample_K27me1,Sample_K27ac,Sample_K4me1,Sample_K9me3,Sample_K27me3,Sample_18F3/intergenic7325'
+                   '/PRMT6_2_seq6,Sample_pol-2,Sample_K36me3,H3K4me3_seq2,Sample_K27me1,Sample_K27ac,Sample_K4me1,Sample_K9me3,Sample_K27me3,Sample_18F3intergenic.csv',
     header=0, sep=',')
-density_based_motif_comparision(peak_df, 'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered')
+#density_based_motif_comparision(peak_df, 'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered')
+peak_df = peak_df[peak_df['cluster'] == 7]
+sample_dict = {'PRMT6_intergenic_vs_H3K9_Non_RA': peak_df}
+seq = seqOperations.seq4motif(sample_dict)
+db = ["JASPAR_CORE_2014_vertebrates.meme", "uniprobe_mouse.meme"]
+seqOperations.motif_analysis(db, 10, seq)
 '''
 ### Performing motif and CpG analysis on prmt6 sites wrt regions eg. TSS, Exon
 '''
@@ -170,17 +245,18 @@ db = ["JASPAR_CORE_2014_vertebrates.meme", "uniprobe_mouse.meme"]
 seqOperations.motif_analysis(db, 10, seq)
 '''
 ### Annotate peaks with 5 nearest genes (+,-) strand
+'''
 diffpeaks = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/DiffBind_P6_vs_all.csv',
     header=0, sep=',')
 gtf_path = '/ps/imt/genome/human/Homo_sapiens_Ensembl_GRCh37/Homo_sapiens/Ensembl/GRCh37/Annotation/Genes/genes.gtf'
 next5genes_annotator(diffpeaks, gtf_path)
-
+'''
 ### calculate overlaps between peaks
 '''
 overlapping_samples = {}
 
-sample_name1 = ['PRMT6_2_seq6 vs IgG_seq6 filtered', 'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered']#, 'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered']
-sample_name2 = ['H3K4me3_seq2 vs IgG_seq2 filtered', 'H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered']#, 'Sample_18F3_RA vs IgG_RA_seq6 filtered']
+sample_name1 = ['PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered']#, 'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered']
+sample_name2 = ['YY1_RA_seq3 vs IgG_RA_seq2 filtered']#, 'Sample_18F3_RA vs IgG_RA_seq6 filtered']
 
 if len(sample_name1) != len(sample_name2):
     raise ValueError("Unequal sample list for comparison")
@@ -191,13 +267,14 @@ else:
         with open("/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/overlapping_peaks.txt", "a") as file:
             file.write(
                 name.split('vs')[0] + '\t' + name.split('vs')[2][1:] + '\t' + str(len(overlapping_res.get(name))) + '\n')
-
-
+'''
+'''
 sample_name3 = ['PRMT6_2_seq6 vs IgG_seq6 filtered_vs_H3K4me3_seq2 vs IgG_seq2 filtered']
 sample_name4 = ['Encode_NT2D1_H3K36me3']
 
 
-diff_sample = ['PRMT6_2_seq6 vs IgG_seq6 filtered_vs_H3K4me3_seq2 vs IgG_seq2 filtered'] ## load samples to analysis
+diff_sample = ['PRMT6_2_seq6 vs IgG_seq6 filtered_vs_Sample_K9me3 vs Sample_8C9 filtered',
+               'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered_vs_Sample_K9me3_RA vs IgG_RA_seq6 filtered'] ## load samples to analysis
 
 
 #peak_data2 = {}
@@ -211,7 +288,7 @@ for a in diff_sample:
     GPcount = df['GenomicPosition TSS=1250 bp, upstream=5000 bp'].value_counts()
     GPcount = zip(GPcount.index, GPcount.values)
     cal_genomic_region.plotGenomicregions(GPcount, a)
-    overlapping_samples[a] = df
+    #overlapping_samples[a] = df
     print a
 
 for i in range(0, len(sample_name3)):
@@ -228,16 +305,13 @@ for k, v in overlapping_samples.iteritems():
         GPcount = v['GenomicPosition TSS=1250 bp, upstream=5000 bp'].value_counts()
         GPcount = zip(GPcount.index, GPcount.values)
         cal_genomic_region.plotGenomicregions(GPcount, k)
-
-#sample_4_motif = ['Diff_peaks_Non_RA']
-
-#for i in sample_4_motif:
-#    overlapping_samples[i] = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/'+i+'.csv', header=0, sep=',')
-
+'''
  #this will make seq from Genomic regions
 #print "Samples for seq fetching:", len(overlapping_samples)
-#seq = seq4motif.seq4motif(overlapping_samples)
+#seq = seqOperations.seq4motif(filtered_peak_data)
 #db = ["JASPAR_CORE_2014_vertebrates.meme", "uniprobe_mouse.meme"]
-#seq4motif.motif_analysis(db, 10, seq)
-'''
+#seqOperations.motif_analysis(db, 10, seq)
 
+#seq1 = seqOperations.seq4motif({'p6_H3K9':peak_df})
+#db1 = ["JASPAR_CORE_2014_vertebrates.meme", "uniprobe_mouse.meme"]
+#seqOperations.motif_analysis(db1, 10, seq1)

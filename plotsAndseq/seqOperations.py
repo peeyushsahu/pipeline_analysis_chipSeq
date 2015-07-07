@@ -53,6 +53,8 @@ def seq4motif(peak_data):
             print 'CpG',len(CpG_ratio)
             df['CpG_ratio'] = CpG_ratio
             df['CG_percent'] = gc_percent
+            df = df[df['CpG_ratio'] >= 0.6]
+            df = df[df['CG_percent'] >= 50]
             df.to_csv(base_path+'/CpG/'+k+'.csv', sep=",", encoding='utf-8', ignore_index=True)
     return output_dir
 

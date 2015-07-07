@@ -13,57 +13,58 @@ class Overlaps():
         self.filter_peaks = filter_peaks
 
 
-def diffBinding(self, basepeakfile):
-    '''
-    This function will extract summit (+-500) peak data if peak length is >1000 from provided peaks.
-    This dataframe can be used with DESeq for differential bound calculation.
-    :return:
-    '''
-    import pysam
-    import sys
-    print "\nCheck point: diffBinding"
-    sample_name = self.samples_names
-    dataframes = self.filter_peaks
-    # print type(sample_name)
-    #df = dataframes.get(sample_name[0]).iloc[:, 0:1]
-    df = pd.DataFrame()
-    df = pd.concat([df, dataframes.get(basepeakfile)['chr']], axis=1)
-    df = pd.concat([df, dataframes.get(basepeakfile)['start']], axis=1)
-    df = pd.concat([df, dataframes.get(basepeakfile)['stop']], axis=1)
-    df = pd.concat([df, dataframes.get(basepeakfile)['GenomicPosition TSS=1250 bp, upstream=5000 bp']], axis=1)
-    df = pd.concat([df, dataframes.get(basepeakfile)['Next transcript gene name']], axis=1)
-    df = pd.concat([df, dataframes.get(basepeakfile)['Next transcript strand']], axis=1)
-    df = pd.concat([df, dataframes.get(basepeakfile)['summit']], axis=1)
-    df['cookiecut_start'] = 0
-    df['cookiecut_stop'] = 0
-    #print df.head()
-    print df.dtypes
-    for sample in sample_name:
-        df[sample] = 0
-        #print '\n'+sample
-        sample_bam_path = getBam(sample) #.split(' vs ')[0]
-        sample_bam = pysam.Samfile(sample_bam_path, "rb")
-        for k, v in df.iterrows():
-            sys.stdout.write("\rNumber of peaks processed:%d" % k)
-            sys.stdout.flush()
-            #print v['start'], v['summit']
-            if v['stop']-v['start'] > 1000:
-                chr = str(v['chr'])
-                summit = v['start']+v['summit']
-                tags = sample_bam.count(chr, summit-500, summit+500)
-                df.loc[k,'cookiecut_start'] = summit-500
-                df.loc[k,'cookiecut_stop'] = summit+500
-                df.loc[k,sample] = tags
-            else:
-                chr = str(v['chr'])
-                tags = sample_bam.count(chr, v['start'], v['stop'])
-                df.loc[k,'cookiecut_start'] = v['start']
-                df.loc[k,'cookiecut_stop'] = v['stop']
-                df.loc[k,sample] = tags
-        sample_bam.close()
-    df.to_csv(
-            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/' + '_'.join(sample_name) + '.csv',
-            sep=",", encoding='utf-8', ignore_index=True)
+    def diffBinding(self, basepeakfile):
+        '''
+        This function will extract summit (+-500) peak data if peak length is >1000 from provided peaks.
+        This dataframe can be used with DESeq for differential bound calculation.
+        :return:
+        '''
+        import pysam
+        import sys
+        print "\nCheck point: diffBinding"
+        sample_name = self.samples_names
+        dataframes = self.filter_peaks
+        # print type(sample_name)
+        #df = dataframes.get(sample_name[0]).iloc[:, 0:1]
+        df = pd.DataFrame()
+        df = pd.concat([df, dataframes.get(basepeakfile)['chr']], axis=1)
+        df = pd.concat([df, dataframes.get(basepeakfile)['start']], axis=1)
+        df = pd.concat([df, dataframes.get(basepeakfile)['stop']], axis=1)
+        df = pd.concat([df, dataframes.get(basepeakfile)['GenomicPosition TSS=1250 bp, upstream=5000 bp']], axis=1)
+        df = pd.concat([df, dataframes.get(basepeakfile)['Next transcript gene name']], axis=1)
+        df = pd.concat([df, dataframes.get(basepeakfile)['Next transcript strand']], axis=1)
+        df = pd.concat([df, dataframes.get(basepeakfile)['Next Transcript tss distance']], axis=1)
+        df = pd.concat([df, dataframes.get(basepeakfile)['summit']], axis=1)
+        df['cookiecut_start'] = 0
+        df['cookiecut_stop'] = 0
+        #print df.head()
+        print df.dtypes
+        for sample in sample_name:
+            df[sample] = 0
+            #print '\n'+sample
+            sample_bam_path = getBam(sample) #.split(' vs ')[0]
+            sample_bam = pysam.Samfile(sample_bam_path, "rb")
+            for k, v in df.iterrows():
+                sys.stdout.write("\rNumber of peaks processed:%d" % k)
+                sys.stdout.flush()
+                #print v['start'], v['summit']
+                if v['stop']-v['start'] > 1000:
+                    chr = str(v['chr'])
+                    summit = v['start']+v['summit']
+                    tags = sample_bam.count(chr, summit-500, summit+500)
+                    df.loc[k,'cookiecut_start'] = summit-500
+                    df.loc[k,'cookiecut_stop'] = summit+500
+                    df.loc[k,sample] = tags
+                else:
+                    chr = str(v['chr'])
+                    tags = sample_bam.count(chr, v['start'], v['stop'])
+                    df.loc[k,'cookiecut_start'] = v['start']
+                    df.loc[k,'cookiecut_stop'] = v['stop']
+                    df.loc[k,sample] = tags
+            sample_bam.close()
+        df.to_csv(
+                '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/' + '_'.join(sample_name) + '.csv',
+                sep=",", encoding='utf-8', ignore_index=True)
 
 def getBam(name):
     '''
@@ -158,6 +159,63 @@ def col_position(dataframe, colname):
     collist = dataframe.columns.values.tolist()
     indices = [i for i, s in enumerate(collist) if colname in s]
     return indices
+
+
+def modification4nearestgenes(dataframe, name, modification_list):
+    '''
+    This function will extract summit (+-500) peak data if peak length is >1000 from provided peaks.
+    This dataframe can be used with DESeq for differential bound calculation.
+    :return:
+    '''
+    import pysam
+    import sys
+    print "\nCheck point: diffBinding"
+    sample_name = name
+    dataframes = dataframe
+    # print type(sample_name)
+    #df = dataframes.get(sample_name[0]).iloc[:, 0:1]
+    df = pd.DataFrame()
+
+    ### create df from nearest genes
+    print 'Reassembling dataframe'
+    genewidpos = zip(dataframes['next5genes'], dataframes['position'])
+    for i in genewidpos:
+        gene = i[0].split(',')
+        pos = i[1].split(',')
+        for j in range(0,len(gene)):
+            row = [gene[j], pos[j].split(':')[0], pos[j].split(':')[1], pos[j].split(':')[2], (int(pos[j].split(':')[2])-int(pos[j].split(':')[1]))]
+            #print row
+            df = df.append(pd.Series(row), ignore_index=True)
+    df.columns = ['gene', 'chr', 'start', 'stop', 'length']
+
+    ### Extract tag count for the specific region of peak
+    for sample in modification_list:
+        print '\n'+sample+' sample being processed.'
+        df[sample] = 0
+        sample_bam_path = getBam(sample) #.split(' vs ')[0]
+        sample_bam = pysam.Samfile(sample_bam_path, "rb")
+        if 'pol' in sample or 'K4me3' in sample:
+            for k, v in df.iterrows():
+                sys.stdout.write("\rNumber of peaks processed:%d" % k)
+                sys.stdout.flush()
+                chr = str(v['chr'])
+                tags = sample_bam.count(chr, int(v['start'])-500, int(v['start'])+500)
+                df.loc[k, sample] = float(tags)/1000
+        else:
+            for k, v in df.iterrows():
+                #print v['chr'], v['start'], v['stop']
+                sys.stdout.write("\rNumber of peaks processed:%d" % k)
+                sys.stdout.flush()
+                chr = str(v['chr'])
+                tags = sample_bam.count(chr, int(v['start']), int(v['stop']))
+                norm_tags = float(tags)/(int(v['stop']) - int(v['start']))
+                df.loc[k, sample] = norm_tags
+        sample_bam.close()
+    df.to_csv(
+            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/' + sample_name + '_'.join(modification_list) + '.csv',
+            sep=",", encoding='utf-8', ignore_index=True)
+
+
 
 
 def non_overlapping_peaks(self, overlap_no):
