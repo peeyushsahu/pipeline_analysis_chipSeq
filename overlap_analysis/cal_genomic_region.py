@@ -24,13 +24,13 @@ class PeaksAnalysis():
         :return:
         """
 
-        GPcount = self.peaks['GenomicPosition TSS=1250 bp, upstream=5000 bp'].value_counts()
-        GPcount = zip(GPcount.index, GPcount.values)
+        GRcount = self.peaks['GenomicPosition TSS=1250 bp, upstream=5000 bp'].value_counts()
+        GPcount = zip(GRcount.index, GRcount.values)
         self.GCount = GPcount
         with open("/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/plots/G_distributions.txt", "a") as file:
             file.write(self.name+'\t'+str(GPcount)+'\n')
-        plotGenomicregions(GPcount, self.name)
-
+        #plotGenomicregions(GPcount, self.name)
+        #stacked_plot_regions(GRcount.values, GPcount, self.name)
 
     def plot_factors(self, columnname):
         '''
@@ -50,6 +50,164 @@ class PeaksAnalysis():
         plt.title(self.name)
         plt.savefig('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/plots/' + columnname +'_'+self.name + '.png')
         plt.clf()
+
+def plotGenomicregions(GPcount, name):
+    """
+    :param GPcount: is a list of tuples [(region, size),....()]
+    :return:
+    """
+    """ Now we produce some pie charts """
+
+    gr = ['tss', 'intergenic', 'intron', 'exon', 'upstream']
+    size = [0, 0, 0, 0, 0]
+    for a, b in GPcount:
+        if a == 'tss':
+            size[0] = b
+        if a == 'intergenic':
+            size[1] = b
+        if a == 'intron':
+            size[2] = b
+        if a == 'exon':
+            size[3] = b
+        if a == 'upstream':
+            size[4] = b
+    colors = ['yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'cyan']
+    explode = (0.1, 0, 0, 0, 0)  # only "explode" the 2nd slice
+    plt.pie(size, explode=explode, labels=gr, colors=colors,
+            autopct='%1.1f%%', shadow=True, startangle=90)
+    # Set aspect ratio to be equal so that pie is drawn as a circle.
+    #plt.legend(['tss', 'intergenic', 'intron', 'exon', 'upstream'], loc='upper left')
+    plt.axis('equal')
+    plt.savefig('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/plots/' + name + '.png')
+    plt.clf()
+
+
+def stacked_plot_regions(values, GPcount, name):
+    '''
+    This function will plot a stacked bar plot for genomic region percentage.
+    '''
+    import numpy as np
+    import matplotlib.pyplot as plt
+    per = [100.0/sum(values)*i for i in values]
+    gr = ['tss', 'intergenic', 'intron', 'exon', 'upstream']
+    colors = ['yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'cyan']
+    size = [0, 0, 0, 0, 0]
+    for a, b in GPcount:
+        if a == 'tss':
+            size[0] = per[0]
+        if a == 'intergenic':
+            size[1] = per[1]
+        if a == 'intron':
+            size[2] = per[2]
+        if a == 'exon':
+            size[3] = per[3]
+        if a == 'upstream':
+            size[4] = per[4]
+    N = 1
+    tss = size[0]
+    intergenic = size[1]
+    intron = size[2]
+    exon = size[3]
+    upstream = size[4]
+    ind = np.arange(N)    # the x locations for the groups
+    width = 0.5       # the width of the bars: can also be len(x) sequence
+    plt.figure(figsize=(12,8))
+    p1 = plt.bar(ind, intergenic,   width, color='yellowgreen')
+    p2 = plt.bar(ind, upstream, width, color='gold',
+                 bottom=intergenic)
+    p3 = plt.bar(ind, tss, width, color='lightskyblue',
+                 bottom=intergenic + upstream)
+    p4 = plt.bar(ind, exon, width, color='lightcoral',
+                 bottom=intergenic + upstream + tss)
+    p5 = plt.bar(ind, intron, width, color='cyan',
+                 bottom=intergenic + upstream + tss + exon)
+
+    #plt.xlabel(name)
+    plt.ylabel('peaks')
+    plt.title('Genomic region ration')
+    plt.xticks(ind+width/2., [name])
+    plt.yticks(np.arange(0,100, 100/5))
+    plt.legend((p1[0], p2[0], p3[0], p4[0], p5[0]), ('intergenic', 'upstream', 'tss', 'exon', 'intron'), loc='center left', bbox_to_anchor=(1.0, 0.5))
+    plt.savefig('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/plots/stacked' + name + '.png', bbox_inches='tight')
+    plt.clf()
+
+def sumzip(*items):
+    return [sum(values) for values in zip(*items)]
+
+def stacke_plot_multiple(names_list, filtered_peaks):
+    '''
+    Creating Genomic Region stacked plot for multiple samples
+    :param names_list:
+    :param filtered_peaks:
+    :return:
+    '''
+    tss = [7]
+    intergenic = [46]
+    intron = [42]
+    exon = [2]
+    upstream = [3]
+    samples = ['Human']
+    for name in names_list:
+        samples.append(name.split(' ')[0])
+        df = filtered_peaks.get(name)
+        GRcount = df['GenomicPosition TSS=1250 bp, upstream=5000 bp'].value_counts()
+        per = [100.0/sum(GRcount.values)*i for i in GRcount.values]
+        GPcount = zip(GRcount.index, per)
+        for G,C in GPcount:
+            if G == 'tss':
+                tss.append(C)
+            if G == 'intergenic':
+                intergenic.append(C)
+            if G == 'intron':
+                intron.append(C)
+            if G == 'exon':
+                exon.append(C)
+            if G == 'upstream':
+                upstream.append(C)
+
+    N = len(names_list)+1
+    ind = np.arange(N)    # the x locations for the groups
+    width = 0.25       # the width of the bars: can also be len(x) sequence
+
+    fig, ax = plt.subplots()
+
+    p1 = plt.bar(ind, intergenic,   width, color='yellowgreen')
+    p2 = plt.bar(ind, upstream, width, color='gold',
+                 bottom=intergenic)
+    p3 = plt.bar(ind, tss, width, color='lightskyblue',
+                 bottom=sumzip(intergenic, upstream))
+    p4 = plt.bar(ind, exon, width, color='lightcoral',
+                 bottom=sumzip(intergenic, upstream, tss))
+    p5 = plt.bar(ind, intron, width, color='cyan',
+                 bottom=sumzip(intergenic, upstream, tss, exon))
+
+    def autolabel(rects, gr_list):
+        # attach some text labels
+        i = 0
+        for rect in rects:
+            height = rect.get_height()
+            ax.text(rect.get_x()+rect.get_width()/2., gr_list[i]+(height/2)-1, '%d'%int(height),
+                    ha='center', va='bottom')
+            gr_list[i] = gr_list[i] + height
+            i += 1
+        return gr_list
+
+    gr_list = [0]*(len(names_list)+1)
+    gr_list = autolabel(p1, gr_list)
+    gr_list = autolabel(p2, gr_list)
+    gr_list = autolabel(p3, gr_list)
+    gr_list = autolabel(p4, gr_list)
+    autolabel(p5, gr_list)
+
+    plt.xlabel('Samples')
+    plt.ylabel('percent peaks')
+    plt.title('Genomic region ration')
+    plt.xticks(ind+width/2., samples)
+    plt.ylim(0,100)
+    plt.yticks(np.arange(0, 100, 100/5))
+    plt.legend( (p1[0], p2[0], p3[0], p4[0], p5[0]), ('intergenic', 'upstream', 'tss', 'exon', 'intron') ,loc='center left', bbox_to_anchor=(1.0, 0.5))
+    plt.savefig('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/plots/multi_stacked' + ','.join(samples) + '.png', bbox_inches='tight')
+    plt.clf()
 
 def OverlappingPeaks(dict_peaksdf, name, name1):
 
@@ -86,37 +244,6 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
     ddf.to_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/'+name+'_vs_'+name1+'.csv', sep=",", encoding='utf-8')
     return overlap_dict
 
-def plotGenomicregions(GPcount, name):
-    """
-    :param GPcount: is a list of tuples [(region, size),....()]
-    :return:
-    """
-    """ Now we produce some pie charts """
-
-    gr = ['tss', 'intergenic', 'intron', 'exon', 'upstream']
-    size = [0, 0, 0, 0, 0]
-    for a, b in GPcount:
-        if a == 'tss':
-            size[0] = b
-        if a == 'intergenic':
-            size[1] = b
-        if a == 'intron':
-            size[2] = b
-        if a == 'exon':
-            size[3] = b
-        if a == 'upstream':
-            size[4] = b
-    colors = ['yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'cyan']
-    explode = (0.1, 0, 0, 0, 0)  # only "explode" the 2nd slice
-    plt.pie(size, explode=explode, labels=gr, colors=colors,
-            autopct='%1.1f%%', shadow=True, startangle=90)
-    # Set aspect ratio to be equal so that pie is drawn as a circle.
-    #plt.legend(['tss', 'intergenic', 'intron', 'exon', 'upstream'], loc='upper left')
-    plt.axis('equal')
-    plt.savefig('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/plots/' + name + '.png')
-    plt.clf()
-
-
 def PeakOverlaps_concise(df1, df2):
     '''
     Used only when dataframe does not contain all the column needed.
@@ -135,7 +262,7 @@ def PeakOverlaps_concise(df1, df2):
     ind = 0
     j = 0
     for i in df1_g:
-        print '\nchr:', i[0]
+        #print '\nchr:', i[0]
         if i[0] in df2_g.groups:
             for count, row in df1_g.get_group(i[0]).iterrows():
                 #print count
@@ -146,20 +273,6 @@ def PeakOverlaps_concise(df1, df2):
                 sys.stdout.write("\r%d%%" % ind)
                 sys.stdout.flush()
                 for count1, row1 in df2_g.get_group(i[0]).iterrows():
-                    if (row['start'] >= row1['start']) and (row['stop'] <= row1['stop']):
-                          #
-                          #
-                          # it is an complete overlap 1
-                          #
-                          #
-                        overlaps = {'Next transcript strand':row['Next transcript strand'],'Sample1_row':count, 'Sample2_row':count1, 'chr':row['chr'], 'start':row['start'], 'stop':row['stop'], 'GenomicPosition TSS=1250 bp, upstream=5000 bp':row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
-                        'Next transcript gene name':row['Next transcript gene name'], 'start1':row1['start'], 'stop1':row1['stop'], 'overlap':1, 'summit':row['summit'], 'summit1':row1['summit'],
-                        'Repeat_name':row1['repeat'], 'repeat_family':row1['class/family']}
-                        overlap_list.append(overlaps)
-                        num_overlap += 1
-                        #print overlaps
-                        break
-
                     if max(row['start'], row1['start']) < min(row['stop'], row1['stop']):
                           #
                           #
@@ -169,6 +282,9 @@ def PeakOverlaps_concise(df1, df2):
                         overlaps = {'Next transcript strand':row['Next transcript strand'],'Sample1_row':count, 'Sample2_row':count1, 'chr':row['chr'], 'start':row['start'], 'stop':row['stop'], 'GenomicPosition TSS=1250 bp, upstream=5000 bp':row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
                         'Next transcript gene name':row['Next transcript gene name'], 'start1':row1['start'], 'stop1':row1['stop'], 'overlap':2, 'summit':row['summit'], 'summit1':row1['summit'],
                         'Repeat_name':row1['repeat'], 'repeat_family':row1['class/family']}
+                        #overlaps = {'Next transcript strand':row['Next transcript strand'],'Sample1_row':count, 'Sample2_row':count1, 'chr':row['chr'], 'start':row['start'], 'stop':row['stop'], 'GenomicPosition TSS=1250 bp, upstream=5000 bp':row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
+                        #'Next transcript gene name':row['Next transcript gene name'], 'start1':row1['start'], 'stop1':row1['stop'],
+                        #'Next transcript gene name1':row1['Next transcript gene name'], 'overlap':1, 'summit':row['summit'], 'summit1':row1['summit']}
                         overlap_list.append(overlaps)
                         num_overlap += 1
                         break
@@ -191,7 +307,7 @@ def PeakOverlaps(df1, df2):
     ind = 0
     j = 0
     for i in df1_g:
-        print '\nchr:',i[0]
+        #print '\nchr:',i[0]
         if i[0] in df2_g.groups:
             for count, row in df1_g.get_group(i[0]).iterrows():
                 #print count

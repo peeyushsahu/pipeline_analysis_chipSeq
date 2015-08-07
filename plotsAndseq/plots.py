@@ -36,7 +36,6 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     sort_column = sort_column
     if region != 'all':
         peak_df = peak_df[peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'] == region]
-
     if region == 'tss':  # Reduce peaks based on their distance from TSS
         print 'Selecting peaks only within +-300bp'
         peak_df = peak_df[peak_df['Next Transcript tss distance'] < 300]
@@ -93,6 +92,7 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     try:
         if sort:big_df.insert(0, sort_column, peak_df[sort_column])
         big_df.insert(0, 'GenomicPosition TSS=1250 bp, upstream=5000 bp', peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'])
+        big_df.insert(0, 'Next Transcript tss distance', peak_df['Next Transcript tss distance'])
         big_df.insert(0, 'Next transcript gene name', peak_df['Next transcript gene name'])
         big_df.insert(0, 'Next transcript strand', peak_df['Next transcript strand'])
         big_df.insert(0, 'summit', peak_df['summit'])
@@ -283,7 +283,7 @@ def line_plot_peak_distribution(dict_of_df, name, path):
         #plt.legend([names[1], names[3]], loc='upper left')
         #plt.show()
         plt.savefig(path + name + '_cluster:' + str(Cluster) + '.png')
-        plt.savefig(path + name + '_cluster:' + str(Cluster) + '.svg')
+        #plt.savefig(path + name + '_cluster:' + str(Cluster) + '.svg')
         plt.clf()
 
 
@@ -514,7 +514,7 @@ def scale_dataframe(df):
     list_of_rows = []
     print 'Process: scaling of dataframe'
     print 'Max value in df:',old_max
-    if old_max > 50:  # Scale values only when the highest in dataframe is > 50
+    if old_max > 30:  # Scale values only when the highest in dataframe is > 50
         for r, v in df.iterrows():
             rows = []
             for val in v:
