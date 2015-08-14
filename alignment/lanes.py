@@ -5,6 +5,7 @@ import subprocess as sp
 import os
 import timeit
 import commons
+import pysam
 
 class Lane():
 
@@ -16,15 +17,18 @@ class Lane():
         self.fqpath = None
         self.resultdir = None
         self.sampath = None
+        self.bampath = None
+        self.temp_files = []
 
 
     def join_multiple_fq(self):
         self.resultdir = commons.create_odir()
         fqdir = os.path.join(self.resultdir, 'cache', self.name)
-        commons.create_sample_dir(fqdir)
+        commons.ensure_path(fqdir)
         path = self.path
         outname = 'temp_' + self.name + '.fastq.gz'
         self.fqoutpath = os.path.join(fqdir, outname)
+        self.temp_files.append(self.fqoutpath)
         newfilename = 'cat '
         for i in os.listdir(path):
             if i.endswith("fastq.gz"):
@@ -38,19 +42,53 @@ class Lane():
 
 
     def do_alignment(self, genome):
+        self.genome = genome
         aligner.bowtie2(self, genome)
+        self.sam2bam()
         return
 
 
     def sam2bam(self):
         import pysam
-        return
+        #samtools view -Sb alignment_rep_prmt6+.sam > alignment_rep_PRMT6+.bam
+        samtool = aligner.samtool()
+        samtools = samtool.samtools
+        print samtools, 'view -Sb', self.sampath, '>', self.bampath
+        cmd = ' '.join([samtools, 'view -Sb', self.sampath, '>', self.bampath])
+        try:
+            proc = sp.Popen(cmd, shell=True)
+            proc.wait()
+        except:
+            raise IOError("Problem with samtools sam 2 bam.")
+        sortpath = os.path.join(self.resultdir, 'alignedLane', self.name, self.name + '_' + self.genome.name)
+        print sortpath
+        pysam.sort(self.bampath, sortpath)
+        self.bampath = sortpath+'.bam'
+        pysam.index(self.bampath)
+        self.remove_temp()
 
-class AlignedLane():
+    def remove_temp(self):
+        for i in self.temp_files:
+            os.remove(i)
 
 
+class AlignedLaneDedup():
     def __init__(self, Lane):
         self.name = Lane.name
-        self.path = Lane.path
-        self.sampath = None
-        self.reultpath = Lane.resultdir
+        self.genome = Lane.genome
+        self.bampath = Lane.bampath
+        self.deduppath = None
+        self.resultdir = Lane.resultdir
+        self.peakdata = None
+
+
+    def do_dedup(self):
+        commons.ensure_path(os.path.join(self.resultdir, 'alignedLane', self.name + '_dedup', self.name + '_dedup'))
+        self.deduppath = os.path.join(self.resultdir, 'alignedLane', self.name + '_dedup', self.name + '_dedup' + '_' + self.genome.name)
+        bamfile = pysam.Samfile(self.bampath, "rb")
+        for read in bamfile.fetch():
+            return
+
+
+    def callPeaks(self, sample, controlsample, name, peakcaller):
+        return

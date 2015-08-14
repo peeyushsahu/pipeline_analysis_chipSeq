@@ -130,7 +130,7 @@ def kmeans_clustering(df, nClus, iter):
 #@profile
 def overlapping_peaks_distribution(bam_name, overlap_df):
     '''
-    Returns dataframe for tag count distribution for overlapping peaks within 500bp (+,-) from summit.
+    Returns dataframe for tag count distribution for overlapping peaks within 3000bp (+,-) from summit.
     This function also considers the gene transcrition direction.
     :param bam_peak1:
     :param overlap_df:

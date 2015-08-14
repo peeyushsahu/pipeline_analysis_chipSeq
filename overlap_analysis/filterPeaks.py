@@ -38,10 +38,6 @@ def filterpeaks(peak_data_list):
                 df1 = df[df[condition] >= 3*df[control]]
                 df2 = df1[((df1['stop']-df1['start'])/df1[condition]) <= 15]
                 final = df2
-            elif "H3R2" in sample[0] or "YY1" in sample[0]:
-                df1 = df[df[condition] >= 5*df[inputcol]]
-                final = df1[df1[condition] >= 3*df1[control]]
-                #final = df
             elif "PRMT6" in sample[0] and "RA" in sample[0]:
                 #df1 = df[df[condition] >= 5*df[inputcol]]
                 df2 = df[df[condition] >= 3*df[control]]
@@ -58,6 +54,6 @@ def filterpeaks(peak_data_list):
                 final = df2[df2[condition] >= 50]
         file.write(name.split(' ')[0]+'\t'+str(len(df))+'\t'+str(len(final))+'\n')
         filtered_peak_data[name] = final
-        final.to_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/filtered/filtered_'+name+'.csv', sep=",", encoding='utf-8')
+        final.to_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/filtered/'+name+'.csv', sep=",", encoding='utf-8')
     file.close()
     return filtered_peak_data

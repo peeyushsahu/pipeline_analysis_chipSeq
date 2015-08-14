@@ -40,14 +40,14 @@ sample_name = [#'YY1_RA_seq3 vs IgG_RA_seq2 filtered',
                #'PRMT6_2_seq4 vs IgG_seq4 filtered',
                #'H3R2me2_18F3_seq7 vs IgG_seq4 filtered',
                #'H3R2me2_17E2_seq7 vs IgG_seq4 filtered',
-               'PRMT6_2_seq6 vs IgG_seq6 filtered',
+               #'PRMT6_2_seq6 vs IgG_seq6 filtered',
                #'PRMT6_2_RA_seq2 vs IgG_RA_seq2 filtered',
                #'PRMT6_2_seq3 vs IgG_seq2 filtered',
                #'PRMT6_2_RA_seq3 vs IgG_seq2 filtered',
                #'H3R2me2_17F10_seq7 vs IgG_seq4 filtered',
                #'H3R2me2_17H5_seq7 vs IgG_seq4 filtered',
                #'JARID1A_seq2 vs IgG_seq2 filtered',
-               'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered',
+               #'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered',
                #'JARID1A_RA_seq2 vs IgG_RA_seq1 filtered',
                #'H3K27me3_seq2 vs IgG_seq2 filtered',
                #'PRMT6_2_seq1 vs IgG_seq1 filtered',
@@ -57,13 +57,13 @@ sample_name = [#'YY1_RA_seq3 vs IgG_RA_seq2 filtered',
                #'PRMT6_2_RA_seq5 vs IgG_RA_seq2 filtered',
                #'PRMT6_2_RA_seq4 vs IgG_RA_seq4 filtered',
                #'H3K27me3_RA_seq2 vs IgG_RA_seq2 filtered',
-               'H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered',
+               #'H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered',
                #'PRMT6_2_RA_seq1 vs IgG_RA_seq1 filtered',
-               'H3K4me3_seq2 vs IgG_seq2 filtered',
+               #'H3K4me3_seq2 vs IgG_seq2 filtered',
                #'Encode_NT2D1_H3K36me3',
                #'Encode_NT2D1_Suz12 vs Input',
-               'Sample_18F3_RA vs IgG_RA_seq6 filtered',
-               'Sample_18F3 vs Sample_8C9 filtered',
+               #'Sample_18F3_RA vs IgG_RA_seq6 filtered',
+               #'Sample_18F3 vs Sample_8C9 filtered',
                #'Sample_K27ac vs Sample_8C9 filtered',
                #'Sample_EZH1_RA vs IgG_RA_seq6 filtered',
                #'Sample_EZH1 vs Sample_8C9 filtered',
@@ -88,26 +88,40 @@ sample_name = [#'YY1_RA_seq3 vs IgG_RA_seq2 filtered',
                ]
 
 # Here import peak called data in a list....
-peak_data = {}
-for a in sample_name:
-    df = read_csv(
-        '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/csv/' + a + '.csv',
-        header=0, sep='\t')
-    df = df.rename(columns={'Next Gene name': 'Next transcript gene name'})
-    peak_data[a] = df #[df['Next Transcript tss distance'] < 200]
-print "Number of sample are being analysed: ", peak_data.__len__()
+done = False
+if not done:
+    peak_data = {}
+    for a in sample_name:
+        df = read_csv(
+            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/csv/' + a + '.csv',
+            header=0, sep='\t')
+        df = df.rename(columns={'Next Gene name': 'Next transcript gene name'})
+        peak_data[a] = df
+    print "Number of sample are being analysed: ", peak_data.__len__()
 
-print "Filtering peaks."
-filtered_peak_data = filterPeaks.filterpeaks(peak_data)
+    print "Filtering peaks."
+    filtered_peak_data = filterPeaks.filterpeaks(peak_data)
+else:
+    filtered_peak_data = {}
+    for a in sample_name:
+        df = read_csv(
+            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/filtered/' + a + '.csv',
+            header=0, sep='\t')
+        df = df.rename(columns={'Next Gene name': 'Next transcript gene name'})
+        filtered_peak_data[a] = df
+    print "Number of sample are being analysed: ", filtered_peak_data.__len__()
+
+
 
 ## Plot stacked plot for selected samples
+'''
 cal_genomic_region.stacke_plot_multiple(['PRMT6_2_seq6 vs IgG_seq6 filtered', 'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered']
                                         , filtered_peak_data)
 cal_genomic_region.stacke_plot_multiple(['H3K4me3_seq2 vs IgG_seq2 filtered', 'H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered']
                                         , filtered_peak_data)
 cal_genomic_region.stacke_plot_multiple(['Sample_18F3 vs Sample_8C9 filtered', 'Sample_18F3_RA vs IgG_RA_seq6 filtered']
                                         , filtered_peak_data)
-
+'''
 peakAnalysis_df = {}
 for k, v in filtered_peak_data.iteritems():
     name = k
@@ -216,7 +230,7 @@ for bams in bam_list:
         GR_heatmaps_DF_for_peaks(bams, filtered_peak_data.get('Sample_EZH1 vs Sample_8C9 filtered'), region=i,
                                  sort=False, sort_column='PRMT6_2_seq6')
 '''
-'''
+
 ### Comapre ChIP-Seq profile from altered sample (external)
 
 #bam_list = [['PRMT6_2_RA_seq6', 'Sample_pol-2_RA', 'Sample_K36me3_RA', 'H3K4me3_RA_seq2', 'Sample_K27me1_RA',
@@ -225,9 +239,9 @@ for bams in bam_list:
 #             'Sample_K4me1', 'Sample_K9me3', 'Sample_K27me3', 'Sample_18F3', 'YY1_seq3']]
 
 
-bam_list = [['PRMT6_2_seq6', 'PRMT6_2_RA_seq6', 'Sample_K27ac', 'Sample_K27ac_RA', 'Sample_K4me1', 'Sample_K4me1_RA']]
+bam_list = [['H3K4me3_seq2', 'Sample_K36me3', 'PRMT6_2_seq6']]
 
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/DiffBind_P6_vs_all.csv', header=0, sep=',')
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/H3K4me3_seq2/all22459/H3K4me3_seq2all.csv', header=0, sep=',')
 
 
 ### If DF is from R change column names ('' ','.')
@@ -246,12 +260,12 @@ for List in bam_list:
         #peak_df['cluster'] = pd.Categorical(peak_df['cluster'], [6,7,4,3,0,1,5,8,2]) #7,5,4,0,1,2,3,9,8,6
         #peak_df = peak_df.sort('cluster')
         #peak_df = peak_df[(peak_df['cluster'] == 4) | (peak_df['cluster'] == 5) | (peak_df['cluster'] == 7)]
-        GR_heatmaps_DF_for_peaks(List, peak_df, region=i, sort=True, sort_column='PRMT6_2_seq6')
+        GR_heatmaps_DF_for_peaks(List, peak_df, region=i, sort=True, sort_column='H3K4me3_seq2')
         #GPcount = peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'].value_counts()
         #GPcount = zip(GPcount.index, GPcount.values)
         #cal_genomic_region.plotGenomicregions(GPcount, 'DiffBind_P6_vs_all')
 gc.collect()
-'''
+
 ### Density based motif analysis
 '''
 peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/PRMT6_2_seq6,Sample_pol-2,Sample_K36me3,H3K4me3_seq2,Sample_K27me1,Sample_K27ac,Sample_K4me1,Sample_K9me3,Sample_K27me3,Sample_18F3/intergenic7325'
