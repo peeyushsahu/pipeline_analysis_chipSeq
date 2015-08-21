@@ -3,13 +3,18 @@ __author__ = 'peeyush'
 import subprocess as sp
 import os, sys
 import commons
+import pysam
 
 
 class human_GRCh37():
     def __init__(self):
         self.name = 'GRCh37'
         self.refgenomename = "/ps/imt/genome/human/Homo_sapiens_Ensembl_GRCh37/Homo_sapiens/Ensembl/GRCh37/Sequence/Bowtie2Index/genome"
+        self.refgenome = "/ps/imt/genome/human/Homo_sapiens_Ensembl_GRCh37/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/"
 
+    def get_chromosome_length(self, chr):
+        genome = pysam.Fastafile(self.refgenome +'genome.fa')
+        return genome.get_reference_length(chr)
 
 class samtool():
     def __init__(self):

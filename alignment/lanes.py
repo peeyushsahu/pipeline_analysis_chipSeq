@@ -83,11 +83,30 @@ class AlignedLaneDedup():
 
 
     def do_dedup(self):
-        commons.ensure_path(os.path.join(self.resultdir, 'alignedLane', self.name + '_dedup', self.name + '_dedup'))
-        self.deduppath = os.path.join(self.resultdir, 'alignedLane', self.name + '_dedup', self.name + '_dedup' + '_' + self.genome.name)
+        deduppath = os.path.join(self.resultdir, 'alignedLane', self.name + '_dedup', self.name + '_dedup')
+        commons.ensure_path(deduppath)
+        self.deduppath = os.path.join(deduppath + '_' + self.genome.name)
         bamfile = pysam.Samfile(self.bampath, "rb")
+        genome = self.genome
+        last_forward_position = -1
+        last_reverse_position = -1
+        last_chr = -1
+        count = 0
         for read in bamfile.fetch():
-            return
+            a = read
+            #print read
+            print 'chr', bamfile.references[read.tid]
+            print 'position', read.pos
+            print 'reverse', read.is_reverse
+            print 'dup', read.opt('XC')
+            last_chr = read.tid
+            read_chr = bamfile.references[read.tid]
+            type(read_chr)
+            filtered_on_this_chromosome = [(genome.get_chromosome_length(read_chr), genome.get_chromosome_length(read_chr))]
+            last_reverse_position = -1
+            last_forward_position = -1
+            count += 1
+            if count > 20: break
 
 
     def callPeaks(self, sample, controlsample, name, peakcaller):

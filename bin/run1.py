@@ -239,9 +239,9 @@ for bams in bam_list:
 #             'Sample_K4me1', 'Sample_K9me3', 'Sample_K27me3', 'Sample_18F3', 'YY1_seq3']]
 
 
-bam_list = [['H3K4me3_seq2', 'Sample_K36me3', 'PRMT6_2_seq6']]
+bam_list = [['PRMT6_2_seq6', 'PRMT6_2_RA_seq6', 'PRMT6_2_seq5', 'PRMT6_2_RA_seq5']]
 
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/H3K4me3_seq2/all22459/H3K4me3_seq2all.csv', header=0, sep=',')
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/DiffBind_P6_vs_all.csv', header=0, sep=',')
 
 
 ### If DF is from R change column names ('' ','.')
@@ -257,10 +257,10 @@ if '.' in peak_df.columns[6]:
 for List in bam_list:
     region = ['all'] #'all', 'tss', 'exon', 'intron', 'intergenic', 'upstream'
     for i in region:
-        #peak_df['cluster'] = pd.Categorical(peak_df['cluster'], [6,7,4,3,0,1,5,8,2]) #7,5,4,0,1,2,3,9,8,6
+        #peak_df['cluster'] = d.Categorical(peak_df['cluster'], [6,7,4,3,0,1,5,8,2]) #7,5,4,0,1,2,3,9,8,6
         #peak_df = peak_df.sort('cluster')
         #peak_df = peak_df[(peak_df['cluster'] == 4) | (peak_df['cluster'] == 5) | (peak_df['cluster'] == 7)]
-        GR_heatmaps_DF_for_peaks(List, peak_df, region=i, sort=True, sort_column='H3K4me3_seq2')
+        GR_heatmaps_DF_for_peaks(List, peak_df, region=i, sort=False, sort_column='H3K4me3_seq2')
         #GPcount = peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'].value_counts()
         #GPcount = zip(GPcount.index, GPcount.values)
         #cal_genomic_region.plotGenomicregions(GPcount, 'DiffBind_P6_vs_all')
