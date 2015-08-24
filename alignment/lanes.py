@@ -83,6 +83,7 @@ class AlignedLaneDedup():
 
 
     def do_dedup(self):
+        import random
         deduppath = os.path.join(self.resultdir, 'alignedLane', self.name + '_dedup', self.name + '_dedup')
         commons.ensure_path(deduppath)
         self.deduppath = os.path.join(deduppath + '_' + self.genome.name)
@@ -90,23 +91,64 @@ class AlignedLaneDedup():
         genome = self.genome
         last_forward_position = -1
         last_reverse_position = -1
+        forward_reads = set()
+        reverse_reads = set()
         last_chr = -1
         count = 0
+        dup = 0
+        rdup = 0
+        dup_dict = {}
+        out_sam = pysam.Samfile('/media/peeyush/F87E9CDC7E9C94CA/M1_M2_Data/test.bam', 'wb',
+                                reference_names=genome.genome.references, reference_lengths=genome.refrence_length())
         for read in bamfile.fetch():
-            a = read
             #print read
-            print 'chr', bamfile.references[read.tid]
-            print 'position', read.pos
-            print 'reverse', read.is_reverse
-            print 'dup', read.opt('XC')
+            #print 'chr', bamfile.references[read.tid]
+
+            if not read.is_reverse:
+                if read.pos == last_forward_position:
+                    dup += 1
+                    forward_reads.add(read)
+
+                else:
+                    if dup > 7:
+                        dup_dict[last_forward_position]=dup
+                        forward_reads = random.sample(forward_reads, 2)
+                        for rd in forward_reads:
+                            out_sam.write(rd)
+                    forward_reads = set()
+                    last_forward_position = read.pos
+                    dup = 0
+            else:
+                readpos = read.pos + read.qlen
+                if readpos == last_reverse_position:
+                    reverse_reads.add(read)
+                    rdup += 1
+
+                else:
+                    if rdup > 7:
+                        dup_dict['r'+str(last_reverse_position)]=rdup
+                        reverse_reads = random.sample(reverse_reads, 2)
+                        for rr in reverse_reads:
+                            out_sam.write(rr)
+                    else:
+                        forward_reads = set()
+                        forward_reads.add(read)
+                        last_reverse_position = read.pos
+
+                    last_reverse_position = readpos
+                    rdup = 0
+            #print 'dup', read.opt('XC')
             last_chr = read.tid
             read_chr = bamfile.references[read.tid]
             type(read_chr)
-            filtered_on_this_chromosome = [(genome.get_chromosome_length(read_chr), genome.get_chromosome_length(read_chr))]
-            last_reverse_position = -1
-            last_forward_position = -1
+            #filtered_on_this_chromosome = [(genome.get_chromosome_length(read_chr), genome.get_chromosome_length(read_chr))]
+            #last_reverse_position = -1
+            #last_forward_position = -1
             count += 1
-            if count > 20: break
+            if count > 5000: break
+        out_sam.close()
+        pysam.index('/media/peeyush/F87E9CDC7E9C94CA/M1_M2_Data/test.bam')
+        print dup
 
 
     def callPeaks(self, sample, controlsample, name, peakcaller):

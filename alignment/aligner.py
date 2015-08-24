@@ -9,12 +9,33 @@ import pysam
 class human_GRCh37():
     def __init__(self):
         self.name = 'GRCh37'
-        self.refgenomename = "/ps/imt/genome/human/Homo_sapiens_Ensembl_GRCh37/Homo_sapiens/Ensembl/GRCh37/Sequence/Bowtie2Index/genome"
+        self.refindex = "/ps/imt/genome/human/Homo_sapiens_Ensembl_GRCh37/Homo_sapiens/Ensembl/GRCh37/Sequence/Bowtie2Index/genome"
         self.refgenome = "/ps/imt/genome/human/Homo_sapiens_Ensembl_GRCh37/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/"
 
     def get_chromosome_length(self, chr):
         genome = pysam.Fastafile(self.refgenome +'genome.fa')
         return genome.get_reference_length(chr)
+
+class mouse_mm9():
+    def __init__(self):
+        self.name = 'GRCh37'
+        self.refindex = "/media/peeyush/F87E9CDC7E9C94CA/M1_M2_Data/mm9"
+        self.refgenome = "/media/peeyush/F87E9CDC7E9C94CA/M1_M2_Data/chromFa/"
+        self.genome = pysam.Fastafile('/media/peeyush/F87E9CDC7E9C94CA/M1_M2_Data/chromFa/mm9_genome.fa')
+
+    def get_chromosome_length(self, chr):
+        return self.genome.get_reference_length(chr)
+
+    def refrence_length(self):
+        chr = self.genome.references
+        refrence_length = []
+        for i in chr:
+            refrence_length.append(self.get_chromosome_length(i))
+        print refrence_length
+        return tuple(refrence_length)
+
+
+
 
 class samtool():
     def __init__(self):
