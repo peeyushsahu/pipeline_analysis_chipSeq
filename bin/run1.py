@@ -239,9 +239,9 @@ for bams in bam_list:
 #             'Sample_K4me1', 'Sample_K9me3', 'Sample_K27me3', 'Sample_18F3', 'YY1_seq3']]
 
 
-bam_list = [['PRMT6_2_seq6', 'PRMT6_2_RA_seq6', 'PRMT6_2_seq5', 'PRMT6_2_RA_seq5']]
+bam_list = [['H3K4me3_seq2', 'Sample_K36me3', 'PRMT6_2_seq6', 'Sample_pol-2']]
 
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/DiffBind_P6_vs_all.csv', header=0, sep=',')
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/H3K4me3_seq2/all22459/H3K4me3_seq2all.csv', header=0, sep=',')
 
 
 ### If DF is from R change column names ('' ','.')

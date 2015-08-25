@@ -11,10 +11,19 @@ class human_GRCh37():
         self.name = 'GRCh37'
         self.refindex = "/ps/imt/genome/human/Homo_sapiens_Ensembl_GRCh37/Homo_sapiens/Ensembl/GRCh37/Sequence/Bowtie2Index/genome"
         self.refgenome = "/ps/imt/genome/human/Homo_sapiens_Ensembl_GRCh37/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/"
+        self.genome = pysam.Fastafile('/ps/imt/genome/human/Homo_sapiens_Ensembl_GRCh37/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/genome.fa')
+
 
     def get_chromosome_length(self, chr):
-        genome = pysam.Fastafile(self.refgenome +'genome.fa')
-        return genome.get_reference_length(chr)
+        return self.genome.get_reference_length(chr)
+
+    def refrence_length(self):
+        chr = self.genome.references
+        refrence_length = []
+        for i in chr:
+            refrence_length.append(self.get_chromosome_length(i))
+        #print refrence_length
+        return tuple(refrence_length)
 
 class mouse_mm9():
     def __init__(self):
@@ -31,7 +40,7 @@ class mouse_mm9():
         refrence_length = []
         for i in chr:
             refrence_length.append(self.get_chromosome_length(i))
-        print refrence_length
+        #print refrence_length
         return tuple(refrence_length)
 
 
