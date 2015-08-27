@@ -10,8 +10,6 @@ import random
 
 
 class Lane():
-
-
     def __init__(self, samplename, path):
         self.name = samplename
         self.path = path
@@ -96,25 +94,17 @@ class AlignedLaneDedup():
         last_reverse_position = -1
         forward_reads = set()
         reverse_reads = set()
-        last_chr = -1
-        last_read = 0
-        count = 0
-        out_sam = pysam.Samfile(self.deduppath+'.temp', 'wb',
+        out_sam = pysam.Samfile('/ps/imt/e/test/test.temp', 'wb',
                                 reference_names=genome.genome.references, reference_lengths=genome.refrence_length())
-        last_chr = -1
         for read in bamfile.fetch():
-            #print read
-            #print 'chr', bamfile.references[read.tid]
-            count += 1
-            if not last_chr == read.tid:
-                last_chr = read.tid
-                read_chr = bamfile.references[read.tid]
-                print 'chr Start', bamfile.references[read.tid], 'read_pos', read.pos, 'Read count', count
-
             if not read.is_reverse:
                 if read.pos == last_forward_position:
-                    forward_reads.add(read)
-
+                    try:
+                        repeat_count = read.opt('XC')
+                    except KeyError: #no XC
+                        repeat_count = 1
+                    for ii in xrange(0,repeat_count):
+                        forward_reads.add(read)
                 else:
                     dup_dict['+'+str(len(forward_reads))] = dup_dict.get('+'+str(len(forward_reads)), 0) + 1
                     if len(forward_reads) < 7:
@@ -122,7 +112,7 @@ class AlignedLaneDedup():
                             forward_reads = random.sample(forward_reads, 2)
                         for rd in forward_reads:
                             out_sam.write(rd)
-                    if len(forward_reads) > 7:
+                    else:
                         forward_reads = random.sample(forward_reads, 1)
                         out_sam.write(forward_reads.pop())
                     forward_reads = set()
@@ -131,22 +121,25 @@ class AlignedLaneDedup():
             else:
                 readpos = read.pos + read.qlen
                 if readpos == last_reverse_position:
-                    reverse_reads.add(read)
-
+                    try:
+                        repeat_count = read.opt('XC')
+                    except KeyError: #no XC
+                        repeat_count = 1
+                    for ii in xrange(0,repeat_count):
+                        reverse_reads.add(read)
                 else:
-                    dup_dict['-'+str(len(forward_reads))] = dup_dict.get('-'+str(len(forward_reads)), 0) + 1
+                    dup_dict['-'+str(len(reverse_reads))] = dup_dict.get('-'+str(len(reverse_reads)), 0) + 1
                     if len(reverse_reads) < 7:
                         if len(reverse_reads) > 2:
                             reverse_reads = random.sample(reverse_reads, 2)
                         for rr in reverse_reads:
                             out_sam.write(rr)
-                    if len(reverse_reads) > 7:
+                    else:
                         reverse_reads = random.sample(reverse_reads, 1)
                         out_sam.write(reverse_reads.pop())
                     reverse_reads = set()
                     reverse_reads.add(read)
                     last_reverse_position = readpos
-
         # Last push for reads
         if len(forward_reads) < 7:
             if len(forward_reads) >= 2:
@@ -164,14 +157,10 @@ class AlignedLaneDedup():
         if len(reverse_reads) > 7:
             reverse_reads = random.sample(reverse_reads, 1)
             out_sam.write(reverse_reads.pop())
-
-            #print 'dup', read.opt('XC')
-            #filtered_on_this_chromosome = [(genome.get_chromosome_length(read_chr), genome.get_chromosome_length(read_chr))]
-            #if count > 15000: break
         out_sam.close()
-        pysam.sort(self.deduppath+'.temp', self.deduppath)
-        pysam.index(self.deduppath+'.bam')
-        #print dup
+        pysam.sort('/ps/imt/e/test/test.temp', '/ps/imt/e/test/test')
+        pysam.index('/ps/imt/e/test/test.bam')
+
 
 
     def callPeaks(self, sample, controlsample, name, peakcaller):
