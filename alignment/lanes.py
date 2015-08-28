@@ -80,21 +80,21 @@ class AlignedLaneDedup():
         self.resultdir = Lane.resultdir
         self.peakdata = None
 
-
-    def do_dedup(self):
+    def do_dedup(self, maximum_stacks=None, maximum_stacks_allowed=2):
+        """
+        To remove PCR duplicates from bam files.
+        """
         deduppath = os.path.join(self.resultdir, 'alignedLane', self.name + '_dedup', self.name + '_dedup')
         commons.ensure_path(deduppath)
         self.deduppath = os.path.join(deduppath + '_' + self.genome.name)
         bamfile = pysam.Samfile(self.bampath, "rb")
         genome = self.genome
-        coverage_before = []
-        coverage_after = []
         dup_dict = {}
         last_forward_position = -1
         last_reverse_position = -1
         forward_reads = set()
         reverse_reads = set()
-        out_sam = pysam.Samfile('/ps/imt/e/test/test.temp', 'wb',
+        out_sam = pysam.Samfile(self.deduppath+'.temp', 'wb',
                                 reference_names=genome.genome.references, reference_lengths=genome.refrence_length())
         for read in bamfile.fetch():
             if not read.is_reverse:
@@ -107,8 +107,8 @@ class AlignedLaneDedup():
                         forward_reads.add(read)
                 else:
                     dup_dict['+'+str(len(forward_reads))] = dup_dict.get('+'+str(len(forward_reads)), 0) + 1
-                    if len(forward_reads) < 7:
-                        if len(forward_reads) >= 2:
+                    if maximum_stacks is None or len(forward_reads) < maximum_stacks:
+                        if len(forward_reads) >= maximum_stacks_allowed:
                             forward_reads = random.sample(forward_reads, 2)
                         for rd in forward_reads:
                             out_sam.write(rd)
@@ -125,12 +125,12 @@ class AlignedLaneDedup():
                         repeat_count = read.opt('XC')
                     except KeyError: #no XC
                         repeat_count = 1
-                    for ii in xrange(0,repeat_count):
+                    for ii in xrange(0, repeat_count):
                         reverse_reads.add(read)
                 else:
                     dup_dict['-'+str(len(reverse_reads))] = dup_dict.get('-'+str(len(reverse_reads)), 0) + 1
-                    if len(reverse_reads) < 7:
-                        if len(reverse_reads) > 2:
+                    if maximum_stacks is None or len(reverse_reads) < maximum_stacks:
+                        if len(reverse_reads) >= maximum_stacks_allowed:
                             reverse_reads = random.sample(reverse_reads, 2)
                         for rr in reverse_reads:
                             out_sam.write(rr)
@@ -141,27 +141,110 @@ class AlignedLaneDedup():
                     reverse_reads.add(read)
                     last_reverse_position = readpos
         # Last push for reads
-        if len(forward_reads) < 7:
-            if len(forward_reads) >= 2:
+        if maximum_stacks is None or len(forward_reads) < maximum_stacks:
+            if len(forward_reads) >= maximum_stacks_allowed:
                 forward_reads = random.sample(forward_reads, 2)
             for rd in forward_reads:
                 out_sam.write(rd)
-        if len(forward_reads) > 7:
+        else:
             forward_reads = random.sample(forward_reads, 1)
             out_sam.write(forward_reads.pop())
-        if len(reverse_reads) < 7:
-            if len(reverse_reads) > 2:
+        if maximum_stacks is None or len(reverse_reads) < maximum_stacks:
+            if len(reverse_reads) >= maximum_stacks_allowed:
                 reverse_reads = random.sample(reverse_reads, 2)
             for rr in reverse_reads:
                 out_sam.write(rr)
-        if len(reverse_reads) > 7:
+        else:
             reverse_reads = random.sample(reverse_reads, 1)
             out_sam.write(reverse_reads.pop())
         out_sam.close()
-        pysam.sort('/ps/imt/e/test/test.temp', '/ps/imt/e/test/test')
-        pysam.index('/ps/imt/e/test/test.bam')
+        pysam.sort(self.deduppath+'.temp', self.deduppath)
+        pysam.index(self.deduppath+'.bam')
 
+    def do_dedup_stringent(self, maximum_stacks=None, maximum_stacks_allowed=2):
+        """
+        To remove PCR duplicates from bam files.
+        """
+        deduppath = os.path.join(self.resultdir, 'alignedLane', self.name + '_dedup', self.name + '_dedup')
+        commons.ensure_path(deduppath)
+        self.deduppath = os.path.join(deduppath + '_' + self.genome.name)
+        bamfile = pysam.Samfile(self.bampath, "rb")
+        genome = self.genome
+        dup_dict = {}
+        last_forward_start = -1
+        last_forward_end = -1
+        last_reverse_start = -1
+        last_reverse_end = -1
+        forward_reads = set()
+        reverse_reads = set()
+        out_sam = pysam.Samfile(self.deduppath+'.temp', 'wb',
+                                reference_names=genome.genome.references, reference_lengths=genome.refrence_length())
+        for read in bamfile.fetch():
+            if not read.is_reverse:
+                if read.pos == last_forward_start and read.pos+read.qlen == last_forward_end:
+                    try:
+                        repeat_count = read.opt('XC')
+                    except KeyError: #no XC
+                        repeat_count = 1
+                    for ii in xrange(0,repeat_count):
+                        forward_reads.add(read)
+                else:
+                    dup_dict['+'+str(len(forward_reads))] = dup_dict.get('+'+str(len(forward_reads)), 0) + 1
+                    if maximum_stacks is None or len(forward_reads) < maximum_stacks:
+                        if len(forward_reads) >= maximum_stacks_allowed:
+                            forward_reads = random.sample(forward_reads, 2)
+                        for rd in forward_reads:
+                            out_sam.write(rd)
+                    else:
+                        forward_reads = random.sample(forward_reads, 1)
+                        out_sam.write(forward_reads.pop())
+                    forward_reads = set()
+                    forward_reads.add(read)
+                    last_forward_start = read.pos
+                    last_forward_end = read.pos+read.qlen
+            else:
+                readpos = read.pos + read.qlen
+                if readpos == last_reverse_start and read.pos == last_reverse_end:
+                    try:
+                        repeat_count = read.opt('XC')
+                    except KeyError: #no XC
+                        repeat_count = 1
+                    for ii in xrange(0, repeat_count):
+                        reverse_reads.add(read)
+                else:
+                    dup_dict['-'+str(len(reverse_reads))] = dup_dict.get('-'+str(len(reverse_reads)), 0) + 1
+                    if maximum_stacks is None or len(reverse_reads) < maximum_stacks:
+                        if len(reverse_reads) >= maximum_stacks_allowed:
+                            reverse_reads = random.sample(reverse_reads, 2)
+                        for rr in reverse_reads:
+                            out_sam.write(rr)
+                    else:
+                        reverse_reads = random.sample(reverse_reads, 1)
+                        out_sam.write(reverse_reads.pop())
+                    reverse_reads = set()
+                    reverse_reads.add(read)
+                    last_reverse_end = read.pos
+                    last_reverse_start = readpos
+        # Last push for reads
+        if maximum_stacks is None or len(forward_reads) < maximum_stacks:
+            if len(forward_reads) >= maximum_stacks_allowed:
+                forward_reads = random.sample(forward_reads, 2)
+            for rd in forward_reads:
+                out_sam.write(rd)
+        else:
+            forward_reads = random.sample(forward_reads, 1)
+            out_sam.write(forward_reads.pop())
+        if maximum_stacks is None or len(reverse_reads) < maximum_stacks:
+            if len(reverse_reads) >= maximum_stacks_allowed:
+                reverse_reads = random.sample(reverse_reads, 2)
+            for rr in reverse_reads:
+                out_sam.write(rr)
+        else:
+            reverse_reads = random.sample(reverse_reads, 1)
+            out_sam.write(reverse_reads.pop())
+        out_sam.close()
+        pysam.sort(self.deduppath+'.temp', self.deduppath)
+        pysam.index(self.deduppath+'.bam')
 
-
-    def callPeaks(self, sample, controlsample, name, peakcaller):
+    def callPeaks(self, peakscaller, sample, controlsample, name, outdir, broad_cutoff, broadpeaks=False):
         return
