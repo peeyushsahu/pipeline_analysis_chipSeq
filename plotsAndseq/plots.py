@@ -1,7 +1,6 @@
 import gc
 from overlap_analysis.differential_binding import getBam, factor_seperate
 
-
 __author__ = 'peeyush'
 
 
@@ -14,8 +13,8 @@ def make_dir(bam_order, region='All'):
     return path
 
 
-#@profile
-def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, sort_column=None):
+# @profile
+def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, sort_column=None, scale_df=True):
     '''
     Suggestion: Please do not use more then 3 samples at a time.
     This function will take a list of bam files path and create a heatmap of genomic region for the provided peak dataset.
@@ -43,7 +42,7 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
         if len(peak_df) == 0:
             raise ValueError('selected region does not contain any peaks')
     print region + ' found in dataframe: ', len(peak_df)
-    #print peak_df.head()
+    # print peak_df.head()
     peak_df.index = range(0, len(peak_df))
     if sort:
         colnames = peak_df.columns.tolist()
@@ -62,17 +61,20 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
                 sort_column = condition
                 break
 
-    #print peak_df.head()
+    # print peak_df.head()
     for v in bam_name_list:
         df = overlapping_peaks_distribution(v, peak_df)
-        df = scale_dataframe(df)   # scaling of dataframe
+        if scale_df:
+            df = scale_dataframe(df)  # scaling of dataframe
+            print 'scaled df'
         big_df = pd.concat([big_df, df], axis=1)
-    #big_df = overlapping_peaks_distribution_improved(bam_name_list, peak_df)
+    # big_df = overlapping_peaks_distribution_improved(bam_name_list, peak_df)
     big_df.columns = range(0, big_df.shape[1])
     bam_order = ','.join(bam_name_list)
     path = make_dir(bam_order, region + str(len(peak_df)))
-    #big_df.to_csv(path+bam_order+region+'.csv', sep=",", encoding='utf-8', ignore_index=True)
-    #divide_peaks_in_strength(big_df, bam_order, path)         # plotting line plots
+    # big_df.to_csv(path+bam_order+region+'.csv', sep=",", encoding='utf-8', ignore_index=True)
+    # divide_peaks_in_strength(big_df, bam_order, path)         # plotting line plots
+
     try:
         big_df = kmeans_clustering(big_df, 9, 100)  # performing k-means clustering
         dict_of_df = factor_seperate(big_df, 'cluster')  # divide df in smaller dfs basis in clustering
@@ -90,8 +92,9 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
 
     ### adding columns to heatmap df
     try:
-        if sort:big_df.insert(0, sort_column, peak_df[sort_column])
-        big_df.insert(0, 'GenomicPosition TSS=1250 bp, upstream=5000 bp', peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'])
+        if sort: big_df.insert(0, sort_column, peak_df[sort_column])
+        big_df.insert(0, 'GenomicPosition TSS=1250 bp, upstream=5000 bp',
+                      peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'])
         big_df.insert(0, 'Next Transcript tss distance', peak_df['Next Transcript tss distance'])
         big_df.insert(0, 'Next transcript gene name', peak_df['Next transcript gene name'])
         big_df.insert(0, 'Next transcript strand', peak_df['Next transcript strand'])
@@ -105,9 +108,10 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
         big_df.insert(0, 'stop', peak_df['stop'])
         big_df.insert(0, 'start', peak_df['start'])
         big_df.insert(0, 'chr', peak_df['chr'])
-    #print big_df.head()
-    big_df.to_csv(path + bam_order + region + '.csv', sep=",", encoding='utf-8') #, ignore_index=True
+    # print big_df.head()
+    big_df.to_csv(path + bam_order + region + '.csv', sep=",", encoding='utf-8')  # , ignore_index=True
     gc.collect()
+
 
 def kmeans_clustering(df, nClus, iter):
     '''
@@ -127,8 +131,9 @@ def kmeans_clustering(df, nClus, iter):
     df_fin.insert(0, 'cluster', pd.Series(res[1]))
     return df_fin
 
-#@profile
-def overlapping_peaks_distribution(bam_name, overlap_df):
+
+# @profile
+def overlapping_peaks_distribution(bam_name, overlap_df, normalized = True):
     '''
     Returns dataframe for tag count distribution for overlapping peaks within 3000bp (+,-) from summit.
     This function also considers the gene transcrition direction.
@@ -143,6 +148,7 @@ def overlapping_peaks_distribution(bam_name, overlap_df):
     startT = timeit.default_timer()
     bam_path = getBam(bam_name)
     sample_bam = pysam.Samfile(bam_path, "rb")
+    total_mapped = sample_bam.mapped
     peak_distribution_sample = pd.DataFrame()
     overlap_df = overlap_df[['chr', 'start', 'stop', 'Next transcript strand', 'summit']]
     print 'Process: Feature extraction from BAM started'
@@ -157,13 +163,16 @@ def overlapping_peaks_distribution(bam_name, overlap_df):
             chr = chr[3:]
         orientation = ind['Next transcript strand']
         middle = ind['start'] + ind['summit']
-        start = middle - 3000   # Distance on one side of the peaks
+        start = middle - 3000  # Distance on one side of the peaks
         stop = start + 50
         list_sample = []
         # total_tags = int(bam_peak1.mapped) will get total no of mapped reads
         if start > 0:
             for i in range(0, 120):  # Please set based on distance on one side = s*distance/50
                 seqcount = sample_bam.count(chr, start, stop)
+                ## Normalized count per million
+                if normalized: list_sample.append((seqcount/total_mapped)*10**6)
+                ## count real
                 list_sample.append(seqcount)
                 start = stop
                 stop = start + 50  # divide peaks into length of 50 bp
@@ -172,11 +181,12 @@ def overlapping_peaks_distribution(bam_name, overlap_df):
                 peak_distribution_sample = peak_distribution_sample.append(pd.Series(list_sample), ignore_index=True)
             else:
                 # print 'Towards 3 prime'
-                peak_distribution_sample = peak_distribution_sample.append(pd.Series(list_sample[::-1]), ignore_index=True)
+                peak_distribution_sample = peak_distribution_sample.append(pd.Series(list_sample[::-1]),
+                                                                           ignore_index=True)
         del list_sample, middle, start, stop
     stop = timeit.default_timer()
     print summit_found
-    print '\nTime elapsed:'+str((stop-startT)/60)+'min'
+    print '\nTime elapsed:' + str((stop - startT) / 60) + 'min'
     sample_bam.close()
     return peak_distribution_sample
 
@@ -224,7 +234,7 @@ def plot_divide_peaks_in_strength(dict_list, name, path):
     plt.xlabel('Binding profile')
     plt.ylabel('Normalized tag density')
     plt.title('Genomic distribution of peaks')
-    plt.gca().set_color_cycle(['mediumorchid', 'coral', 'r', 'dodgerblue'])  #'mediumorchid', 'coral',
+    plt.gca().set_color_cycle(['mediumorchid', 'coral', 'r', 'dodgerblue'])  # 'mediumorchid', 'coral',
 
     xnew = np.linspace(x.min(), x.max(), 300)
     smooth = spline(x, s, xnew)
@@ -242,8 +252,8 @@ def plot_divide_peaks_in_strength(dict_list, name, path):
     smooth3 = spline(x, h, xnew3)
     plt.plot(xnew3, smooth3, linewidth=3)
 
-    plt.legend(['Low', 'Medium-Low', 'Medium-high', 'High'], loc='upper left')  #'Low', 'Medium',
-    #plt.show()
+    plt.legend(['Low', 'Medium-Low', 'Medium-high', 'High'], loc='upper left')  # 'Low', 'Medium',
+    # plt.show()
     plt.savefig(path + name + '.png')
     plt.clf()
 
@@ -266,12 +276,12 @@ def line_plot_peak_distribution(dict_of_df, name, path):
         # x_axis = []
         # for i in range(0, size[1]/80):
         #    x_axis.extend(range(-2000,+2000,50))
-        #x = np.array(x_axis)
+        # x = np.array(x_axis)
 
         x = np.array(range(df.shape[1] / 2 * -50, df.shape[1] / 2 * 50, 50))
-        #print len(x)
+        # print len(x)
         s = np.array(df.sum(axis=0))
-        #print len(s)
+        # print len(s)
         plt.ylim(0, max(s) + 50)
         plt.xlabel('Distribution of cluster: ' + str(Cluster))
         plt.ylabel('Binding profile cluster ' + str(Cluster))
@@ -279,11 +289,11 @@ def line_plot_peak_distribution(dict_of_df, name, path):
         plt.gca().set_color_cycle(['r'])
         xnew = np.linspace(x.min(), x.max(), 300)
         smooth = spline(x, s, xnew)
-        plt.plot(xnew, smooth, linewidth=3)  #marker='o'
-        #plt.legend([names[1], names[3]], loc='upper left')
-        #plt.show()
+        plt.plot(xnew, smooth, linewidth=3)  # marker='o'
+        # plt.legend([names[1], names[3]], loc='upper left')
+        # plt.show()
         plt.savefig(path + name + '_cluster:' + str(Cluster) + '.png')
-        #plt.savefig(path + name + '_cluster:' + str(Cluster) + '.svg')
+        # plt.savefig(path + name + '_cluster:' + str(Cluster) + '.svg')
         plt.clf()
 
 
@@ -301,27 +311,27 @@ def plot_clustered_peaks_4_two_samples(dict_df, name, path):
     # print 'shape', dict_list[0].shape
     for k, v in dict_df.iteritems():
         size = v.shape
-        size_one_df = size[1]/2
-        df1 = v.iloc[:, 1:size_one_df+1]
-        df2 = v.iloc[:, size_one_df+1:size[1]]
-        #x = np.array(range(-3000, 3000, 50))
+        size_one_df = size[1] / 2
+        df1 = v.iloc[:, 1:size_one_df + 1]
+        df2 = v.iloc[:, size_one_df + 1:size[1]]
+        # x = np.array(range(-3000, 3000, 50))
         x = np.array(range(df1.shape[1] / 2 * -50, df1.shape[1] / 2 * 50, 50))
         # print x
-        s = np.array(df1.sum(axis=0))/float(len(df1))
-        #s = np.subtract(s, sp.median(s))           ### Normalizing with median
-        #s = np.subtract(s, np.percentile(s, 25))    ### Normalizing with 25 percentile
+        s = np.array(df1.sum(axis=0)) / float(len(df1))
+        # s = np.subtract(s, sp.median(s))           ### Normalizing with median
+        # s = np.subtract(s, np.percentile(s, 25))    ### Normalizing with 25 percentile
         s = np.subtract(s, min(s))
 
-        l = np.array(df2.sum(axis=0))/float(len(df2))
-        #l = np.subtract(l, sp.median(l))
-        #l = np.subtract(l, np.percentile(l, 25))
+        l = np.array(df2.sum(axis=0)) / float(len(df2))
+        # l = np.subtract(l, sp.median(l))
+        # l = np.subtract(l, np.percentile(l, 25))
         l = np.subtract(l, min(l))
 
         plt.ylim(0, max(max(s), max(l)) + 10)
         plt.xlabel('Binding profile cluster' + str(k))
         plt.ylabel('Combined tag density')
         plt.title('Genomic distribution of peaks with datapoints: ' + str(size[0]))
-        plt.gca().set_color_cycle(['mediumorchid', 'r', 'dodgerblue'])  #'mediumorchid', 'coral',
+        plt.gca().set_color_cycle(['mediumorchid', 'r', 'dodgerblue'])  # 'mediumorchid', 'coral',
 
         xnew = np.linspace(x.min(), x.max(), 300)
         smooth = spline(x, s, xnew)
@@ -332,8 +342,8 @@ def plot_clustered_peaks_4_two_samples(dict_df, name, path):
         plt.plot(xnew1, smooth1, linewidth=3)
 
         sname = name.split(',')
-        plt.legend([sname[0], sname[1]], loc='upper left')  #'Low', 'Medium',
-        #plt.show()
+        plt.legend([sname[0], sname[1]], loc='upper left')  # 'Low', 'Medium',
+        # plt.show()
         plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.png')
         plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.svg')
         plt.clf()
@@ -358,26 +368,26 @@ def plot_clustered_peaks_4_three_samples(dict_df, name, path):
         df3 = v.iloc[:, 241:361]
         x = np.array(range(-3000, 3000, 50))
         # print x
-        s = np.array(df1.sum(axis=0))/float(len(df1))
-        #s = np.subtract(s, sp.median(s))           ### Normalizing with median
-        #s = np.subtract(s, np.percentile(s, 25))    ### Normalizing with 25 percentile
+        s = np.array(df1.sum(axis=0)) / float(len(df1))
+        # s = np.subtract(s, sp.median(s))           ### Normalizing with median
+        # s = np.subtract(s, np.percentile(s, 25))    ### Normalizing with 25 percentile
         s = np.subtract(s, min(s))
 
-        l = np.array(df2.sum(axis=0))/float(len(df2))
-        #l = np.subtract(l, sp.median(l))
-        #l = np.subtract(l, np.percentile(l, 25))
+        l = np.array(df2.sum(axis=0)) / float(len(df2))
+        # l = np.subtract(l, sp.median(l))
+        # l = np.subtract(l, np.percentile(l, 25))
         l = np.subtract(l, min(l))
 
-        m = np.array(df3.sum(axis=0))/float(len(df3))
-        #m = np.subtract(m, sp.median(m))
-        #m = np.subtract(m, np.percentile(m, 25))
+        m = np.array(df3.sum(axis=0)) / float(len(df3))
+        # m = np.subtract(m, sp.median(m))
+        # m = np.subtract(m, np.percentile(m, 25))
         m = np.subtract(m, min(m))
 
         plt.ylim(0, max(max(m), max(s), max(l)) + 10)
         plt.xlabel('Binding profile cluster' + str(k))
         plt.ylabel('combined tag density / no. of peaks')
         plt.title('Genomic distribution of peaks with datapoints: ' + str(size[0]))
-        plt.gca().set_color_cycle(['mediumorchid', 'r', 'dodgerblue'])  #'mediumorchid', 'coral',
+        plt.gca().set_color_cycle(['mediumorchid', 'r', 'dodgerblue'])  # 'mediumorchid', 'coral',
 
         xnew = np.linspace(x.min(), x.max(), 300)
         smooth = spline(x, s, xnew)
@@ -392,8 +402,8 @@ def plot_clustered_peaks_4_three_samples(dict_df, name, path):
         plt.plot(xnew2, smooth2, linewidth=3)
 
         sname = name.split(',')
-        plt.legend([sname[0], sname[1], sname[2]], loc='upper left')  #'Low', 'Medium',
-        #plt.show()
+        plt.legend([sname[0], sname[1], sname[2]], loc='upper left')  # 'Low', 'Medium',
+        # plt.show()
         plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.png')
         plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.svg')
         plt.clf()
@@ -419,29 +429,29 @@ def plot_clustered_peaks_4_four_samples(dict_df, name, path):
         df4 = v.iloc[:, 361:481]
         x = np.array(range(-3000, 3000, 50))
         # print x
-        s = np.array(df1.sum(axis=0))/float(len(df1))
-        #s = np.subtract(s, sp.median(s))           ### Normalizing with median
-        #s = np.subtract(s, np.percentile(s, 25))    ### Normalizing with 25 percentile
+        s = np.array(df1.sum(axis=0)) / float(len(df1))
+        # s = np.subtract(s, sp.median(s))           ### Normalizing with median
+        # s = np.subtract(s, np.percentile(s, 25))    ### Normalizing with 25 percentile
         s = np.subtract(s, min(s))
 
-        l = np.array(df2.sum(axis=0))/float(len(df2))
-        #l = np.subtract(l, sp.median(l))
-        #l = np.subtract(l, np.percentile(l, 25))
+        l = np.array(df2.sum(axis=0)) / float(len(df2))
+        # l = np.subtract(l, sp.median(l))
+        # l = np.subtract(l, np.percentile(l, 25))
         l = np.subtract(l, min(l))
 
-        m = np.array(df3.sum(axis=0))/float(len(df3))
-        #m = np.subtract(m, sp.median(m))
-        #m = np.subtract(m, np.percentile(m, 25))
+        m = np.array(df3.sum(axis=0)) / float(len(df3))
+        # m = np.subtract(m, sp.median(m))
+        # m = np.subtract(m, np.percentile(m, 25))
         m = np.subtract(m, min(m))
 
-        n = np.array(df4.sum(axis=0))/float(len(df4))
+        n = np.array(df4.sum(axis=0)) / float(len(df4))
         n = np.subtract(n, min(n))
 
         plt.ylim(0, max(max(m), max(s), max(l), max(n)) + 10)
         plt.xlabel('Binding profile cluster' + str(k))
         plt.ylabel('Combined tag density')
         plt.title('Genomic distribution of peaks with datapoints: ' + str(size[0]))
-        plt.gca().set_color_cycle(['mediumorchid', 'r', 'dodgerblue', 'green'])  #'mediumorchid', 'coral',
+        plt.gca().set_color_cycle(['mediumorchid', 'r', 'dodgerblue', 'green'])  # 'mediumorchid', 'coral',
 
         xnew = np.linspace(x.min(), x.max(), 300)
         smooth = spline(x, s, xnew)
@@ -460,8 +470,8 @@ def plot_clustered_peaks_4_four_samples(dict_df, name, path):
         plt.plot(xnew3, smooth3, linewidth=3)
 
         sname = name.split(',')
-        plt.legend([sname[0], sname[1], sname[2], sname[3]], loc='upper left')  #'Low', 'Medium',
-        #plt.show()
+        plt.legend([sname[0], sname[1], sname[2], sname[3]], loc='upper left')  # 'Low', 'Medium',
+        # plt.show()
         plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.png')
         plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.svg')
         plt.clf()
@@ -513,7 +523,7 @@ def scale_dataframe(df):
     new_min = 0
     list_of_rows = []
     print 'Process: scaling of dataframe'
-    print 'Max value in df:',old_max
+    print 'Max value in df:', old_max
     if old_max > 30:  # Scale values only when the highest in dataframe is > 50
         for r, v in df.iterrows():
             rows = []
@@ -524,7 +534,8 @@ def scale_dataframe(df):
                     rows.append(scale(val, (old_min, old_max), (new_min, new_max)))
             list_of_rows.append(rows)
         scaled_df = pd.DataFrame(data=list_of_rows)
-    else: scaled_df = df
+    else:
+        scaled_df = df
     return scaled_df
 
 
@@ -658,12 +669,12 @@ def line_plot_overlapping_peak_intensity(dict_of_bins):
                                             axes=par2,
                                             offset=(offset, 0))
         # new_fixed_axis = par3.get_grid_helper().new_fixed_axis
-        #par3.axis["right"] = new_fixed_axis(loc="right",
+        # par3.axis["right"] = new_fixed_axis(loc="right",
         #                                    axes=par3,
         #                                    offset=(2 * offset, 0))
 
         par2.axis["right"].toggle(all=True)
-        #par3.axis["right"].toggle(all=True)
+        # par3.axis["right"].toggle(all=True)
 
         List = dict_of_bins.values()
         names = dict_of_bins.keys()
@@ -676,23 +687,23 @@ def line_plot_overlapping_peak_intensity(dict_of_bins):
         host.set_ylabel(names[1])
         par1.set_ylabel(names[2])
         par2.set_ylabel(names[3])
-        #par3.set_ylabel(names[3])
+        # par3.set_ylabel(names[3])
 
         p1, = host.plot(x_range, List[1], label=names[1], marker='o')
         p2, = par1.plot(x_range, List[2], label=names[2], marker='o')
         p3, = par2.plot(x_range, List[3], label=names[3], marker='o')
-        #p4, = par3.plot(x_range, List[3], label=names[3], marker='o')
+        # p4, = par3.plot(x_range, List[3], label=names[3], marker='o')
 
         par1.set_ylim(0, int(max(List[2])) + 10)
         par2.set_ylim(0, int(max(List[3])) + 10)
-        #par3.set_ylim(0, int(max(List[3])) + 10)
+        # par3.set_ylim(0, int(max(List[3])) + 10)
 
         host.legend(loc='upper left')
 
         host.axis["left"].label.set_color(p1.get_color())
         par1.axis["right"].label.set_color(p2.get_color())
         par2.axis["right"].label.set_color(p3.get_color())
-        #par3.axis["right"].label.set_color(p4.get_color())
+        # par3.axis["right"].label.set_color(p4.get_color())
 
         plt.draw()
         # plt.show()
@@ -716,22 +727,22 @@ def line_plot_overlapping_peak_intensity_2(dict_of_bins):
     plt.xlabel('Normalized PRMT6 peaks')
     plt.ylabel('Corresponding H3k4me3 peaks')
     plt.title('H3K4 wrt PRMT6 ascending')
-    plt.gca().set_color_cycle(['dodgerblue', 'r'])  #'mediumorchid', 'coral',
+    plt.gca().set_color_cycle(['dodgerblue', 'r'])  # 'mediumorchid', 'coral',
 
-    #plt.plot(m, l, linewidth=3, marker='o')
+    # plt.plot(m, l, linewidth=3, marker='o')
 
-    #xnew1 = np.linspace(x.min(),x.max(),300)
-    #smooth1 = spline(x,l,xnew1)
-    #plt.plot(xnew1, smooth1, linewidth=3)
+    # xnew1 = np.linspace(x.min(),x.max(),300)
+    # smooth1 = spline(x,l,xnew1)
+    # plt.plot(xnew1, smooth1, linewidth=3)
 
-    #xnew2 = np.linspace(x.min(),x.max(),300)
-    #smooth2 = spline(x,m,xnew2)
-    #plt.plot(xnew2, smooth2, linewidth=3)
+    # xnew2 = np.linspace(x.min(),x.max(),300)
+    # smooth2 = spline(x,m,xnew2)
+    # plt.plot(xnew2, smooth2, linewidth=3)
 
     plt.plot(m, h, linewidth=3, marker='o')
 
-    plt.legend([names[1], names[3]], loc='upper left')  #'Low', 'Medium',
-    #plt.show()
+    plt.legend([names[1], names[3]], loc='upper left')  # 'Low', 'Medium',
+    # plt.show()
     plt.savefig('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/' + names[2] + '_' + names[
         3] + '.png')
     plt.clf()
@@ -756,15 +767,14 @@ def peak_position_dataframe(peak_df, name):
             # print position
             posOnList = 20 + position
             if posOnList >= 0 and posOnList <= 40:
-                #print posOnList
+                # print posOnList
                 geneNames.append(v['Next transcript gene name'])
                 positionList[posOnList - 1] = 1
                 positionDf = positionDf.append(pd.Series(positionList), ignore_index=True)
         # positionDf['Next transcript gene name'] = pd.Series(geneNames)
         positionDf = positionDf.set_index(pd.Series(geneNames))
-        #plot_heatmap_4_peaks_position(positionDf)
+        # plot_heatmap_4_peaks_position(positionDf)
     print 'Frequency of peak positions\n', positionDf.sum()
     positionDf.to_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/' + name + '.csv',
                       sep=",", encoding='utf-8', ignore_index=True)
     return positionDf
-

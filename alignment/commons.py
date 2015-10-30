@@ -6,7 +6,7 @@ import tarfile
 def create_odir():
     odir = 'results'
     indir = ['alignedLane', 'cache', 'peaks']
-    cdpath = os.getcwd()
+    cdpath = '/ps/imt/e/HL60_Christene/further_analysis'##os.getcwd() when run script from the folder of interest
     if not os.path.exists(os.path.join(cdpath, odir)): os.mkdir(os.path.join(cdpath, odir))
     for i in indir:
         print os.path.join(cdpath, odir, i)

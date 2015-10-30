@@ -1,16 +1,28 @@
 
 import alignment.lanes
 import alignment.aligner
+import rna_seq.bam_processing as bamPrcessing
 
-genome = alignment.aligner.human_GRCh37()
+genome = alignment.aligner.human_GRCh37_74()
 
 
 raw_lanes = [
-    alignment.lanes.Lane( 'Sample_8C9', '/ps/imt/f/20150320/150303_C00113_0099_AHFHHGADXX/Sample_8C9_test/'),
-    #alignment.lanes.Lane( 'Sample_18F3', '/ps/imt/f/20150320/150303_C00113_0099_AHFHHGADXX/Sample_18F3_0/'),
-    #alignment.lanes.Lane( 'Sample_18F3_RA', '/ps/imt/f/20150320/150303_C00113_0099_AHFHHGADXX/Sample_18F3_1/')
+    #alignment.lanes.Lane('HL60_GFP3_1', '/ps/imt/f/christine/20151015/Sample_HL60_GFP3_1'),
+    #alignment.lanes.Lane('HL60_GFP3_2', '/ps/imt/f/christine/20151015/Sample_HL60_GFP3_2'),
+    #alignment.lanes.Lane('HL60_GFP3_3', '/ps/imt/f/christine/20151015/Sample_HL60_GFP3_3'),
+    alignment.lanes.Lane('HL60_2_10_1', '/ps/imt/f/christine/20151015/Sample_HL60_Klon2_10_1'),
+    alignment.lanes.Lane('HL60_2_10_2', '/ps/imt/f/christine/20151015/Sample_HL60_Klon2_10_2'),
+    alignment.lanes.Lane('HL60_2_10_3', '/ps/imt/f/christine/20151015/Sample_HL60_Klon2_10_3')
 ]
 
+## Aligner = Bowtie2, Tophat2
+alignedLane = {}
 for lanes in raw_lanes:
     lanes.join_multiple_fq()
-    lanes.do_alignment(genome)
+    lanes.do_alignment(genome, 'Tophat2')
+
+## RNASeq diffcalling CuffDiff
+controlSamples = ['HL60_GFP3_1', 'HL60_GFP3_2', 'HL60_GFP3_3']
+conditionSamples = ['HL60_2_10_1', 'HL60_2_10_2','HL60_2_10_3']
+bamPrcessing.cuffDiff(alignedLane, controlSamples, conditionSamples, genome)
+

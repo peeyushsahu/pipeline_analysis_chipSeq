@@ -345,3 +345,46 @@ def PeakOverlaps(df1, df2):
                         num_overlap += 1
                         break
     return overlap_list
+
+
+def significance_of_chipseq_overlap(overlap, peak_df1, peak_df2, iteration=10):
+    from statistics import mean
+    import sys
+    '''
+    A permutation method to access the significance of overlap.
+    :return:
+    '''
+    n_peak_df1 = peak_df1[['chr', 'start', 'stop']]
+    n_peak_df2 = peak_df2[['chr', 'start', 'stop']]
+    overlaps = overlap
+    n_peak_df1['chr'] = n_peak_df1['chr'].astype(str)
+    n_peak_df2['chr'] = n_peak_df2['chr'].astype(str)
+    df = n_peak_df1.append(n_peak_df2, ignore_index=True)
+    datapoints = min(len(n_peak_df1), len(n_peak_df2))
+    print n_peak_df1.shape, n_peak_df2.shape, df.shape, datapoints
+    ## Number of iterations
+    overlap_list = {}
+    for ite in range(0, iteration):
+        sys.stdout.write("\r%d%%" % ite)
+        sys.stdout.flush()
+        df1_g = df.sample(n=datapoints)
+        df2_g = df.loc[~df.index.isin(df1_g.index)]
+        #print len(df1_g), len(df2_g)
+        df1_g = df1_g.groupby(df1_g['chr'])
+        df2_g = df2_g.groupby(df2_g['chr'])
+        num_overlap = 0
+        for i in df1_g:
+            #print len(i[1])
+            if i[0] in df2_g.groups:
+                #print len(df2_g.get_group(i[0]))
+                for count, row in df1_g.get_group(i[0]).iterrows():
+                    for count1, row1 in df2_g.get_group(i[0]).iterrows():
+                        if max(row['start'], row1['start']) < min(row['stop'], row1['stop']):
+                            #print row['start'], row1['start']
+                            num_overlap += 1
+                            break
+        #print 'Overlap for iteration', num_overlap
+        overlap_list[ite] = num_overlap
+    #calculate p-value for the iterations
+    pval = len([elem for elem in overlap_list.values() if elem >= overlap])/iteration
+    return overlap_list, pval

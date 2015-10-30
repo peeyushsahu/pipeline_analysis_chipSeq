@@ -17,23 +17,33 @@ def filterpeaks(peak_data_list):
             colnames = df.columns.values.tolist()
             indices1 = [i for i, s in enumerate(colnames) if sample[0] in s]
             indices2 = [i for i, s in enumerate(colnames) if sample[2] in s]
-            indices3 = [i for i, s in enumerate(colnames) if "Input" in s]
-            print indices1
+            #indices3 = [i for i, s in enumerate(colnames) if "Input" in s]
             for i in indices1:
-                if "RA" not in colnames[i] and "RA" not in name and "norm" not in colnames[i]:
+                if "RA" not in colnames[i] and "norm" not in colnames[i]:
                     condition = colnames[i]
                     break
-                elif "RA" in colnames[i] and "RA" in name and "norm" not in colnames[i]:
+                elif "RA" in colnames[i] and "norm" not in colnames[i]:
                     condition = colnames[i]
+                    break
+            for i in indices2:
+                if "RA" not in colnames[i] and "norm" not in colnames[i]:
+                    control = colnames[i]
+                    break
+                elif "RA" in colnames[i] and "norm" not in colnames[i]:
+                    control = colnames[i]
                     break
             else:
-                raise ValueError("Filtering Error: Sample name differs from column name.")
-
-            print condition
-            control = colnames[indices2[0]]
+                raise ValueError("Filtering Sample name differs from column name.")
             print control
-            inputcol = colnames[indices3[0]]
-            print inputcol
+            print condition
+            #inputcol = colnames[indices3[0]]
+            #print inputcol
+
+            ## condition for simple filtering of preaks
+            df1 = df[df[condition] >= 3*df[control]]
+            df2 = df1[((df1['stop']-df1['start'])/df1[condition]) <= 15]
+            final = df2
+            '''
             if "Sample" in sample[0]:
                 df1 = df[df[condition] >= 3*df[control]]
                 df2 = df1[((df1['stop']-df1['start'])/df1[condition]) <= 15]
@@ -52,6 +62,7 @@ def filterpeaks(peak_data_list):
                 df1 = df[df[condition] >= 5*df[inputcol]]
                 df2 = df1[df1[condition] >= 3*df1[control]]
                 final = df2[df2[condition] >= 50]
+            '''
         file.write(name.split(' ')[0]+'\t'+str(len(df))+'\t'+str(len(final))+'\n')
         filtered_peak_data[name] = final
         final.to_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/filtered/'+name+'.csv', sep=",", encoding='utf-8')

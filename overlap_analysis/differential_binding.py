@@ -16,7 +16,7 @@ class Overlaps():
     def diffBinding(self, basepeakfile):
         '''
         This function will extract summit (+-500) peak data if peak length is >1000 from provided peaks.
-        This dataframe can be used with DESeq for differential bound calculation.
+        This dataframe can be used with DESeq for differential binding calculation.
         :return:
         '''
         import pysam
@@ -44,6 +44,7 @@ class Overlaps():
             #print '\n'+sample
             sample_bam_path = getBam(sample) #.split(' vs ')[0]
             sample_bam = pysam.Samfile(sample_bam_path, "rb")
+            total_reads = sample_bam.mapped
             for k, v in df.iterrows():
                 sys.stdout.write("\rNumber of peaks processed:%d" % k)
                 sys.stdout.flush()
@@ -55,12 +56,14 @@ class Overlaps():
                     df.loc[k,'cookiecut_start'] = summit-500
                     df.loc[k,'cookiecut_stop'] = summit+500
                     df.loc[k,sample] = tags
+                    df.loc[k,sample+'norm_millon'] = (tags/total_reads)*10**6
                 else:
                     chr = str(v['chr'])
                     tags = sample_bam.count(chr, v['start'], v['stop'])
                     df.loc[k,'cookiecut_start'] = v['start']
                     df.loc[k,'cookiecut_stop'] = v['stop']
                     df.loc[k,sample] = tags
+                    df.loc[k,sample+'norm_millon'] = (tags/total_reads)*10**6
             sample_bam.close()
         df.to_csv(
                 '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/' + '_'.join(sample_name) + '.csv',

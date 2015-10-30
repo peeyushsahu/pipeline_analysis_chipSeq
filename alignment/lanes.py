@@ -32,19 +32,24 @@ class Lane():
         newfilename = 'cat '
         for i in os.listdir(path):
             if i.endswith("fastq.gz"):
-                newfilename = newfilename+" "+path+i
+                newfilename = os.path.join(newfilename+" "+path,i)
         newfilename = newfilename+" > "+self.fqoutpath
         print newfilename
         proc = sp.Popen([newfilename], shell=True)
         proc.wait()
         #os.remove(self.fqoutpath)
-        #print outname
+        print outname
 
 
-    def do_alignment(self, genome):
+    def do_alignment(self, genome, method):
         self.genome = genome
-        aligner.bowtie2(self, genome)
-        self.sam2bam()
+        if method == "Bowtie2":
+            aligner.bowtie2_aligner(self, genome)
+            self.sam2bam()
+            self.bam_sort()
+        if method == "Tophat2":
+            aligner.tophat2_aligner(self, genome)
+            self.bam_sort()
         return
 
 
@@ -59,10 +64,13 @@ class Lane():
             proc.wait()
         except:
             raise IOError("Problem with samtools sam 2 bam.")
-        sortpath = os.path.join(self.resultdir, 'alignedLane', self.name, self.name + '_' + self.genome.name)
-        print sortpath
-        pysam.sort(self.bampath, sortpath)
-        self.bampath = sortpath+'.bam'
+
+
+    def bam_sort(self):
+        self.sortbampath = os.path.join(self.resultdir, 'alignedLane', self.name, self.name + '_' + self.genome.name)
+        print self.sortbampath
+        pysam.sort(self.bampath, self.sortbampath)
+        self.bampath = self.sortbampath+'.bam'
         pysam.index(self.bampath)
         self.remove_temp()
 
