@@ -92,7 +92,7 @@ sample_name = [#'YY1_RA_seq3 vs IgG_RA_seq2 filtered',
                #'H3K4me3_E9 vs IgG_E.9 filtered',
                #'H3K27ac_B5.1 vs IgG_B5.1 filtered',
                #'H3R2ame2_B5.1 vs IgG_B5.1 filtered',
-               #'H3R2ame2_E9 vs IgG_E.9 filtered'
+               'H3R2ame2_E9 vs IgG_E.9 filtered'
                ]
 
 # Here import peak called data in a list....
@@ -141,11 +141,11 @@ for k, v in filtered_peak_data.iteritems():
 
 
 ### Performs differential binding calulation from full sample
-'''
-sample = ['H3K4me3_seq2', 'H3K4me3_B5.1', 'H3K4me3_E9']
+
+sample = ['H3R2ame2_E9', 'Sample_18F3', 'H3R2ame2_B5.1']
 diffbind = differential_binding.Overlaps(sample, filtered_peak_data)
-diffbind.diffBinding('H3K4me3_seq2 vs IgG_seq2 filtered')
-'''
+diffbind.diffBinding('H3R2ame2_E9 vs IgG_E.9 filtered')
+
 ### Diff. binding for nearest genes
 '''
 sample = ['Sample_K36me3', 'Sample_K36me3_RA',
@@ -234,7 +234,7 @@ for bams in bam_list:
 '''
 
 ### Comapre ChIP-Seq profile from altered sample (external)
-
+'''
 #bam_list = [['PRMT6_2_RA_seq6', 'Sample_pol-2_RA', 'Sample_K36me3_RA', 'H3K4me3_RA_seq2', 'Sample_K27me1_RA',
 #             'Sample_K27ac_RA', 'Sample_K4me1_RA', 'Sample_K9me3_RA', 'Sample_K27me3_RA', 'Sample_18F3_RA', 'YY1_RA_seq3'],
 #           ['PRMT6_2_seq6', 'Sample_pol-2', 'Sample_K36me3', 'H3K4me3_seq2', 'Sample_K27me1', 'Sample_K27ac',
@@ -267,7 +267,7 @@ for List in bam_list:
         #GPcount = zip(GPcount.index, GPcount.values)
         #cal_genomic_region.plotGenomicregions(GPcount, 'DiffBind_P6_vs_all')
 #gc.collect()
-
+'''
 ### Density based motif analysis
 '''
 peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/PRMT6_2_seq6,Sample_pol-2,Sample_K36me3,H3K4me3_seq2,Sample_K27me1,Sample_K27ac,Sample_K4me1,Sample_K9me3,Sample_K27me3,Sample_18F3/intergenic7325'

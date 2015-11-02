@@ -53,17 +53,19 @@ class Overlaps():
                     chr = str(v['chr'])
                     summit = v['start']+v['summit']
                     tags = sample_bam.count(chr, summit-500, summit+500)
+                    if tags == 0: tags = 1
                     df.loc[k,'cookiecut_start'] = summit-500
                     df.loc[k,'cookiecut_stop'] = summit+500
                     df.loc[k,sample] = tags
-                    df.loc[k,sample+'norm_millon'] = (tags/total_reads)*10**6
+                    df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
                 else:
                     chr = str(v['chr'])
                     tags = sample_bam.count(chr, v['start'], v['stop'])
+                    if tags == 0: tags = 1
                     df.loc[k,'cookiecut_start'] = v['start']
                     df.loc[k,'cookiecut_stop'] = v['stop']
                     df.loc[k,sample] = tags
-                    df.loc[k,sample+'norm_millon'] = (tags/total_reads)*10**6
+                    df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
             sample_bam.close()
         df.to_csv(
                 '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/' + '_'.join(sample_name) + '.csv',
