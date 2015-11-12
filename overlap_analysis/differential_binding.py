@@ -1,6 +1,7 @@
 __author__ = 'peeyush'
 
 import pandas as pd
+import os
 
 
 class Overlaps():
@@ -82,6 +83,7 @@ def getBam(name):
     bam_list = listdir('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane')
     Dir = None
     file = None
+    print name
     for i in bam_list:
         if name in i and 'dedup' in i:
             if 'RA' in name and 'RA' in i:
@@ -98,10 +100,11 @@ def getBam(name):
                     if j.endswith('.bam'):
                         file = j
                         print '\nBam file selected: '+j
+
     if file is None:
         raise KeyError('Bam file cannot be found for '+name)
     else:
-        return Dir+'/'+file
+        return os.path.join(Dir, file)
 
 
 

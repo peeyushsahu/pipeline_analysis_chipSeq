@@ -63,7 +63,7 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
 
     # print peak_df.head()
     for v in bam_name_list:
-        df = overlapping_peaks_distribution(v, peak_df)
+        df = overlapping_peaks_distribution(v, peak_df, normalized=False)
         if scale_df:
             df = scale_dataframe(df)  # scaling of dataframe
             print 'scaled df'
@@ -99,12 +99,14 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
         big_df.insert(0, 'Next transcript gene name', peak_df['Next transcript gene name'])
         big_df.insert(0, 'Next transcript strand', peak_df['Next transcript strand'])
         big_df.insert(0, 'summit', peak_df['summit'])
+        big_df.insert(0, 'length', peak_df['stop'] - peak_df['start'])
         big_df.insert(0, 'stop', peak_df['stop'])
         big_df.insert(0, 'start', peak_df['start'])
         big_df.insert(0, 'chr', peak_df['chr'])
     except:
         big_df.insert(0, 'Next transcript strand', peak_df['Next transcript strand'])
         big_df.insert(0, 'summit', peak_df['summit'])
+        big_df.insert(0, 'length', peak_df['stop'] - peak_df['start'])
         big_df.insert(0, 'stop', peak_df['stop'])
         big_df.insert(0, 'start', peak_df['start'])
         big_df.insert(0, 'chr', peak_df['chr'])

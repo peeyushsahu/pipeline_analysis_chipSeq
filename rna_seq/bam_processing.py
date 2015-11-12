@@ -27,11 +27,11 @@ def count_data(bam_files, gtf_file, samtype='bam', order='name', stranded='yes',
     file = open('/ps/imt/e/HL60_Christene/further_analysis/RNA_seq/GeneId_HL60_SKI_EGFP_KO_stats.txt', 'w')
     file.write('Original feature counts: '+str(len(count_df)))
     file.write('Filtered feature counts: '+str(len(count_df_fin)))
-    count_df_fin.to_csv('/ps/imt/e/HL60_Christene/further_analysis/RNA_seq/Filtered_GeneId_HL60_SKI_EGFP_KO.txt', sep='\t')
+    count_df_fin.to_csv('/ps/imt/e/HL60_Christene/further_analysis/RNA_seq/Tophat_Filtered_GeneId_HL60_SKI_EGFP_KO.txt', sep='\t')
     #return pd.DataFrame(counts_dict), counts_dict
 
 '''
-gtf_file = '/ps/imt/f/Genomes/Homo_sapiens.GRCh37.75.gtf'
+gtf_file = '/ps/imt/f/Genomes/Homo_sapiens/Ensembl/GRCh37/Annotation/Genes/genes.gtf'
 bam_files = ['/ps/imt/e/HL60_Christene/results/AlignedLane/HL60_2_10_1__aligned_with_STAR_against_EnsemblGenome_Homo_sapiens_74_37/aligned_unique_HL60_2_10_1__aligned_with_STAR_against_EnsemblGenome_Homo_sapiens_74_37.bam',
               '/ps/imt/e/HL60_Christene/results/AlignedLane/HL60_2_10_2__aligned_with_STAR_against_EnsemblGenome_Homo_sapiens_74_37/aligned_unique_HL60_2_10_2__aligned_with_STAR_against_EnsemblGenome_Homo_sapiens_74_37.bam',
               '/ps/imt/e/HL60_Christene/results/AlignedLane/HL60_2_10_3__aligned_with_STAR_against_EnsemblGenome_Homo_sapiens_74_37/aligned_unique_HL60_2_10_3__aligned_with_STAR_against_EnsemblGenome_Homo_sapiens_74_37.bam',
@@ -39,7 +39,37 @@ bam_files = ['/ps/imt/e/HL60_Christene/results/AlignedLane/HL60_2_10_1__aligned_
               '/ps/imt/e/HL60_Christene/results/AlignedLane/HL60_GFP3_2__aligned_with_STAR_against_EnsemblGenome_Homo_sapiens_74_37/aligned_unique_HL60_GFP3_2__aligned_with_STAR_against_EnsemblGenome_Homo_sapiens_74_37.bam',
               '/ps/imt/e/HL60_Christene/results/AlignedLane/HL60_GFP3_3__aligned_with_STAR_against_EnsemblGenome_Homo_sapiens_74_37/aligned_unique_HL60_GFP3_3__aligned_with_STAR_against_EnsemblGenome_Homo_sapiens_74_37.bam']
 '''
+count_out = '/ps/imt/e/HL60_Christene/further_analysis/RNA_seq/featureCounts_TopHat2_Filtered_GeneId_HL60_SKI_EGFP_KO.txt'
 
+
+def count_Data_featureCounts(bam_files, gtf_file, feature_type='exon', id_attribute='gene_name', count_out='', stranded=1):
+    '''
+    This will count features using SubRead.featureCount function.
+    :param bam_files:
+    :param gtf_file:
+    :param feature_type:
+    :param id_attribute:
+    :param count_out: output file name with directory structure.
+    :param stranded: 1; Stranded, 2:reversly stranded, 0; Un-staranded
+    :return:
+    '''
+    program = '/home/sahu/Documents/aligners/subread-1.5.0-Linux-x86_64/bin/featureCounts'
+    bam_files = ' '.join(bam_files)
+    thread = '-T 6'
+    feature = '-t '+feature_type
+    attribute = '-g '+id_attribute
+    annotation = '-a '+gtf_file
+    stranded = '-s '+str(stranded)
+    count_out = '-o '+count_out
+    cmd = ' '.join([program, thread, feature, attribute, stranded, annotation, count_out, bam_files])
+    print cmd
+    try:
+         proc = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
+         stdout, stdrr = proc.communicate()
+         print stdrr
+         proc.wait()
+    except:
+        raise IOError ('Subprocess SubRead.featureCounts exited with error')
 
 def cuffDiff(alignmentLanes, groupA, groupB, genome, label):
     '''

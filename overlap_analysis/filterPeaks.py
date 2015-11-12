@@ -41,8 +41,8 @@ def filterpeaks(peak_data_list):
 
             ## condition for simple filtering of preaks
             df1 = df[df[condition] >= 3*df[control]]
-            df2 = df1[((df1['stop']-df1['start'])/df1[condition]) <= 15]
-            final = df2
+            #df2 = df1[((df1['stop']-df1['start'])/df1[condition]) <= 15]
+            final = df1
             '''
             if "Sample" in sample[0]:
                 df1 = df[df[condition] >= 3*df[control]]

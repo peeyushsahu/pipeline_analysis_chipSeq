@@ -34,70 +34,59 @@ for folder in folders:
         os.makedirs(path)
 print 'Output folder created'
 
-sample_name = [#'YY1_RA_seq3 vs IgG_RA_seq2 filtered',
-               #'YY1_seq2 vs IgG_seq2 filtered',
-               #'YY1_RA_seq2 vs IgG_RA_seq2 filtered',
-               #'PRMT6_2_seq4 vs IgG_seq4 filtered',
-               #'H3R2me2_18F3_seq7 vs IgG_seq4 filtered',
-               #'H3R2me2_17E2_seq7 vs IgG_seq4 filtered',
-               #'PRMT6_2_seq6 vs IgG_seq6 filtered',
-               #'PRMT6_2_RA_seq2 vs IgG_RA_seq2 filtered',
-               #'PRMT6_2_seq3 vs IgG_seq2 filtered',
-               #'PRMT6_2_RA_seq3 vs IgG_seq2 filtered',
-               #'H3R2me2_17F10_seq7 vs IgG_seq4 filtered',
-               #'H3R2me2_17H5_seq7 vs IgG_seq4 filtered',
-               #'JARID1A_seq2 vs IgG_seq2 filtered',
-               #'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered',
-               #'JARID1A_RA_seq2 vs IgG_RA_seq1 filtered',
-               #'H3K27me3_seq2 vs IgG_seq2 filtered',
-               #'PRMT6_2_seq1 vs IgG_seq1 filtered',
-               #'PRMT6_2_seq5 vs IgG_seq2 filtered',
-               #'YY1_seq3 vs IgG_seq2 filtered',
-               #'PRMT6_2_seq2 vs IgG_seq2 filtered',
-               #'PRMT6_2_RA_seq5 vs IgG_RA_seq2 filtered',
-               #'PRMT6_2_RA_seq4 vs IgG_RA_seq4 filtered',
-               #'H3K27me3_RA_seq2 vs IgG_RA_seq2 filtered',
-               #'H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered',
-               #'PRMT6_2_RA_seq1 vs IgG_RA_seq1 filtered',
-               #'H3K4me3_seq2 vs IgG_seq2 filtered',
-               #'Encode_NT2D1_H3K36me3',
-               #'Encode_NT2D1_Suz12 vs Input',
-               #'Sample_18F3_RA vs IgG_RA_seq6 filtered',
-               #'Sample_18F3 vs Sample_8C9 filtered',
-               #'Sample_K27ac vs Sample_8C9 filtered',
-               #'Sample_EZH1_RA vs IgG_RA_seq6 filtered',
-               #'Sample_EZH1 vs Sample_8C9 filtered',
-               #'Sample_EZH2_RA vs IgG_RA_seq6 filtered',
-               #'Sample_EZH2 vs Sample_8C9 filtered',
-               #'Sample_H3R2_comm_RA vs IgG_RA_seq6 filtered',
-               #'Sample_H3R2_comm vs Sample_8C9 filtered',
-               #'Sample_K4me1_RA vs IgG_RA_seq6 filtered',
-               #'Sample_K4me1 vs Sample_8C9 filtered',
-               #'Sample_K9me3_RA vs IgG_RA_seq6 filtered',
-               #'Sample_K9me3 vs Sample_8C9 filtered',
-               #'Sample_K27ac_RA vs IgG_RA_seq6 filtered',
-               #'Sample_K27me3_RA vs IgG_RA_seq6 filtered',
-               #'Sample_K27me3 vs Sample_8C9 filtered',
-               #'Sample_K36me3_RA vs IgG_RA_seq6 filtered',
-               #'Sample_K36me3 vs Sample_8C9 filtered',
-               #'Sample_pol-2_RA vs IgG_RA_seq6 filtered',
-               #'Sample_pol-2 vs Sample_8C9 filtered',
-               #'Sample_PRMT6_3_RA vs IgG_RA_seq6 filtered',
-               #'Sample_K27me1 vs IgG_seq6 filtered',
-               #'Sample_K27me1_RA vs IgG_RA_seq6 filtered',
-               #'Sample_PRMT6_3_10_wt vs IgG_seq6_RA filtered',
-               #'Sample_PRMT6_3_0_wt vs IgG_seq6 filtered',
-               #'H3K4me3_B5.1 vs IgG_B5.1 filtered',
-               #'H3K27ac_E9 vs IgG_E.9 filtered',
-               #'H3K4me3_E9 vs IgG_E.9 filtered',
-               #'H3K27ac_B5.1 vs IgG_B5.1 filtered',
-               #'H3R2ame2_B5.1 vs IgG_B5.1 filtered',
-               'H3R2ame2_E9 vs IgG_E.9 filtered'
-               ]
+sample_name = [
+     #'H3K4me3_B5.1 vs IgG_B5.1 filtered',
+     #'Sample_K27ac vs IgG_seq6 filtered',
+     #'Sample_K27ac_10_wt vs IgG_seq6_RA filtered',
+     #'PRMT6_seq5 vs IgG_seq4 filtered',
+     #'Sample_K4me1_RA vs Sample_PIS_RA filtered',
+     #'Sample_PRMT6_3_RA vs IgG_seq6_RA filtered',
+     #'H3K4me3_seq2 vs IgG_seq2 filtered',
+     #'Sample_EZH1 vs IgG_seq6 filtered',
+     #'PRMT6_seq6_RA vs IgG_seq6_RA filtered',
+     #'H3K4me3_seq2 vs Sample_PIS filtered',
+     #'Sample_EZH2_RA vs IgG_seq6_RA filtered',
+     #'PRMT6_KO_B5.1 vs IgG_B5.1 filtered',
+     #'Sample_K27ac_RA vs IgG_seq6_RA filtered',
+     #'Sample_K9me3_RA vs IgG_seq6_RA filtered',
+     #'PRMT6_KO_10.8 vs IgG_10.8 filtered',
+     #'H3K4me3_E9 vs IgG_E.9 filtered',
+     #'Sample_18F3 vs Sample_8C9 filtered',
+     #'Sample_K9me3 vs IgG_seq6 filtered',
+     #'Sample_pol2_RA vs IgG_seq6_RA filtered',
+     #'PRMT6_3_seq1 vs IgG_seq2 filtered',
+     #'Sample_PRMT6_2_10_wt vs IgG_seq6_RA filtered',
+     #'Sample_K27me1_RA vs IgG_seq6_RA filtered',
+     #'YY1_seq3 vs IgG_seq4 filtered',
+     #'Sample_K36me3_RA vs IgG_seq6_RA filtered',
+     #'Sample_EZH2 vs IgG_seq6 filtered',
+     #'H3K27ac_B5.1 vs IgG_B5.1 filtered',
+     #'H3K4me3_seq2_RA vs Sample_PIS_RA filtered',
+     #'H3K27ac_E9 vs IgG_E.9 filtered',
+     #'PRMT6_seq6 vs IgG_seq6 filtered',
+     #'Sample_PRMT6_3_0_wt vs IgG_seq6 filtered',
+     #'Sample_K27me1 vs IgG_seq6 filtered',
+     #'YY1_seq3_RA vs IgG_seq4_RA filtered',
+     #'Sample_K4me1 vs Sample_PIS filtered',
+     #'Sample_EZH1_RA vs IgG_seq6_RA filtered',
+     #'PRMT6_1_seq1 vs IgG_seq2 filtered',
+     #'Sample_K27me3_RA vs IgG_seq6_RA filtered',
+     #'H3R2ame2_E9 vs IgG_E.9 filtered',
+     #'Sample_K27me3 vs IgG_seq6 filtered',
+     #'Sample_K36me3 vs IgG_seq6 filtered',
+     #'Sample_pol2 vs IgG_seq6 filtered',
+     #'Sample_K4me3_10_wt vs IgG_seq6_RA filtered',
+     #'Sample_18F3_RA vs IgG_seq6_RA filtered',
+     #'PRMT6_KO_B6.2 vs IgG_B6.2 filtered',
+     #'H3R2ame2_B5.1 vs IgG_B5.1 filtered',
+     #'PRMT6_seq5_RA vs IgG_seq4_RA filtered',
+     #'PRMT6_KO_E.9 vs IgG_E.9 filtered'
+     ]
+
 
 # Here import peak called data in a list....
-done = False
-if not done:
+Filtering = True
+if Filtering:
     peak_data = {}
     for a in sample_name:
         df = read_csv(
@@ -111,9 +100,10 @@ if not done:
     filtered_peak_data = filterPeaks.filterpeaks(peak_data)
 else:
     filtered_peak_data = {}
+    print "############ No filtering ###############"
     for a in sample_name:
         df = read_csv(
-            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/filtered/' + a + '.csv',
+            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/csv/' + a + '.csv',
             header=0, sep='\t')
         df = df.rename(columns={'Next Gene name': 'Next transcript gene name'})
         filtered_peak_data[a] = df
@@ -141,11 +131,11 @@ for k, v in filtered_peak_data.iteritems():
 
 
 ### Performs differential binding calulation from full sample
-
-sample = ['H3R2ame2_E9', 'Sample_18F3', 'H3R2ame2_B5.1']
+'''
+sample = ['PRMT6_KO_E.9', 'PRMT6_KO_B5.1']
 diffbind = differential_binding.Overlaps(sample, filtered_peak_data)
-diffbind.diffBinding('H3R2ame2_E9 vs IgG_E.9 filtered')
-
+diffbind.diffBinding('PRMT6_KO_E.9 vs IgG_E.9 filtered')
+'''
 ### Diff. binding for nearest genes
 '''
 sample = ['Sample_K36me3', 'Sample_K36me3_RA',
@@ -160,9 +150,9 @@ modification4nearestgenes(peak_df, 'prmt6_nearest5genes', sample)
 
 ### Diff. Binding calculation from altered sample (external)
 '''
-sample = ['H3K4me3_seq2', 'H3K4me3_E9', 'H3K4me3_B5.1']
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/H3K4me3_seq2 vs IgG_seq2 filtered_vs_H3K4me3_E9 vs IgG_E.9 filtered.csv',
-    header=0, sep=',')
+sample = ['PRMT6_KO_E.9', 'PRMT6_KO_B5.1']
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/csv/PRMT6_KO_B5.1 vs IgG_B5.1 filtered.csv',
+    header=0, sep='\t')
 filtered_peak = {'loaded_sample': peak_df}
 diffbind = differential_binding.Overlaps(sample, filtered_peak)
 diffbind.diffBinding('loaded_sample')
@@ -226,24 +216,24 @@ else:
 ### Compares multiple ChIP-Seq profile using peaks (heatmap) from on sample
 '''
 region = ['all'] #'all', 'tss', 'exon', 'intron', 'intergenic', 'upstream'
-bam_list = [['H3K4me3_E9', 'H3K4me3_B5.1', 'H3K27ac_E9', 'H3K27ac_B5.1']]
+bam_list = [['Sample_PRMT6_3_0_wt', 'Sample_PRMT6_3_RA', 'PRMT6_seq6']]
 for bams in bam_list:
     for i in region:
-        GR_heatmaps_DF_for_peaks(bams, filtered_peak_data.get('H3K4me3_E9 vs IgG_E.9 filtered'), region=i,
-                                 sort=False, sort_column='Sample_PRMT6_3_0_wt')
+        GR_heatmaps_DF_for_peaks(bams, filtered_peak_data.get('Sample_PRMT6_3_0_wt vs IgG_seq6 filtered'), region=i,
+                                 sort=True, sort_column='Sample_PRMT6_3_0_wt')
 '''
 
 ### Comapre ChIP-Seq profile from altered sample (external)
-'''
+
 #bam_list = [['PRMT6_2_RA_seq6', 'Sample_pol-2_RA', 'Sample_K36me3_RA', 'H3K4me3_RA_seq2', 'Sample_K27me1_RA',
 #             'Sample_K27ac_RA', 'Sample_K4me1_RA', 'Sample_K9me3_RA', 'Sample_K27me3_RA', 'Sample_18F3_RA', 'YY1_RA_seq3'],
 #           ['PRMT6_2_seq6', 'Sample_pol-2', 'Sample_K36me3', 'H3K4me3_seq2', 'Sample_K27me1', 'Sample_K27ac',
 #             'Sample_K4me1', 'Sample_K9me3', 'Sample_K27me3', 'Sample_18F3', 'YY1_seq3']]
 
 
-bam_list = [['H3K4me3_seq2', 'H3K4me3_E9', 'H3K4me3_B5.1']]
+bam_list = [['PRMT6_KO_E.9', 'PRMT6_KO_B5.1']]
 
-peak_df = read_csv('/home/sahu/Desktop/Diff_peaks_H3K4me3_EGFP9_vs_B5.1.csv', header=0, sep=',')
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/PRMT6_DB_E9_B5.1.csv', header=0, sep='\t')
 
 
 ### If DF is from R change column names ('' ','.')
@@ -266,8 +256,8 @@ for List in bam_list:
         #GPcount = peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'].value_counts()
         #GPcount = zip(GPcount.index, GPcount.values)
         #cal_genomic_region.plotGenomicregions(GPcount, 'DiffBind_P6_vs_all')
-#gc.collect()
-'''
+gc.collect()
+
 ### Density based motif analysis
 '''
 peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/PRMT6_2_seq6,Sample_pol-2,Sample_K36me3,H3K4me3_seq2,Sample_K27me1,Sample_K27ac,Sample_K4me1,Sample_K9me3,Sample_K27me3,Sample_18F3/intergenic7325'
