@@ -22,7 +22,7 @@ alignedLane = {}
 for lanes in raw_lanes:
     raw_lanes[lanes].join_multiple_fq()
     alignedLane[lanes] = raw_lanes[lanes].do_alignment(genome, 'Tophat2')
-
+'''
 ## RNASeq diffcalling CuffDiff
 controlSamples = ['HL60_GFP3_1', 'HL60_GFP3_2', 'HL60_GFP3_3']
 conditionSamples = ['HL60_2_10_1', 'HL60_2_10_2','HL60_2_10_3']
@@ -36,6 +36,7 @@ for name in samples:
     bampaths.append(alignedLane[name].bampath)
     if outpath is None: outpath = alignedLane[name].resultdir
 ## calling HTSeq-count
+bamPrcessing.count_Data_featureCounts(bampaths, genome.gtfFile, stranded=1)
 bamPrcessing.count_data(bampaths, genome.gtfFile, outpath)
-
+'''
 
