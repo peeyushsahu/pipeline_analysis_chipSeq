@@ -50,7 +50,10 @@ class Lane():
         if method == "Tophat2":
             aligner.tophat2_aligner(self, genome)
             self.bam_sort()
-        return
+        if method == "STAR":
+            aligner.tophat2_aligner(self, genome)
+            self.bam_sort()
+        return self
 
 
     def sam2bam(self):
@@ -69,9 +72,18 @@ class Lane():
     def bam_sort(self):
         self.sortbampath = os.path.join(self.resultdir, 'alignedLane', self.name, self.name + '_' + self.genome.name)
         print self.sortbampath
-        pysam.sort(self.bampath, self.sortbampath)
-        self.bampath = self.sortbampath+'.bam'
-        pysam.index(self.bampath)
+        try:
+            pysam.sort(self.bampath, self.sortbampath)
+            self.bampath = self.sortbampath+'.bam'
+        except:
+            raise IOError("Problem in bam sorting.")
+
+
+    def bam_index(self):
+        try:
+            pysam.index(self.bampath)
+        except:
+            raise RuntimeError("Error in Bam indexing")
         self.remove_temp()
 
     def remove_temp(self):

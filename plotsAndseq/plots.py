@@ -63,7 +63,7 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
 
     # print peak_df.head()
     for v in bam_name_list:
-        df = overlapping_peaks_distribution(v, peak_df)
+        df = overlapping_peaks_distribution(v, peak_df, normalized=False)
         if scale_df:
             df = scale_dataframe(df)  # scaling of dataframe
             print 'scaled df'
