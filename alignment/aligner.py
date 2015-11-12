@@ -96,11 +96,15 @@ def tophat2_aligner(lane, genome):
     thread = '-p 6'
     gtfFile = '-G '+genome.gtfFile
     readfn = lane.fqoutpath
+    library = '--library-type fr-secondstrand'
     outpath = os.path.join(lane.resultdir, 'cache', lane.name)
     lane.bampath = os.path.join(outpath, 'accepted_hits.bam')
     lane.temp_files.append(lane.bampath)
-    cmd = ' '.join([program, thread, gtfFile, '-o', outpath, genome.refindex, readfn])
+    cmd = ' '.join([program, thread, library, gtfFile, '-o', outpath, genome.refindex, readfn])
     print 'Tophat2 command:', cmd
+    parameter = open(outpath+'parameter.txt')
+    parameter.write(cmd)
+    parameter.close()
     tophat2_run(cmd)
 
 
@@ -112,7 +116,7 @@ def tophat2_run(cmd):
          print stdrr
          proc.wait()
     except:
-        raise IOError ('Subprocess Tophat2 exited with error:', proc)
+        raise IOError('Subprocess Tophat2 exited with error:', proc)
 
 
 def STAR_indexing():
