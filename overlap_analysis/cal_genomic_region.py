@@ -3,10 +3,12 @@ __author__ = 'peeyush'
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import sys
+import sys, os
 import pandas as pd
 import math
 import numpy as np
+import annotate.Annotate as Annotate
+import overlap_analysis.differential_binding
 
 class PeaksAnalysis():
     """A dataframe for peak data analysis is created"""
@@ -200,12 +202,12 @@ def stacke_plot_multiple(names_list, filtered_peaks):
     autolabel(p5, gr_list)
 
     plt.xlabel('Samples')
-    plt.ylabel('percent peaks')
-    plt.title('Genomic region ration')
+    plt.ylabel('% genomic distribution')
+    plt.title('Genomic region ratio')
     plt.xticks(ind+width/2., samples)
     plt.ylim(0,100)
     plt.yticks(np.arange(0, 100, 100/5))
-    plt.legend( (p1[0], p2[0], p3[0], p4[0], p5[0]), ('intergenic', 'upstream', 'tss', 'exon', 'intron') ,loc='center left', bbox_to_anchor=(1.0, 0.5))
+    plt.legend( (p1[0], p2[0], p3[0], p4[0], p5[0]), ('Intron', 'Exon', 'TSS', 'Upstream', 'Intergenic') ,loc='center left', bbox_to_anchor=(1.0, 0.5))
     plt.savefig('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/plots/multi_stacked' + ','.join(samples) + '.png', bbox_inches='tight')
     plt.clf()
 
@@ -241,7 +243,7 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
     print "Time consumed by method PeakOverlaps:", stop1-start1, 'sec'
     overlap_dict = {name+'_vs_'+name1: overlap_list}
     ddf = pd.DataFrame(overlap_list)
-    ddf.to_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/'+name+'_vs_'+name1+'.csv', sep=",", encoding='utf-8')
+    ddf.to_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/'+name+'_vs_'+name1+'.txt', sep="\t", encoding='utf-8')
     return overlap_dict
 
 def PeakOverlaps_concise(df1, df2):
@@ -318,6 +320,7 @@ def PeakOverlaps(df1, df2):
                 sys.stdout.write("\r%d%%" % ind)
                 sys.stdout.flush()
                 for count1, row1 in df2_g.get_group(i[0]).iterrows():
+                    '''
                     if (row['start'] >= row1['start']) and (row['stop'] <= row1['stop']):
                           #
                           #
@@ -331,7 +334,7 @@ def PeakOverlaps(df1, df2):
                         num_overlap += 1
                         #print overlaps
                         break
-
+                    '''
                     if max(row['start'], row1['start']) < min(row['stop'], row1['stop']):
                           #
                           #

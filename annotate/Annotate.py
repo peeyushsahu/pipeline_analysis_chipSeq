@@ -1,15 +1,40 @@
 __author__ = 'peeyush'
 
 
+def geneid_converter(listofids, input_identifier = None , output_identifier = None):
+    '''
+    Method will take gene identifier anf convert into desired one. Identifiers availble:
+    [u'accession', u'alias', u'biocarta', u'chr', u'end', u'ensemblgene', u'ensemblprotein', u'ensembltranscript',
+    u'entrezgene', u'exons', u'flybase', u'generif', u'go', u'hgnc', u'homologene', u'hprd', u'humancyc', u'interpro',
+    u'ipi', u'kegg', u'mgi', u'mim', u'mirbase', u'mousecyc', u'name', u'netpath', u'pdb', u'pfam', u'pharmgkb', u'pid',
+    u'pir', u'prosite', u'ratmap', u'reactome', u'reagent', u'refseq', u'reporter', u'retired', u'rgd', u'smpdb',
+    u'start', u'strand', u'summary', u'symbol', u'tair', u'taxid', u'type_of_gene', u'unigene', u'uniprot',
+    u'wikipathways', u'wormbase', u'xenbase', u'yeastcyc', u'zfin']
+    :param input_identifier: input identifier eg. entrezgene
+    :param output_identifier: list of output identifier eg. ["symbol", "ensembl.gene"]
+    :param listofids: list of ids to be mapped eg. ['1', '10', '10001']
+    :return: DataFrame of mapped ids
+    '''
+    import mygene
+    if input_identifier is None:
+        input_identifier = "entrezgene"
+    if output_identifier is None:
+        output_identifier = ["symbol", "ensembl.gene"]
+    mygene_object = mygene.MyGeneInfo()
+    mapped_dataframe = mygene_object.querymany(listofids, scopes=input_identifier, fields=output_identifier, species="human", as_dataframe=True)
+    return mapped_dataframe
+
+
 
 def parse_gtf(path):
     from pandas import read_csv
     #gtf_file = read_csv('/ps/imt/genome/human/Homo_sapiens_Ensembl_GRCh37/Homo_sapiens/Ensembl/GRCh37/Annotation/Genes/genes.gtf', sep='\t', header=0)
-    colnames = ['chr', 'transcript_annotation', 'region', 'start', 'stop', 'score', 'strand', 'frame', 'further_information']
+    colnames = ['chr', 'transcript_annotation', 'feature', 'start', 'stop', 'score', 'strand', 'frame', 'further_information']
     gtf_file = read_csv(path, sep='\t')
     gtf_file.columns = colnames
     gtf_file['chr'] = gtf_file['chr'].astype(str)
     return gtf_file
+
 
 def vectors_4_chromosome():
     import numpy as np

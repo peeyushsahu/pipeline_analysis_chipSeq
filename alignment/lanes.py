@@ -35,6 +35,9 @@ class Lane():
                 newfilename = os.path.join(newfilename+" "+path,i)
         newfilename = newfilename+" > "+self.fqoutpath
         print newfilename
+        parameter = open(fqdir+'/parameter.txt', 'w')
+        parameter.write(newfilename)
+        parameter.close()
         proc = sp.Popen([newfilename], shell=True)
         proc.wait()
         #os.remove(self.fqoutpath)

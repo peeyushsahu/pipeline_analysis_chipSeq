@@ -4,10 +4,10 @@ import subprocess as sp
 
 base_path = "/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/"
 path_to_seq = "seq4motif/"
-path_to_genome = "/ps/imt/genome/human/Homo_sapiens_Ensembl_GRCh37/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/"
-path_to_program = "/home/peeyush/peeyush/meme/bin/"
+path_to_genome = "/ps/imt/f/Genomes/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/"
+path_to_program = "/home/sahu/meme/bin/"
 program = "meme-chip"
-motif_db_base = "/home/peeyush/peeyush/meme/db/motif_databases/"
+motif_db_base = "/home/sahu/Documents/motif_databases/"
 
 def seq4motif(peak_data):
     '''

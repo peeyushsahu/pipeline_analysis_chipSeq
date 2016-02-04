@@ -111,7 +111,7 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
         big_df.insert(0, 'start', peak_df['start'])
         big_df.insert(0, 'chr', peak_df['chr'])
     # print big_df.head()
-    big_df.to_csv(path + bam_order + region + '.csv', sep=",", encoding='utf-8')  # , ignore_index=True
+    big_df.to_csv(path + bam_order + region + '.txt', sep="\t", encoding='utf-8')  # , ignore_index=True
     gc.collect()
 
 
@@ -135,7 +135,7 @@ def kmeans_clustering(df, nClus, iter):
 
 
 # @profile
-def overlapping_peaks_distribution(bam_name, overlap_df, normalized = True):
+def overlapping_peaks_distribution(bam_name, overlap_df, normalized = False):
     '''
     Returns dataframe for tag count distribution for overlapping peaks within 3000bp (+,-) from summit.
     This function also considers the gene transcrition direction.
@@ -165,19 +165,19 @@ def overlapping_peaks_distribution(bam_name, overlap_df, normalized = True):
             chr = chr[3:]
         orientation = ind['Next transcript strand']
         middle = ind['start'] + ind['summit']
-        start = middle - 3000  # Distance on one side of the peaks
-        stop = start + 50
+        start = middle - 5000  # Distance on one side of the peaks
+        stop = start + 100
         list_sample = []
         # total_tags = int(bam_peak1.mapped) will get total no of mapped reads
         if start > 0:
-            for i in range(0, 120):  # Please set based on distance on one side = s*distance/50
+            for i in range(0, 100):  # Please set based on distance on one side = s*distance/50
                 seqcount = sample_bam.count(chr, start, stop)
                 ## Normalized count per million
                 if normalized: list_sample.append((seqcount/total_mapped)*10**6)
                 ## count real
                 list_sample.append(seqcount)
                 start = stop
-                stop = start + 50  # divide peaks into length of 50 bp
+                stop = start + 100  # divide peaks into length of 50 bp
             if orientation == 1:  # Direction gene transcription
                 # print 'Towards 5 prime'
                 peak_distribution_sample = peak_distribution_sample.append(pd.Series(list_sample), ignore_index=True)
@@ -191,6 +191,132 @@ def overlapping_peaks_distribution(bam_name, overlap_df, normalized = True):
     print '\nTime elapsed:' + str((stop - startT) / 60) + 'min'
     sample_bam.close()
     return peak_distribution_sample
+
+
+def grHeatmap4wholeGene(peaksDF, bam_name, samplename, longestTranscriptDB = '/ps/imt/f/Genomes/geneAnotations/longest_transcript_annotation.db'):
+    '''
+    This function is useful for plotting whole gene profile of histone marks or RNAseq. e.g. H3K36me3, PolII
+    :param peaksDF:
+    :param bamfilename:
+    :param samplename:
+    :return:
+    '''
+    import pysam, math
+    import pandas as pd
+    normalized = False
+    transcriptDB = pd.read_csv(longestTranscriptDB, header=0, sep='\t')
+    #print transcriptDB.head()
+    peak_distribution_df = pd.DataFrame()
+    for bam in bam_name:
+        bam_path = getBam(bam)
+        sample_bam = pysam.Samfile(bam_path, "rb")
+        total_mapped = sample_bam.mapped
+        distribution_df = pd.DataFrame()
+
+        for ind, row in peaksDF.iterrows(): # reading peaksdf
+            gene_name = row['Next transcript gene name']
+            if gene_name in list(transcriptDB['gene_name']):    # checking coordinates of genes in the database
+                gene_ind = transcriptDB['gene_name'][transcriptDB['gene_name'] == gene_name].index[0]
+                #print transcriptDB.loc[gene_ind,:]
+                chr = transcriptDB.loc[gene_ind, 'chr']; startT = transcriptDB.loc[gene_ind, 'start']; stopT = transcriptDB.loc[gene_ind, 'stop']; strand = transcriptDB.loc[gene_ind, 'strand']
+                interval = math.ceil((stopT-startT)/100.0)
+
+                start = startT  # Distance on one side of the peaks
+                stop = start + interval
+                list_sample = []
+                # total_tags = int(bam_peak1.mapped) will get total no of mapped reads
+                if start > 0:
+                    for i in range(0, 100):  # Please set based on distance on one side = s*distance/50
+                        seqcount = sample_bam.count(chr, start, stop)
+                        if normalized: list_sample.append((seqcount/total_mapped)*10**6)    # Normalized count per million
+                        list_sample.append(seqcount/interval)    # count real
+                        start = stop
+                        stop = start + interval  # divide peaks into length of 50 bp
+                    if strand == '+':  # Direction gene transcription
+                        # print 'Towards 5 prime'
+                        distribution_df = distribution_df.append(pd.Series(list_sample), ignore_index=True)
+                    else:
+                        # print 'Towards 3 prime'
+                        distribution_df = distribution_df.append(pd.Series(list_sample[::-1]), ignore_index=True)
+            else:
+                print gene_name
+        sample_bam.close()
+
+        peak_distribution_df = pd.concat([peak_distribution_df, distribution_df], axis=1)
+        peak_distribution_df.columns = range(0, peak_distribution_df.shape[1])
+    bam_order = ','.join(bam_name)
+    path = make_dir(bam_order, samplename + str(len(peaksDF)))
+    try:
+        peak_distribution_df = kmeans_clustering(peak_distribution_df, 9, 100)
+        dict_of_df = factor_seperate(peak_distribution_df, 'cluster')  # divide df in smaller dfs basis in clustering
+        line_plot_peak_distribution(dict_of_df, bam_order, path)  # plotting individual clusters
+        if len(bam_name) == 2:
+            print 'In here'
+            broad_clustered_peaks_4_two_samples(dict_of_df, bam_order, path)
+    except:
+        print 'Not enough data point for clustering.'
+    peak_distribution_df.insert(0, 'Next transcript gene name', peaksDF['Next transcript gene name'])
+    peak_distribution_df.to_csv(path + samplename + bam_order + '.txt', sep="\t", encoding='utf-8')  # , ignore_index=True
+    gc.collect()
+    return peak_distribution_df
+
+
+def broad_clustered_peaks_4_two_samples(dict_df, name, path):
+    '''
+    Plots result of divided_cluster_peaks_in_strength.
+    :param dict_df:
+    :param name:
+    :return:
+    '''
+    import matplotlib.pyplot as plt
+    from scipy.interpolate import spline
+    import numpy as np
+    import scipy as sp
+    # print 'shape', dict_list[0].shape
+    for k, v in dict_df.iteritems():
+        size = v.shape
+        size_one_df = size[1] / 2
+        df1 = v.iloc[:, 1:size_one_df + 1]
+        df2 = v.iloc[:, size_one_df + 1:size[1]]
+        # x = np.array(range(-3000, 3000, 50))
+        #print df1.shape
+        #print df2.shape
+        #print x
+        s = np.array(df1.sum(axis=0)) / float(len(df1))
+        # s = np.subtract(s, sp.median(s))           ### Normalizing with median
+        # s = np.subtract(s, np.percentile(s, 25))    ### Normalizing with 25 percentile
+        s = np.subtract(s, min(s))
+
+        l = np.array(df2.sum(axis=0)) / float(len(df2))
+        # l = np.subtract(l, sp.median(l))
+        # l = np.subtract(l, np.percentile(l, 25))
+        l = np.subtract(l, min(l))
+
+        s = np.convolve(s, np.ones(10)/10)
+        l = np.convolve(l, np.ones(10)/10)
+        x = np.array(range(0, len(s), 1))
+        plt.ylim(0, max(max(s), max(l)) + max(max(s), max(l))/10)
+        plt.xlabel('Binding profile cluster' + str(k))
+        plt.ylabel('Normalized tag density')
+        plt.title('Genomic distribution of peaks with datapoints: ' + str(size[0]))
+        plt.gca().set_color_cycle(['mediumorchid', 'r', 'dodgerblue'])  # 'mediumorchid', 'coral',
+        '''
+        xnew = np.linspace(x.min(), x.max(), 300)
+        smooth = spline(x, s, xnew)
+        plt.plot(xnew, smooth, linewidth=3)
+
+        xnew1 = np.linspace(x.min(), x.max(), 300)
+        smooth1 = spline(x, l, xnew1)
+        plt.plot(xnew1, smooth1, linewidth=3)
+        '''
+        plt.plot(x, s, linewidth=3)
+        plt.plot(x, l, linewidth=3)
+        sname = name.split(',')
+        plt.legend([sname[0], sname[1]], loc='upper left')  # 'Low', 'Medium',
+        # plt.show()
+        plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.png')
+        #plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.svg')
+        plt.clf()
 
 
 def divide_peaks_in_strength(df, name, path):
@@ -317,7 +443,7 @@ def plot_clustered_peaks_4_two_samples(dict_df, name, path):
         df1 = v.iloc[:, 1:size_one_df + 1]
         df2 = v.iloc[:, size_one_df + 1:size[1]]
         # x = np.array(range(-3000, 3000, 50))
-        x = np.array(range(df1.shape[1] / 2 * -50, df1.shape[1] / 2 * 50, 50))
+        x = np.array(range(-5000, 5000, 100))
         # print x
         s = np.array(df1.sum(axis=0)) / float(len(df1))
         # s = np.subtract(s, sp.median(s))           ### Normalizing with median
@@ -329,9 +455,9 @@ def plot_clustered_peaks_4_two_samples(dict_df, name, path):
         # l = np.subtract(l, np.percentile(l, 25))
         l = np.subtract(l, min(l))
 
-        plt.ylim(0, max(max(s), max(l)) + 10)
+        plt.ylim(0, max(max(s), max(l)) + max(max(s), max(l))/10)
         plt.xlabel('Binding profile cluster' + str(k))
-        plt.ylabel('Combined tag density')
+        plt.ylabel('Norm. tag density')
         plt.title('Genomic distribution of peaks with datapoints: ' + str(size[0]))
         plt.gca().set_color_cycle(['mediumorchid', 'r', 'dodgerblue'])  # 'mediumorchid', 'coral',
 
@@ -365,10 +491,10 @@ def plot_clustered_peaks_4_three_samples(dict_df, name, path):
     # print 'shape', dict_list[0].shape
     for k, v in dict_df.iteritems():
         size = v.shape
-        df1 = v.iloc[:, 1:121]
-        df2 = v.iloc[:, 121:241]
-        df3 = v.iloc[:, 241:361]
-        x = np.array(range(-3000, 3000, 50))
+        df1 = v.iloc[:, 1:101]
+        df2 = v.iloc[:, 101:201]
+        df3 = v.iloc[:, 201:301]
+        x = np.array(range(-5000, 5000, 100))
         # print x
         s = np.array(df1.sum(axis=0)) / float(len(df1))
         # s = np.subtract(s, sp.median(s))           ### Normalizing with median
@@ -385,9 +511,9 @@ def plot_clustered_peaks_4_three_samples(dict_df, name, path):
         # m = np.subtract(m, np.percentile(m, 25))
         m = np.subtract(m, min(m))
 
-        plt.ylim(0, max(max(m), max(s), max(l)) + 10)
+        plt.ylim(0, max(max(m), max(s), max(l)) + max(max(m), max(s), max(l))/10)
         plt.xlabel('Binding profile cluster' + str(k))
-        plt.ylabel('combined tag density / no. of peaks')
+        plt.ylabel('Norm. tag density / no. of peaks')
         plt.title('Genomic distribution of peaks with datapoints: ' + str(size[0]))
         plt.gca().set_color_cycle(['mediumorchid', 'r', 'dodgerblue'])  # 'mediumorchid', 'coral',
 
@@ -425,11 +551,11 @@ def plot_clustered_peaks_4_four_samples(dict_df, name, path):
     # print 'shape', dict_list[0].shape
     for k, v in dict_df.iteritems():
         size = v.shape
-        df1 = v.iloc[:, 1:121]
-        df2 = v.iloc[:, 121:241]
-        df3 = v.iloc[:, 241:361]
-        df4 = v.iloc[:, 361:481]
-        x = np.array(range(-3000, 3000, 50))
+        df1 = v.iloc[:, 1:101]
+        df2 = v.iloc[:, 101:201]
+        df3 = v.iloc[:, 201:301]
+        df4 = v.iloc[:, 301:401]
+        x = np.array(range(-5000, 5000, 100))
         # print x
         s = np.array(df1.sum(axis=0)) / float(len(df1))
         # s = np.subtract(s, sp.median(s))           ### Normalizing with median
@@ -449,9 +575,9 @@ def plot_clustered_peaks_4_four_samples(dict_df, name, path):
         n = np.array(df4.sum(axis=0)) / float(len(df4))
         n = np.subtract(n, min(n))
 
-        plt.ylim(0, max(max(m), max(s), max(l), max(n)) + 10)
+        plt.ylim(0, max(max(m), max(s), max(l), max(n)) + max(max(m), max(s), max(l), max(n))/10)
         plt.xlabel('Binding profile cluster' + str(k))
-        plt.ylabel('Combined tag density')
+        plt.ylabel('Norm. tag density')
         plt.title('Genomic distribution of peaks with datapoints: ' + str(size[0]))
         plt.gca().set_color_cycle(['mediumorchid', 'r', 'dodgerblue', 'green'])  # 'mediumorchid', 'coral',
 

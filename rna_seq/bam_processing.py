@@ -42,7 +42,7 @@ bam_files = ['/ps/imt/e/HL60_Christene/results/AlignedLane/HL60_2_10_1__aligned_
 count_out = '/ps/imt/e/HL60_Christene/further_analysis/RNA_seq/featureCounts_TopHat2_Filtered_GeneId_HL60_SKI_EGFP_KO.txt'
 
 
-def count_Data_featureCounts(bam_files, gtf_file, feature_type='exon', id_attribute='gene_name', count_out='', stranded=1):
+def count_Data_featureCounts(bam_files, gtf_file, feature_type='exon', id_attribute='gene_name', count_out='', stranded=2):
     '''
     This will count features using SubRead.featureCount function.
     :param bam_files:
@@ -50,7 +50,7 @@ def count_Data_featureCounts(bam_files, gtf_file, feature_type='exon', id_attrib
     :param feature_type:
     :param id_attribute:
     :param count_out: output file name with directory structure.
-    :param stranded: 1; Stranded, 2:reversly stranded, 0; Un-staranded
+    :param stranded: 1-Stranded, 2-reversly stranded, 0-Un-staranded
     :return:
     '''
     program = '/home/sahu/Documents/aligners/subread-1.5.0-Linux-x86_64/bin/featureCounts'
@@ -93,7 +93,7 @@ def cuffDiff(alignmentLanes, groupA, groupB, genome, label):
     gtfFile = '/ps/imt/f/Genomes/cufflinks_gtf/cuffcmp.combined.gtf'
     outFile = ''
     cmd = ' '.join([program, thread, lables, frag_bias, outFile, gtfFile, control, condition])
-
+    run_cuffDiff(cmd)
 
 
 def run_cuffDiff(cmd):

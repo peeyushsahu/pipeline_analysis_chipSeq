@@ -14,17 +14,21 @@ class Overlaps():
         self.filter_peaks = filter_peaks
 
 
-    def diffBinding(self, basepeakfile):
+    def diffBinding(self, basepeakfile, outpath=None, genewide=False):
         '''
         This function will extract summit (+-500) peak data if peak length is >1000 from provided peaks.
         This dataframe can be used with DESeq for differential binding calculation.
         :return:
         '''
         import pysam
-        import sys
+        import sys, math
         print "\nCheck point: diffBinding"
         sample_name = self.samples_names
         dataframes = self.filter_peaks
+        if genewide:
+            print("Gene-wide calculation is on....")
+            longestTranscriptDB = '/ps/imt/f/Genomes/geneAnotations/longest_transcript_annotation.db'
+            transcriptDB = pd.read_csv(longestTranscriptDB, header=0, sep='\t')
         # print type(sample_name)
         #df = dataframes.get(sample_name[0]).iloc[:, 0:1]
         df = pd.DataFrame()
@@ -36,8 +40,8 @@ class Overlaps():
         df = pd.concat([df, dataframes.get(basepeakfile)['Next transcript strand']], axis=1)
         df = pd.concat([df, dataframes.get(basepeakfile)['Next Transcript tss distance']], axis=1)
         df = pd.concat([df, dataframes.get(basepeakfile)['summit']], axis=1)
-        df['cookiecut_start'] = 0
-        df['cookiecut_stop'] = 0
+        df['new_start'] = 0
+        df['new_stop'] = 0
         #print df.head()
         print df.dtypes
         for sample in sample_name:
@@ -47,30 +51,56 @@ class Overlaps():
             sample_bam = pysam.Samfile(sample_bam_path, "rb")
             total_reads = sample_bam.mapped
             for k, v in df.iterrows():
-                sys.stdout.write("\rNumber of peaks processed:%d" % k)
-                sys.stdout.flush()
-                #print v['start'], v['summit']
-                if v['stop']-v['start'] > 1000:
-                    chr = str(v['chr'])
-                    summit = v['start']+v['summit']
-                    tags = sample_bam.count(chr, summit-500, summit+500)
-                    if tags == 0: tags = 1
-                    df.loc[k,'cookiecut_start'] = summit-500
-                    df.loc[k,'cookiecut_stop'] = summit+500
-                    df.loc[k,sample] = tags
-                    df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
+                ## Gene wide differential calculation
+                if genewide:
+                    gene_name = v['Next transcript gene name']
+                    if gene_name in list(transcriptDB['gene_name']):    # checking coordinates of genes in the database
+                        gene_ind = transcriptDB['gene_name'][transcriptDB['gene_name'] == gene_name].index[0]
+                        #print transcriptDB.loc[gene_ind,:]
+                        chr = transcriptDB.loc[gene_ind, 'chr']; start = transcriptDB.loc[gene_ind, 'start']; stop = transcriptDB.loc[gene_ind, 'stop']
+                        tags = sample_bam.count(chr, start, stop)
+                        if tags == 0: tags = 1
+                        #print tags, gene_name, start, stop
+                        df.loc[k,'new_start'] = start
+                        df.loc[k,'new_stop'] = stop
+                        df.loc[k,sample] = tags
+                        df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
+                        df.loc[k,sample+'_length_norm'] = ((float(tags)/total_reads)*10**6)/((float(stop)-start)/100)
+
                 else:
-                    chr = str(v['chr'])
-                    tags = sample_bam.count(chr, v['start'], v['stop'])
-                    if tags == 0: tags = 1
-                    df.loc[k,'cookiecut_start'] = v['start']
-                    df.loc[k,'cookiecut_stop'] = v['stop']
-                    df.loc[k,sample] = tags
-                    df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
+                    sys.stdout.write("\rNumber of peaks processed:%d" % k)
+                    sys.stdout.flush()
+                    #print v['start'], v['summit']
+                    if v['stop']-v['start'] > 100:
+                        chr = str(v['chr'])
+                        summit = v['start']+v['summit']
+                        tags = sample_bam.count(chr, summit-750, summit+750)
+                        if tags == 0: tags = 1
+                        df.loc[k,'new_start'] = summit-750
+                        df.loc[k,'new_stop'] = summit+750
+                        df.loc[k,sample] = tags
+                        df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
+                    else:
+                        chr = str(v['chr'])
+                        tags = sample_bam.count(chr, v['start'], v['stop'])
+                        if tags == 0: tags = 1
+                        df.loc[k,'new_start'] = v['start']
+                        df.loc[k,'new_stop'] = v['stop']
+                        df.loc[k,sample] = tags
+                        df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
             sample_bam.close()
-        df.to_csv(
-                '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/' + '_'.join(sample_name) + '.csv',
-                sep=",", encoding='utf-8', ignore_index=True)
+        ## This will calculate the logFC
+        for ind, row in df.iterrows():
+            control = sample_name[0]
+            #print row
+            for sample in sample_name[1:]:
+                df.loc[ind, 'log2FC_'+control+'_norm_vs_'+sample+'_norm'] = math.log(row[sample+'_norm_millon']/row[control+'_norm_millon'],2)
+
+        if outpath is not None:
+            outpath = outpath
+        else:
+            outpath = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/' + '_'.join(sample_name) + '.txt'
+        df.to_csv(outpath, sep="\t", encoding='utf-8', ignore_index=True)
 
 def getBam(name):
     '''

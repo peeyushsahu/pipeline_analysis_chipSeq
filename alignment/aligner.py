@@ -102,9 +102,9 @@ def tophat2_aligner(lane, genome):
     lane.temp_files.append(lane.bampath)
     cmd = ' '.join([program, thread, library, gtfFile, '-o', outpath, genome.refindex, readfn])
     print 'Tophat2 command:', cmd
-    parameter = open(outpath+'parameter.txt')
-    parameter.write(cmd)
-    parameter.close()
+    with open(outpath+'/parameter.txt', "a") as myfile:
+        myfile.write('\n'+cmd)
+        myfile.close()
     tophat2_run(cmd)
 
 
