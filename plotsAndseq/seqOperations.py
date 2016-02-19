@@ -26,8 +26,8 @@ def seq4motif(peak_data):
             for v, row in df.iterrows():
                 summit = int(float(row['summit'])) + int(row['start'])
                 #tss = row['Next Transcript tss distance']
-                start = summit - 250
-                stop = summit + 250
+                start = summit - 500
+                stop = summit + 500
                 if 'GL' in str(row['chr']):
                     CpG_ratio.append(0)
                     gc_percent.append(0)

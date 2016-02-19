@@ -113,16 +113,17 @@ else:
 
 '''
 df = read_csv(
-            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/PRMT6_DB_E9_B5.1.csv',
+            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/PRMT6_DB_E9_B6.1.txt',
             header=0, sep='\t')
 filtered_peak_data['PRMT6_peaks'] = df
 ## Plot stacked plot for selected samples
+
 cal_genomic_region.stacke_plot_multiple(['PRMT6_peaks']
                                         , filtered_peak_data)
-cal_genomic_region.stacke_plot_multiple(['H3K4me3_seq2 vs IgG_seq2 filtered', 'H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered']
-                                        , filtered_peak_data)
-cal_genomic_region.stacke_plot_multiple(['Sample_18F3 vs Sample_8C9 filtered', 'Sample_18F3_RA vs IgG_RA_seq6 filtered']
-                                        , filtered_peak_data)
+#cal_genomic_region.stacke_plot_multiple(['H3K4me3_seq2 vs IgG_seq2 filtered', 'H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered']
+#                                        , filtered_peak_data)
+#cal_genomic_region.stacke_plot_multiple(['Sample_18F3 vs Sample_8C9 filtered', 'Sample_18F3_RA vs IgG_RA_seq6 filtered']
+#                                        , filtered_peak_data)
 '''
 peakAnalysis_df = {}
 for k, v in filtered_peak_data.iteritems():
@@ -153,20 +154,36 @@ modification4nearestgenes(peak_df, 'prmt6_nearest5genes', sample)
 '''
 
 ### Diff. Binding calculation from altered sample (external)
-
+'''
 #'H3R2ame2_E9', 'H3K36me3_E9', 'H3K36me3_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2', 'H3K27ac_E9','H3K27ac_B6.2'
-multiple_df = ['/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/totalDEgenes_analysis/chip_H3K4me3_down.csv',
-               '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/totalDEgenes_analysis/chip_H3K4me3_up.csv',
-               '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/totalDEgenes_analysis/chip_H3K27ac_down.csv',
-               '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/totalDEgenes_analysis/chip_H3K27ac_up.csv',
-               '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/totalDEgenes_analysis/chip_H3K4me1_up.csv',
-               '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/totalDEgenes_analysis/chip_H3K4me1_down.csv']
+multiple_df = ['/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/H3R2ame2_E9_H3R2ame2_B5.1_H3R2me2a_B6.2.txt',
+               #'/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/H3R2me2a/pval<0.05/H3R2ame2_E9_H3R2ame2_B5.1_H3R2me2a_B6.2.txt',
+               #'/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/totalDEgenes_analysis/gene_up_4_k36.csv',
+               #'/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/totalDEgenes_analysis/gene_down_4_k36.csv',
+               #'/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/totalDEgenes_analysis/chip_H3K4me1_up.csv',
+               #'/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/totalDEgenes_analysis/chip_H3K4me1_down.csv'
+                ]
 for df in multiple_df:
-    sample = ['H3K4me3_E9', 'H3K4me3_B6.2', 'H3K27ac_E9','H3K27ac_B6.2', 'H3K4me1_E9', 'H3K4me1_B6']
+    sample = ['H3R2ame2_E9', 'PRMT6_KO_E.9', 'PRMT6_KO_B6.2']
     peak_df = read_csv(df, header=0, sep='\t')
+    peak_df = peak_df.rename(columns={'Next Gene name':'Next transcript gene name'})
+    print peak_df.shape
+    #peak_df = peak_df.drop_duplicates(['Next transcript gene name'])
+    print peak_df.shape
     filtered_peak = {'loaded_sample': peak_df}
     diffbind = differential_binding.Overlaps(sample, filtered_peak)
-    diffbind.diffBinding('loaded_sample', outpath=df+'_diff.txt') #, genewide=True
+    diffbind.diffBinding('loaded_sample', outpath='/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/H3R2_PRMT6_E9_B6_diff.txt', genewide=False) #, genewide=True
+'''
+
+### Gene-wide chip profile for broad histone marks
+'''
+bam_list = ['H3K36me3_E9', 'H3K36me3_B6.2']
+sample_name = 'R2_K36_all946'
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/H3R2me2a/H3R2ame2_E9,H3K36me3_E9,H3K36me3_B6.2,H3K4me3_E9,H3K4me3_B6.2,H3K27ac_E9,H3K27ac_B6.2'
+                   '/diff_binding_all946.txt', header=0, sep='\t')
+#peak_df = peak_df[peak_df['log2FC_H3K27ac_E9_norm_vs_H3K27ac_B6.2_norm'] > 2]
+plots.grHeatmap4wholeGene(peak_df, bam_list, sample_name)
+'''
 
 ### Transposone analysis
 '''
@@ -224,15 +241,6 @@ else:
     for i in range(0, len(sample_name1)):
         overlapping_res = cal_genomic_region.OverlappingPeaks(peakAnalysis_df, sample_name1[i], sample_name2[i])
 '''
-### Gene-wide chip profile for broad histone marks
-'''
-bam_list = ['H3K36me3_E9', 'H3K36me3_B6.2']
-sample_name = 'R2_K36_all946'
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/H3R2me2a/H3R2ame2_E9,H3K36me3_E9,H3K36me3_B6.2,H3K4me3_E9,H3K4me3_B6.2,H3K27ac_E9,H3K27ac_B6.2'
-                   '/diff_binding_all946.txt', header=0, sep='\t')
-#peak_df = peak_df[peak_df['log2FC_H3K27ac_E9_norm_vs_H3K27ac_B6.2_norm'] > 2]
-plots.grHeatmap4wholeGene(peak_df, bam_list, sample_name)
-'''
 
 ### Compares multiple ChIP-Seq profile using peaks (heatmap) from on sample
 '''
@@ -244,26 +252,17 @@ for bams in bam_list:
                                  sort=False, sort_column='H3R2ame2_E9', scale_df=False)
 '''
 ### Comapre ChIP-Seq profile from altered sample (external)
-'''
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/filtered/'
-                   'H3R2ame2_E9 vs IgG_E.9 filtered.csv', header=0, sep=',')
-print peak_df.head(2)
-## filter peak data with matching column using list
-listGroups = ['unchangedPeaks','upRegulatedPeaks','downRegulatedPeaks']
-for List in listGroups:
-    List = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/'
-                    'H3R2me2a/'+List+'.txt', sep='\t', header=None)
-    peaks_df_n = filterPeaks.extract_data(peak_df, List.loc[:,0].tolist(), 'Next transcript gene name')
-    print peaks_df_n.head()
-    #peaks_df_n.to_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/'
-    #                  'H3R2me2a/'+List+'peakdf.txt', sep='\t')
-    # bam_list = ['PRMT6_seq6','PRMT6_seq6_RA','Sample_K27ac','Sample_K27ac_RA','Sample_K4me1','Sample_K4me1_RA',
-    # 'PRMT6_KO_E.9','PRMT6_KO_B5.1','H3K27ac_E9','H3K27ac_B5.1',
-    # 'H3R2ame2_E9', 'H3R2me2a_B6.2', 'H3K4me3_E9','H3K4me3_B6.2']
-    bam_list = [['H3R2ame2_E9', 'H3K36me3_E9', 'H3K36me3_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2', 'H3K27ac_E9',
-                 'H3K27ac_B6.2']]
 
-    ### If DF is from R change column names ('' ','.')
+listGroups = ['H3R2_PRMT6_E9_B6_diff']#,'chip_H3K4me1_up','chip_H3K4me3_down','chip_H3K4me3_up','chip_H3K27ac_down','chip_H3K27ac_up']
+
+for sampleName in listGroups:
+    peaks_df_n = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/'+sampleName+'.txt', sep='\t', header=0)
+    print 'Dim of DF', peaks_df_n.shape
+    bam_list = [['H3R2ame2_E9', 'PRMT6_KO_E.9', 'PRMT6_KO_B6.2']] #'H3R2ame2_E9', 'H3R2me2a_B6.2','H3K27ac_E9','H3K27ac_B6.2','H3K4me1_E9', 'H3K4me1_B6', 'H3K4me3_E9', 'H3K4me3_B6.2'
+
+    # If DF is from R change column names ('' ','.')
+    peaks_df_n = peaks_df_n.rename(columns={'Next Gene name':'Next transcript gene name'})
+    # peaks_df_n = peaks_df_n[peaks_df_n['cluster'].isin([5,6])]
     if '.' in peaks_df_n.columns[6]:
         from string import maketrans
         cols = peaks_df_n.columns
@@ -275,25 +274,21 @@ for List in listGroups:
     for List in bam_list:
         region = ['all'] #'all', 'tss', 'exon', 'intron', 'intergenic', 'upstream'
         for i in region:
-            #peak_df['cluster'] = d.Categorical(peak_df['cluster'], [6,7,4,3,0,1,5,8,2]) #7,5,4,0,1,2,3,9,8,6
-            #peak_df = peak_df.sort('cluster')
-            #peak_df = peak_df[(peak_df['cluster'] == 4) | (peak_df['cluster'] == 5) | (peak_df['cluster'] == 7)]
-            GR_heatmaps_DF_for_peaks(List, peaks_df_n, region=i, sort=False, sort_column='H3K4me3_seq2', scale_df=False)
-            #GPcount = peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'].value_counts()
-            #GPcount = zip(GPcount.index, GPcount.values)
-            #cal_genomic_region.plotGenomicregions(GPcount, 'DiffBind_P6_vs_all')
+            GR_heatmaps_DF_for_peaks(List, peaks_df_n, region=i, sort=False, sort_column='H3K4me3_E9', scale_df=False,
+                                     sample_name=sampleName, normalized=True, strength_divide=False)
     gc.collect()
-'''
+
 ### Density based motif analysis
 '''
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/PRMT6_2_seq6,Sample_pol-2,Sample_K36me3,H3K4me3_seq2,Sample_K27me1,Sample_K27ac,Sample_K4me1,Sample_K9me3,Sample_K27me3,Sample_18F3/intergenic7325'
-                   '/PRMT6_2_seq6,Sample_pol-2,Sample_K36me3,H3K4me3_seq2,Sample_K27me1,Sample_K27ac,Sample_K4me1,Sample_K9me3,Sample_K27me3,Sample_18F3intergenic.csv',
-    header=0, sep=',')
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/overlapping/PRMT6_KO_E.9,PRMT6_KO_B6.2,H3K4me3_E9,H3K4me3_B6.2/all1867_PRMT6_DB_E9_B6.1'
+                   '/PRMT6_KO_E.9,PRMT6_KO_B6.2,H3K4me3_E9,H3K4me3_B6.2all.txt', header=0, sep='\t')
 #density_based_motif_comparision(peak_df, 'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered')
-peak_df = peak_df[peak_df['cluster'] == 7]
-sample_dict = {'PRMT6_intergenic_vs_H3K9_Non_RA': peak_df}
+print len(peak_df)
+peak_df = peak_df[peak_df['cluster'].isin([0,1,2,4,7,8])]
+print len(peak_df)
+sample_dict = {'PRMT6_K4me3_occupied': peak_df}
 seq = seqOperations.seq4motif(sample_dict)
-db = ["JASPAR_CORE_2014_vertebrates.meme", "uniprobe_mouse.meme"]
+db = ["JASPAR_CORE_2016_vertebrates.meme", "HOCOMOCOv9.meme", "SwissRegulon_human_and_mouse.meme"]
 seqOperations.motif_analysis(db, 10, seq)
 '''
 ### Performing motif and CpG analysis on prmt6 sites wrt regions eg. TSS, Exon

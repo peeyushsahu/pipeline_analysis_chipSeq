@@ -126,7 +126,7 @@ def stacked_plot_regions(values, GPcount, name):
 
     #plt.xlabel(name)
     plt.ylabel('peaks')
-    plt.title('Genomic region ration')
+    plt.title('Genomic region ratio')
     plt.xticks(ind+width/2., [name])
     plt.yticks(np.arange(0,100, 100/5))
     plt.legend((p1[0], p2[0], p3[0], p4[0], p5[0]), ('intergenic', 'upstream', 'tss', 'exon', 'intron'), loc='center left', bbox_to_anchor=(1.0, 0.5))

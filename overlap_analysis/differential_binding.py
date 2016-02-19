@@ -29,19 +29,22 @@ class Overlaps():
             print("Gene-wide calculation is on....")
             longestTranscriptDB = '/ps/imt/f/Genomes/geneAnotations/longest_transcript_annotation.db'
             transcriptDB = pd.read_csv(longestTranscriptDB, header=0, sep='\t')
+            df = pd.DataFrame()
+            df = pd.concat([df, dataframes.get(basepeakfile)['Next transcript gene name']], axis=1)
         # print type(sample_name)
         #df = dataframes.get(sample_name[0]).iloc[:, 0:1]
-        df = pd.DataFrame()
-        df = pd.concat([df, dataframes.get(basepeakfile)['chr']], axis=1)
-        df = pd.concat([df, dataframes.get(basepeakfile)['start']], axis=1)
-        df = pd.concat([df, dataframes.get(basepeakfile)['stop']], axis=1)
-        df = pd.concat([df, dataframes.get(basepeakfile)['GenomicPosition TSS=1250 bp, upstream=5000 bp']], axis=1)
-        df = pd.concat([df, dataframes.get(basepeakfile)['Next transcript gene name']], axis=1)
-        df = pd.concat([df, dataframes.get(basepeakfile)['Next transcript strand']], axis=1)
-        df = pd.concat([df, dataframes.get(basepeakfile)['Next Transcript tss distance']], axis=1)
-        df = pd.concat([df, dataframes.get(basepeakfile)['summit']], axis=1)
-        df['new_start'] = 0
-        df['new_stop'] = 0
+        else:
+            df = pd.DataFrame()
+            df = pd.concat([df, dataframes.get(basepeakfile)['chr']], axis=1)
+            df = pd.concat([df, dataframes.get(basepeakfile)['start']], axis=1)
+            df = pd.concat([df, dataframes.get(basepeakfile)['stop']], axis=1)
+            df = pd.concat([df, dataframes.get(basepeakfile)['GenomicPosition TSS=1250 bp, upstream=5000 bp']], axis=1)
+            df = pd.concat([df, dataframes.get(basepeakfile)['Next transcript gene name']], axis=1)
+            df = pd.concat([df, dataframes.get(basepeakfile)['Next transcript strand']], axis=1)
+            df = pd.concat([df, dataframes.get(basepeakfile)['Next Transcript tss distance']], axis=1)
+            df = pd.concat([df, dataframes.get(basepeakfile)['summit']], axis=1)
+            df['new_start'] = 0
+            df['new_stop'] = 0
         #print df.head()
         print df.dtypes
         for sample in sample_name:
@@ -57,12 +60,15 @@ class Overlaps():
                     if gene_name in list(transcriptDB['gene_name']):    # checking coordinates of genes in the database
                         gene_ind = transcriptDB['gene_name'][transcriptDB['gene_name'] == gene_name].index[0]
                         #print transcriptDB.loc[gene_ind,:]
-                        chr = transcriptDB.loc[gene_ind, 'chr']; start = transcriptDB.loc[gene_ind, 'start']; stop = transcriptDB.loc[gene_ind, 'stop']
+                        chr = transcriptDB.loc[gene_ind, 'chr']; start = transcriptDB.loc[gene_ind, 'start']
+                        stop = transcriptDB.loc[gene_ind, 'stop']; strand = transcriptDB.loc[gene_ind, 'strand']
                         tags = sample_bam.count(chr, start, stop)
                         if tags == 0: tags = 1
                         #print tags, gene_name, start, stop
-                        df.loc[k,'new_start'] = start
-                        df.loc[k,'new_stop'] = stop
+                        df.loc[k,'chr'] = chr
+                        df.loc[k,'start'] = start
+                        df.loc[k,'stop'] = stop
+                        df.loc[k,'strand'] = strand
                         df.loc[k,sample] = tags
                         df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
                         df.loc[k,sample+'_length_norm'] = ((float(tags)/total_reads)*10**6)/((float(stop)-start)/100)
@@ -71,18 +77,19 @@ class Overlaps():
                     sys.stdout.write("\rNumber of peaks processed:%d" % k)
                     sys.stdout.flush()
                     #print v['start'], v['summit']
-                    if v['stop']-v['start'] > 100:
+                    if v['stop']-v['start'] > 1000:
                         chr = str(v['chr'])
                         summit = v['start']+v['summit']
-                        tags = sample_bam.count(chr, summit-750, summit+750)
+                        tags = sample_bam.count(chr, summit-1000, summit+1000)
                         if tags == 0: tags = 1
-                        df.loc[k,'new_start'] = summit-750
-                        df.loc[k,'new_stop'] = summit+750
+                        df.loc[k,'new_start'] = summit-1000
+                        df.loc[k,'new_stop'] = summit+1000
                         df.loc[k,sample] = tags
                         df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
                     else:
                         chr = str(v['chr'])
-                        tags = sample_bam.count(chr, v['start'], v['stop'])
+                        summit = v['start']+v['summit']
+                        tags = sample_bam.count(chr, summit-500, summit+500)
                         if tags == 0: tags = 1
                         df.loc[k,'new_start'] = v['start']
                         df.loc[k,'new_stop'] = v['stop']
@@ -139,52 +146,19 @@ def getBam(name):
 
 
 
-def factor_seperate(dataframe, factor):
+def group_DF(dataframe, factor):
     """
     This function will sort the dataframe and return reletive positions of factor (eg. chromosome, genomic region) in peak table.
     :param overlapsObj:
     :return:
     """
-    #if type(factor) != str:
-    #    raise ValueError('def chr_position wrong column name')
-    print 'Defined column is: '+factor
-    peak_list = dataframe.sort([factor], ascending=True)
-    # print df.head()
-    chr_pos_list = peak_list[factor]
-    chr_pos_list = chr_pos_list.astype(basestring)
-    start_pos = 0
-    index_counter = 0
-    chr_pos = {}
-    last_entity = None
-    for i in chr_pos_list:
-        if index_counter == 0:
-            last_entity = i
-            print last_entity
-        index_counter += 1
-        if i != last_entity:
-            #print start_pos
-            #print last_entity
-            chr_pos[last_entity] = start_pos, index_counter - 1
-            start_pos = index_counter
-            last_entity = i
-            #print last_entity
-    chr_pos[last_entity] = start_pos, index_counter
-    print 'Factor position: ', chr_pos
-    return divide_dataframe(peak_list, chr_pos)
-
-def divide_dataframe(dataframe, posDict):
-    '''
-    This method takes result from factor_seperate and divide dataframe into respective parts
-    :param dataframe:
-    :param posDict:
-    :return:
-    '''
-    dict_df = {}
-    for k, v in posDict.iteritems():
-        sub_df = dataframe[v[0]:v[1]]
-        dict_df[k] = sub_df
-    return dict_df
-
+    if not factor in dataframe.columns:
+        raise ValueError('Not valid column for df groupping.')
+    print 'DF grouping based on: '+factor
+    grouppedDF = dataframe.groupby(factor)
+    for k, v in grouppedDF:
+        print 'Cluster:', k, 'Size:', len(v)
+    return grouppedDF
 
 def col_position(dataframe, colname):
     """
