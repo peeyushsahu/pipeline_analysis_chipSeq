@@ -77,10 +77,10 @@ class Overlaps():
                     sys.stdout.write("\rNumber of peaks processed:%d" % k)
                     sys.stdout.flush()
                     #print v['start'], v['summit']
-                    if v['stop']-v['start'] > 1000:
+                    if v['stop']-v['start'] > 500:
                         chr = str(v['chr'])
                         summit = v['start']+v['summit']
-                        tags = sample_bam.count(chr, summit-1000, summit+1000)
+                        tags = sample_bam.count(chr, summit-500, summit+500)
                         if tags == 0: tags = 1
                         df.loc[k,'new_start'] = summit-1000
                         df.loc[k,'new_stop'] = summit+1000
@@ -89,7 +89,7 @@ class Overlaps():
                     else:
                         chr = str(v['chr'])
                         summit = v['start']+v['summit']
-                        tags = sample_bam.count(chr, summit-500, summit+500)
+                        tags = sample_bam.count(chr, v['start'], v['stop'])
                         if tags == 0: tags = 1
                         df.loc[k,'new_start'] = v['start']
                         df.loc[k,'new_stop'] = v['stop']

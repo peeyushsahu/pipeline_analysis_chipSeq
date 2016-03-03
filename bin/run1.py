@@ -113,13 +113,15 @@ else:
 
 '''
 df = read_csv(
-            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/PRMT6_DB_E9_B6.1.txt',
+            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/improved_PRMT6_E9_B6_B5_all_diff.txt',
             header=0, sep='\t')
-filtered_peak_data['PRMT6_peaks'] = df
+df = df[df['log2FC_PRMT6_KO_E.9_norm_vs_PRMT6_KO_B6.2_norm'] < -0.8]
+filtered_peak_data['PRMT6_peaks_improved'] = df
 ## Plot stacked plot for selected samples
 
-cal_genomic_region.stacke_plot_multiple(['PRMT6_peaks']
+cal_genomic_region.stacke_plot_multiple(['PRMT6_peaks_improved']
                                         , filtered_peak_data)
+
 #cal_genomic_region.stacke_plot_multiple(['H3K4me3_seq2 vs IgG_seq2 filtered', 'H3K4me3_RA_seq2 vs IgG_RA_seq2 filtered']
 #                                        , filtered_peak_data)
 #cal_genomic_region.stacke_plot_multiple(['Sample_18F3 vs Sample_8C9 filtered', 'Sample_18F3_RA vs IgG_RA_seq6 filtered']
@@ -137,9 +139,9 @@ for k, v in filtered_peak_data.iteritems():
 
 ### Performs differential binding calulation from full sample
 '''
-sample = ['PRMT6_seq6', 'PRMT6_KO_B6.2', 'PRMT6_KO_B5.1']
+sample = ['H3K27ac_E9', 'H3K27ac_B6.2']
 diffbind = differential_binding.Overlaps(sample, filtered_peak_data)
-diffbind.diffBinding('PRMT6_seq6 vs IgG_seq6 filtered')
+diffbind.diffBinding('H3K27ac_E9 vs IgG_E.9 filtered', outpath='/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/H3K27ac_E9_B6_diff.txt')
 '''
 ### Diff.binding for nearest genes
 '''
@@ -173,8 +175,8 @@ for df in multiple_df:
     filtered_peak = {'loaded_sample': peak_df}
     diffbind = differential_binding.Overlaps(sample, filtered_peak)
     diffbind.diffBinding('loaded_sample', outpath='/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/H3R2_PRMT6_E9_B6_diff.txt', genewide=False) #, genewide=True
-'''
 
+'''
 ### Gene-wide chip profile for broad histone marks
 '''
 bam_list = ['H3K36me3_E9', 'H3K36me3_B6.2']
@@ -252,17 +254,18 @@ for bams in bam_list:
                                  sort=False, sort_column='H3R2ame2_E9', scale_df=False)
 '''
 ### Comapre ChIP-Seq profile from altered sample (external)
-
-listGroups = ['H3R2_PRMT6_E9_B6_diff']#,'chip_H3K4me1_up','chip_H3K4me3_down','chip_H3K4me3_up','chip_H3K27ac_down','chip_H3K27ac_up']
+'''
+listGroups = ['improved_PRMT6_E9_B6_B5_all_diff']#,'chip_H3K4me1_up','chip_H3K4me3_down','chip_H3K4me3_up','chip_H3K27ac_down','chip_H3K27ac_up']
 
 for sampleName in listGroups:
     peaks_df_n = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/'+sampleName+'.txt', sep='\t', header=0)
+    peaks_df_n = peaks_df_n[peaks_df_n['log2FC_PRMT6_KO_E.9_norm_vs_PRMT6_KO_B6.2_norm'] < -0.8]
     print 'Dim of DF', peaks_df_n.shape
-    bam_list = [['H3R2ame2_E9', 'PRMT6_KO_E.9', 'PRMT6_KO_B6.2']] #'H3R2ame2_E9', 'H3R2me2a_B6.2','H3K27ac_E9','H3K27ac_B6.2','H3K4me1_E9', 'H3K4me1_B6', 'H3K4me3_E9', 'H3K4me3_B6.2'
+    bam_list = [['PRMT6_KO_E.9', 'PRMT6_KO_B6.2', 'PRMT6_KO_B5.1']] #'H3R2ame2_E9', 'H3R2me2a_B6.2','H3K27ac_E9','H3K27ac_B6.2','H3K27ac_E9', 'H3K4me1_E9', 'H3K4me1_B6', 'H3K4me3_E9', 'H3K4me3_B6.2', 'PRMT6_KO_B6.2', 'PRMT6_KO_B5.1'
 
     # If DF is from R change column names ('' ','.')
     peaks_df_n = peaks_df_n.rename(columns={'Next Gene name':'Next transcript gene name'})
-    # peaks_df_n = peaks_df_n[peaks_df_n['cluster'].isin([5,6])]
+    #peaks_df_n = peaks_df_n[peaks_df_n['cluster'].isin([5,7,8])]
     if '.' in peaks_df_n.columns[6]:
         from string import maketrans
         cols = peaks_df_n.columns
@@ -274,10 +277,10 @@ for sampleName in listGroups:
     for List in bam_list:
         region = ['all'] #'all', 'tss', 'exon', 'intron', 'intergenic', 'upstream'
         for i in region:
-            GR_heatmaps_DF_for_peaks(List, peaks_df_n, region=i, sort=False, sort_column='H3K4me3_E9', scale_df=False,
+            GR_heatmaps_DF_for_peaks(List, peaks_df_n, region=i, sort=True, sort_column='PRMT6_KO_E.9_norm_millon', scale_df=False,
                                      sample_name=sampleName, normalized=True, strength_divide=False)
     gc.collect()
-
+'''
 ### Density based motif analysis
 '''
 peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/overlapping/PRMT6_KO_E.9,PRMT6_KO_B6.2,H3K4me3_E9,H3K4me3_B6.2/all1867_PRMT6_DB_E9_B6.1'
