@@ -133,6 +133,7 @@ def stacked_plot_regions(values, GPcount, name):
     plt.savefig('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/plots/stacked' + name + '.png', bbox_inches='tight')
     plt.clf()
 
+
 def sumzip(*items):
     return [sum(values) for values in zip(*items)]
 
@@ -245,6 +246,7 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
     ddf = pd.DataFrame(overlap_list)
     ddf.to_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/'+name+'_vs_'+name1+'.txt', sep="\t", encoding='utf-8')
     return overlap_dict
+
 
 def PeakOverlaps_concise(df1, df2):
     '''

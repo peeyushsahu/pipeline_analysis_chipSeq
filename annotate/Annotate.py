@@ -1,9 +1,9 @@
 __author__ = 'peeyush'
-
+import pandas as pd
 
 def geneid_converter(listofids, input_identifier = None , output_identifier = None):
     '''
-    Method will take gene identifier anf convert into desired one. Identifiers availble:
+    Method will take gene identifier and convert into desired one. Identifiers availble:
     [u'accession', u'alias', u'biocarta', u'chr', u'end', u'ensemblgene', u'ensemblprotein', u'ensembltranscript',
     u'entrezgene', u'exons', u'flybase', u'generif', u'go', u'hgnc', u'homologene', u'hprd', u'humancyc', u'interpro',
     u'ipi', u'kegg', u'mgi', u'mim', u'mirbase', u'mousecyc', u'name', u'netpath', u'pdb', u'pfam', u'pharmgkb', u'pid',
@@ -128,11 +128,14 @@ def next5genes_annotator(dataframe, path):
     print 'Process: Reading GTF file'
     start = timeit.default_timer()
     gtfFile = parse_gtf(path)
+    #print(gtfFile.head())
+    gtfFile = gtfFile[gtfFile['feature'] == 'transcript']
+    gtfFile.index = range(0, len(gtfFile))
+    #print(gtfFile.head())
     gtfFile = gtfFile.sort(['chr', 'start'], ascending=True)
     chr_group = gtfFile.groupby('chr')['start']
     dataframe = dataframe.sort(['chr'], ascending=True)
-    dataframe['next5genes'] = 0
-    dataframe['position'] = 0
+    nearGene = pd.DataFrame(columns=['chr', 'start', 'stop', 'Next transcript strand', 'Next transcript gene name', 'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'ngene', 'distance2tss', 'nstrand'])
     count = 0
     print 'Process: Annotating peaks with genes'
     for k, v in dataframe.iterrows():
@@ -140,19 +143,22 @@ def next5genes_annotator(dataframe, path):
         sys.stdout.flush()
         count += 1
         List = chr_group.get_group(v['chr'])
-        key = v['summit']+v['start']
+        key = v['start'] + v['summit']
+        #print(List.shape, key, min(List.index), max(List.index))
         loc = gtf_binary_search(List, key, min(List.index), max(List.index))
+        #print(v)
+        #print(loc)
         if loc != 'KEY OUT OF BOUND':
-            geneList, positionList = next5genes(gtfFile, loc)
-            dataframe.loc[k, 'next5genes'] = ','.join(geneList)
-            dataframe.loc[k, 'position'] = ','.join(positionList)
+            outdf = next5genes(gtfFile, loc, v)
+            nearGene = nearGene.append(outdf, ignore_index=True)
+
     del(gtfFile)
     stop = timeit.default_timer()
     print '\nTime elapsed:', stop-start,' sec'
-    dataframe.to_csv(
-            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/diffPeaks_P6_nearest_5_genes.csv',
-            sep=",", encoding='utf-8', ignore_index=True)
-    return dataframe
+    nearGene.to_csv(
+            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/peak_selecetion_B6/PRMT6_new+old_peaks/PRMT6_old+new_only_Enhancer_bound_nearest_6_genes.txt',
+            sep="\t", ignore_index=True, header=True)
+    return nearGene
 
 
 def gtf_binary_search(List, key, imin, imax):
@@ -173,14 +179,19 @@ def gtf_binary_search(List, key, imin, imax):
     else:
         imid = imin + ((imax - imin)/2)
         if List[imid] > key:
-            # key is in lower subset
+            #print('upper', List[imid], key, imin, imid)
+            # key is in upper subset
             return gtf_binary_search(List, key, imin, imid)
         elif List[imid] < key:
-            # key is in upper subset
+            #print('lower', List[imid], key)
+            # key is in lower subset
             return gtf_binary_search(List, key, imid, imax)
+        elif List[imid] == key:
+            #print('found', List[imid], key)
+            # key is in lower subset
+            return imid, imid+1
 
-
-def next5genes(gtffile, position):
+def next5genes(gtffile, position, row):
     '''
     This method actually search for five nearest genes in GTF file.
     :param gtffile:
@@ -189,36 +200,53 @@ def next5genes(gtffile, position):
     '''
     import re
     geneList = []
-    positionList = []
-    minusGene = ''
-    minusStrandindex = position[0]
-    plusGene = ''
-    plusStrandindex = position[1]
-    while len(geneList) < 5:
+    upstreamindex = position[0]
+    downstreamindex = position[1]
+    nearGene = pd.DataFrame(columns=['chr', 'start', 'stop', 'Next transcript strand', 'Next transcript gene name', 'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'ngene', 'distance2tss', 'nstrand'])
+
+    while len(geneList) < 6:
+        #print geneList, upstreamindex, downstreamindex
         ## Traversing to upstream
-        minus = re.split(';| |"', gtffile.iloc[minusStrandindex]['further_information'])
+        minus = re.split(';| |"', gtffile.iloc[upstreamindex]['further_information'])
         mgene_pos = minus.index('gene_name')
         mGene = minus[mgene_pos+2]
-        if gtffile.iloc[minusStrandindex]['region'] == 'transcript' and minusGene != mGene and not mGene in geneList:
+        if mGene not in geneList:
+            #print mGene
+            newrow = {'chr': row['chr'],
+                    'start': int(row['start']),
+                    'stop': int(row['stop']),
+                    'Next transcript strand': row['Next transcript strand'],
+                    'Next transcript gene name': row['Next transcript gene name'],
+                    'GenomicPosition TSS=1250 bp, upstream=5000 bp':row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
+                    'ngene': mGene,
+                    'nstrand': gtffile.iloc[upstreamindex]['strand'],
+                    'distance2tss': ((row['start'] + row['summit']) - gtffile.iloc[upstreamindex]['stop'])*-1}
+            nearGene = nearGene.append(pd.Series(newrow), ignore_index=True)
+            #pos = str(gtffile.iloc[upstreamindex]['chr'])+':'+str(gtffile.iloc[upstreamindex]['start'])+':'+str(gtffile.iloc[upstreamindex]['stop'])
             geneList.append(mGene)
-            pos = str(gtffile.iloc[minusStrandindex]['chr'])+':'+str(gtffile.iloc[minusStrandindex]['start'])+':'+str(gtffile.iloc[minusStrandindex]['stop'])
-            positionList.append(pos)
-            minusGene = mGene
-            minusStrandindex -= 1
-        minusStrandindex -= 1
+        upstreamindex -= 1
+
         ## Traversing to downstream
-        plus = re.split(';| |"', gtffile.iloc[plusStrandindex]['further_information'])
+        plus = re.split(';| |"', gtffile.iloc[downstreamindex]['further_information'])
         pgene_pos = plus.index('gene_name')
         pGene = plus[pgene_pos+2]
-        if gtffile.iloc[plusStrandindex]['region'] == 'transcript' and plusGene != pGene and not pGene in geneList:
-            geneList.append(pGene)
-            pos = str(gtffile.iloc[plusStrandindex]['chr'])+':'+str(gtffile.iloc[plusStrandindex]['start'])+':'+str(gtffile.iloc[plusStrandindex]['stop'])
-            positionList.append(pos)
-            plusGene = pGene
-            plusStrandindex += 1
-        plusStrandindex += 1
-    return geneList, positionList
+        if pGene not in geneList:
+            #print pGene
+            newrow = {'chr': row['chr'],
+                    'start': int(row['start']),
+                    'stop': int(row['stop']),
+                    'Next transcript strand': row['Next transcript strand'],
+                    'Next transcript gene name': row['Next transcript gene name'],
+                    'GenomicPosition TSS=1250 bp, upstream=5000 bp':row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
+                    'ngene': pGene,
+                    'nstrand': gtffile.iloc[downstreamindex]['strand'],
+                    'distance2tss': gtffile.iloc[downstreamindex]['start'] - (row['start'] + row['summit'])}
 
+            nearGene = nearGene.append(pd.Series(newrow), ignore_index=True)
+            geneList.append(pGene)
+            #pos = str(gtffile.iloc[downstreamindex]['chr'])+':'+str(gtffile.iloc[downstreamindex]['start'])+':'+str(gtffile.iloc[downstreamindex]['stop'])
+        downstreamindex += 1
+    return nearGene
 
 
 

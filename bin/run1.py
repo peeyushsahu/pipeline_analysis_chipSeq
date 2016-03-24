@@ -158,7 +158,7 @@ modification4nearestgenes(peak_df, 'prmt6_nearest5genes', sample)
 ### Diff. Binding calculation from altered sample (external)
 '''
 #'H3R2ame2_E9', 'H3K36me3_E9', 'H3K36me3_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2', 'H3K27ac_E9','H3K27ac_B6.2'
-multiple_df = ['/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/H3R2ame2_E9_H3R2ame2_B5.1_H3R2me2a_B6.2.txt',
+multiple_df = ['/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/csv/H3K4me1_E9 vs IgG_E.9 filtered.csv',
                #'/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/H3R2me2a/pval<0.05/H3R2ame2_E9_H3R2ame2_B5.1_H3R2me2a_B6.2.txt',
                #'/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/totalDEgenes_analysis/gene_up_4_k36.csv',
                #'/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/totalDEgenes_analysis/gene_down_4_k36.csv',
@@ -166,7 +166,7 @@ multiple_df = ['/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis
                #'/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/totalDEgenes_analysis/chip_H3K4me1_down.csv'
                 ]
 for df in multiple_df:
-    sample = ['H3R2ame2_E9', 'PRMT6_KO_E.9', 'PRMT6_KO_B6.2']
+    sample = ['H3K4me1_E9', 'H3K4me1_B6']
     peak_df = read_csv(df, header=0, sep='\t')
     peak_df = peak_df.rename(columns={'Next Gene name':'Next transcript gene name'})
     print peak_df.shape
@@ -174,9 +174,9 @@ for df in multiple_df:
     print peak_df.shape
     filtered_peak = {'loaded_sample': peak_df}
     diffbind = differential_binding.Overlaps(sample, filtered_peak)
-    diffbind.diffBinding('loaded_sample', outpath='/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/H3R2_PRMT6_E9_B6_diff.txt', genewide=False) #, genewide=True
-
+    diffbind.diffBinding('loaded_sample', outpath='/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/H3K4me1_E9_B6_diff.txt', genewide=False) #, genewide=True
 '''
+
 ### Gene-wide chip profile for broad histone marks
 '''
 bam_list = ['H3K36me3_E9', 'H3K36me3_B6.2']
@@ -255,17 +255,17 @@ for bams in bam_list:
 '''
 ### Comapre ChIP-Seq profile from altered sample (external)
 '''
-listGroups = ['improved_PRMT6_E9_B6_B5_all_diff']#,'chip_H3K4me1_up','chip_H3K4me3_down','chip_H3K4me3_up','chip_H3K27ac_down','chip_H3K27ac_up']
+listGroups = ['H3R2me2_bound_down']#,'chip_H3K4me1_up','chip_H3K4me3_down','chip_H3K4me3_up','chip_H3K27ac_down','chip_H3K27ac_up']
 
 for sampleName in listGroups:
-    peaks_df_n = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/'+sampleName+'.txt', sep='\t', header=0)
-    peaks_df_n = peaks_df_n[peaks_df_n['log2FC_PRMT6_KO_E.9_norm_vs_PRMT6_KO_B6.2_norm'] < -0.8]
+    peaks_df_n = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/H3R2me2/'+sampleName+'.txt', sep='\t', header=0)
+    #peaks_df_n = peaks_df_n[peaks_df_n['FC_PRMT6_E9_B6'] > 0]
     print 'Dim of DF', peaks_df_n.shape
-    bam_list = [['PRMT6_KO_E.9', 'PRMT6_KO_B6.2', 'PRMT6_KO_B5.1']] #'H3R2ame2_E9', 'H3R2me2a_B6.2','H3K27ac_E9','H3K27ac_B6.2','H3K27ac_E9', 'H3K4me1_E9', 'H3K4me1_B6', 'H3K4me3_E9', 'H3K4me3_B6.2', 'PRMT6_KO_B6.2', 'PRMT6_KO_B5.1'
+    bam_list = [['H3R2ame2_E9', 'H3K4me3_E9', 'H3K4me3_B6.2']] #'H3R2ame2_E9', 'H3R2me2a_B6.2','H3K27ac_E9','H3K27ac_B6.2','H3K27ac_E9', 'H3K4me1_E9', 'H3K4me1_B6', 'H3K4me3_E9', 'H3K4me3_B6.2', 'PRMT6_KO_B6.2', 'PRMT6_KO_B5.1'
 
     # If DF is from R change column names ('' ','.')
     peaks_df_n = peaks_df_n.rename(columns={'Next Gene name':'Next transcript gene name'})
-    #peaks_df_n = peaks_df_n[peaks_df_n['cluster'].isin([5,7,8])]
+    #peaks_df_n = peaks_df_n[peaks_df_n['cluster'].isin([4,8,12,16,17,19,20])]
     if '.' in peaks_df_n.columns[6]:
         from string import maketrans
         cols = peaks_df_n.columns
@@ -277,10 +277,12 @@ for sampleName in listGroups:
     for List in bam_list:
         region = ['all'] #'all', 'tss', 'exon', 'intron', 'intergenic', 'upstream'
         for i in region:
-            GR_heatmaps_DF_for_peaks(List, peaks_df_n, region=i, sort=True, sort_column='PRMT6_KO_E.9_norm_millon', scale_df=False,
-                                     sample_name=sampleName, normalized=True, strength_divide=False)
+            GR_heatmaps_DF_for_peaks(List, peaks_df_n, region=i, sort=False, sort_column='PRMT6_KO_E.9_norm_millon', scale_df=False,
+                                     sample_name=sampleName, normalized=False, strength_divide=False)
     gc.collect()
 '''
+
+
 ### Density based motif analysis
 '''
 peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/overlapping/PRMT6_KO_E.9,PRMT6_KO_B6.2,H3K4me3_E9,H3K4me3_B6.2/all1867_PRMT6_DB_E9_B6.1'
@@ -294,32 +296,32 @@ seq = seqOperations.seq4motif(sample_dict)
 db = ["JASPAR_CORE_2016_vertebrates.meme", "HOCOMOCOv9.meme", "SwissRegulon_human_and_mouse.meme"]
 seqOperations.motif_analysis(db, 10, seq)
 '''
+
+### HOMER motif analysis
+'''
+outpath = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/peak_selecetion_B6/HOMERmotif'
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/H3R2_PRMT6_E9_B6_diff.txt', sep='\t', header=0)
+seqOperations.motif_analysis_homer(peak_df, path=outpath, samplename='H3R2_PRMT6_E9_B6_diff')
+'''
+
 ### Performing motif and CpG analysis on prmt6 sites wrt regions eg. TSS, Exon
 '''
 sample_dict = {}
-prmt6_df = filtered_peak_data.get('PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered')
-for i in ['tss', 'exon', 'intron', 'intergenic', 'upstream']:
-    sample_dict['PRMT6_2_RA_seq6_'+i] = prmt6_df[prmt6_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'] == i]
-seq = seqOperations.seq4motif(sample_dict)
-db = ["JASPAR_CORE_2014_vertebrates.meme", "uniprobe_mouse.meme"]
-seqOperations.motif_analysis(db, 10, seq)
-'''
-'''
-sample_dict = {}
-prmt6_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/H3R2ame2_E9_Sample_18F3_H3R2ame2_B5.1.csv',
-    header=0, sep=',')
-sample_dict['H3R2me2a_B5.1_KO'] = prmt6_df
+prmt6_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/H3R2_PRMT6_E9_B6_diff.txt',
+    header=0, sep='\t')
+sample_dict['H3R2_PRMT6_E9_B6_diff'] = prmt6_df
 seq = seqOperations.seq4motif(sample_dict)
 db = ["JASPAR_CORE_2016_vertebrates.meme", "HOCOMOCOv9.meme", "SwissRegulon_human_and_mouse.meme"]
 seqOperations.motif_analysis(db, 10, seq)
 '''
-### Annotate peaks with 5 nearest genes (+,-) strand
-'''
-diffpeaks = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/DiffBind_P6_vs_all.csv',
-    header=0, sep=',')
-gtf_path = '/ps/imt/genome/human/Homo_sapiens_Ensembl_GRCh37/Homo_sapiens/Ensembl/GRCh37/Annotation/Genes/genes.gtf'
+### Annotate peaks with 6 nearest genes (+,-) strand
+
+diffpeaks = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/peak_selecetion_B6/PRMT6_new+old_peaks/PRMT6_old+new_only_Enhancer_bound.txt',
+    header=0, sep='\t')
+gtf_path = '/ps/imt/f/Genomes/Homo_sapiens/Ensembl/GRCh37/Annotation/Genes/genes.gtf'
 next5genes_annotator(diffpeaks, gtf_path)
-'''
+
+
 ### calculate overlaps between peaks
 '''
 overlapping_samples = {}
@@ -370,12 +372,22 @@ for i in range(0, len(sample_name3)):
             name + '\t' + str(len(overlap4diff.get(name))) + '\n')
     overlapping_samples[overlap4diff.keys()[0]] = pd.DataFrame(overlap4diff.get(overlap4diff.keys()[0]))
 '''
-#this will make seq from Genomic regions
-#print "Samples for seq fetching:", len(overlapping_samples)
-#seq = seqOperations.seq4motif(filtered_peak_data)
-#db = ["JASPAR_CORE_2014_vertebrates.meme", "uniprobe_mouse.meme"]
-#seqOperations.motif_analysis(db, 10, seq)
 
-#seq1 = seqOperations.seq4motif({'p6_H3K9':peak_df})
-#db1 = ["JASPAR_CORE_2014_vertebrates.meme", "uniprobe_mouse.meme"]
-#seqOperations.motif_analysis(db1, 10, seq1)
+### Enhancer RNA analysis
+'''
+from rna_seq.some_methods import enhancer_rna_analysis
+
+peakdf = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/peak_selecetion_B6/PRMT6_new+old_peaks/PRMT6_old+new_only_Enhancer_bound.txt',
+    header=0, sep='\t')
+print peakdf.shape
+peakdf = peakdf[(peakdf['GenomicPosition TSS=1250 bp, upstream=5000 bp'] == 'intergenic') | (peakdf['GenomicPosition TSS=1250 bp, upstream=5000 bp'] == 'upstream')]
+print peakdf.shape
+path = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/results/alignedLane/'
+bamRNA = {'NT2D1_E9_1':path+'NT2D1_E9_1/NT2D1_E9_1_GRCh37.bam',
+          'NT2D1_E9_2':path+'NT2D1_E9_2/NT2D1_E9_2_GRCh37.bam',
+          'NT2D1_E9_3':path+'NT2D1_E9_3/NT2D1_E9_3_GRCh37.bam',
+          'NT2D1_B6_1':path+'NT2D1_B6_1/NT2D1_B6_1_GRCh37.bam',
+          'NT2D1_B6_2':path+'NT2D1_B6_2/NT2D1_B6_2_GRCh37.bam',
+          'NT2D1_B6_3':path+'NT2D1_B6_3/NT2D1_B6_3_GRCh37.bam'}
+print(enhancer_rna_analysis(peakdf, bamRNA, outpath='/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/peak_selecetion_B6/PRMT6_new+old_peaks', samplename='eRNA_PRMT6_n+o_enhancer_bound'))
+'''
