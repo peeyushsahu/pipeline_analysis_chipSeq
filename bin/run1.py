@@ -156,9 +156,9 @@ modification4nearestgenes(peak_df, 'prmt6_nearest5genes', sample)
 '''
 
 ### Diff. Binding calculation from altered sample (external)
-'''
+
 #'H3R2ame2_E9', 'H3K36me3_E9', 'H3K36me3_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2', 'H3K27ac_E9','H3K27ac_B6.2'
-multiple_df = ['/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/csv/H3K4me1_E9 vs IgG_E.9 filtered.csv',
+multiple_df = ['/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/peak_selecetion_B6/PRMT6_new+old_peaks/Improved+old_PRMT6_E9_B6_B5_all_diff.txt',
                #'/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/H3R2me2a/pval<0.05/H3R2ame2_E9_H3R2ame2_B5.1_H3R2me2a_B6.2.txt',
                #'/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/totalDEgenes_analysis/gene_up_4_k36.csv',
                #'/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/totalDEgenes_analysis/gene_down_4_k36.csv',
@@ -166,7 +166,7 @@ multiple_df = ['/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/csv/H3K4me1_E9 v
                #'/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/totalDEgenes_analysis/chip_H3K4me1_down.csv'
                 ]
 for df in multiple_df:
-    sample = ['H3K4me1_E9', 'H3K4me1_B6']
+    sample = ['PRMT6_KO_E.9', 'PRMT6_KO_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2']
     peak_df = read_csv(df, header=0, sep='\t')
     peak_df = peak_df.rename(columns={'Next Gene name':'Next transcript gene name'})
     print peak_df.shape
@@ -174,8 +174,8 @@ for df in multiple_df:
     print peak_df.shape
     filtered_peak = {'loaded_sample': peak_df}
     diffbind = differential_binding.Overlaps(sample, filtered_peak)
-    diffbind.diffBinding('loaded_sample', outpath='/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/H3K4me1_E9_B6_diff.txt', genewide=False) #, genewide=True
-'''
+    diffbind.diffBinding('loaded_sample', outpath='/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/peak_selecetion_B6/PRMT6_new+old_peaks/Improved+old_PRMT6_E9_B6_K4m3_diff.txt', genewide=False) #, genewide=True
+
 
 ### Gene-wide chip profile for broad histone marks
 '''
@@ -315,12 +315,12 @@ db = ["JASPAR_CORE_2016_vertebrates.meme", "HOCOMOCOv9.meme", "SwissRegulon_huma
 seqOperations.motif_analysis(db, 10, seq)
 '''
 ### Annotate peaks with 6 nearest genes (+,-) strand
-
+'''
 diffpeaks = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/peak_selecetion_B6/PRMT6_new+old_peaks/PRMT6_old+new_only_Enhancer_bound.txt',
     header=0, sep='\t')
 gtf_path = '/ps/imt/f/Genomes/Homo_sapiens/Ensembl/GRCh37/Annotation/Genes/genes.gtf'
 next5genes_annotator(diffpeaks, gtf_path)
-
+'''
 
 ### calculate overlaps between peaks
 '''
