@@ -2,6 +2,10 @@ __author__ = 'sahu'
 import HTSeq.scripts.count as htseq
 import pandas as pd
 import subprocess as sp
+import alignment.commons as paths
+Path = paths.path()
+basepath = Path.basepath
+
 
 class experiment():
     def __init__(self, name, paths, count_data):
@@ -24,10 +28,10 @@ def count_data(bam_files, gtf_file, samtype='bam', order='name', stranded='yes',
         counts_dict[name] = count_dict
     count_df = pd.DataFrame(counts_dict)
     count_df_fin = count_df[count_df.sum(axis=1) > 1]
-    file = open('/ps/imt/e/HL60_Christene/further_analysis/RNA_seq/GeneId_HL60_SKI_EGFP_KO_stats.txt', 'w')
+    file = open(basepath + '/further_analysis/RNA_seq/GeneId_HL60_SKI_EGFP_KO_stats.txt', 'w')
     file.write('Original feature counts: '+str(len(count_df)))
     file.write('Filtered feature counts: '+str(len(count_df_fin)))
-    count_df_fin.to_csv('/ps/imt/e/HL60_Christene/further_analysis/RNA_seq/Tophat_Filtered_GeneId_HL60_SKI_EGFP_KO.txt', sep='\t')
+    count_df_fin.to_csv(basepath + '/further_analysis/RNA_seq/Tophat_Filtered_GeneId_HL60_SKI_EGFP_KO.txt', sep='\t')
     #return pd.DataFrame(counts_dict), counts_dict
 
 '''
@@ -39,7 +43,7 @@ bam_files = ['/ps/imt/e/HL60_Christene/results/AlignedLane/HL60_2_10_1__aligned_
               '/ps/imt/e/HL60_Christene/results/AlignedLane/HL60_GFP3_2__aligned_with_STAR_against_EnsemblGenome_Homo_sapiens_74_37/aligned_unique_HL60_GFP3_2__aligned_with_STAR_against_EnsemblGenome_Homo_sapiens_74_37.bam',
               '/ps/imt/e/HL60_Christene/results/AlignedLane/HL60_GFP3_3__aligned_with_STAR_against_EnsemblGenome_Homo_sapiens_74_37/aligned_unique_HL60_GFP3_3__aligned_with_STAR_against_EnsemblGenome_Homo_sapiens_74_37.bam']
 '''
-count_out = '/ps/imt/e/HL60_Christene/further_analysis/RNA_seq/featureCounts_TopHat2_Filtered_GeneId_HL60_SKI_EGFP_KO.txt'
+count_out = basepath + '/further_analysis/RNA_seq/featureCounts_TopHat2_Filtered_GeneId_HL60_SKI_EGFP_KO.txt'
 
 
 def count_Data_featureCounts(bam_files, gtf_file, feature_type='exon', id_attribute='gene_name', count_out='', stranded=2):

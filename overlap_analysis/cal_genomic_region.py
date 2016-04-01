@@ -9,6 +9,10 @@ import math
 import numpy as np
 import annotate.Annotate as Annotate
 import overlap_analysis.differential_binding
+import alignment.commons as paths
+Path = paths.path()
+basepath = Path.basepath
+
 
 class PeaksAnalysis():
     """A dataframe for peak data analysis is created"""
@@ -29,7 +33,7 @@ class PeaksAnalysis():
         GRcount = self.peaks['GenomicPosition TSS=1250 bp, upstream=5000 bp'].value_counts()
         GPcount = zip(GRcount.index, GRcount.values)
         self.GCount = GPcount
-        with open("/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/plots/G_distributions.txt", "a") as file:
+        with open(basepath + "/further_analysis/plots/G_distributions.txt", "a") as file:
             file.write(self.name+'\t'+str(GPcount)+'\n')
         #plotGenomicregions(GPcount, self.name)
         #stacked_plot_regions(GRcount.values, GPcount, self.name)
@@ -50,7 +54,7 @@ class PeaksAnalysis():
         ax.set_xticklabels(name, rotation=90)
         plt.tight_layout()
         plt.title(self.name)
-        plt.savefig('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/plots/' + columnname +'_'+self.name + '.png')
+        plt.savefig(basepath + '/further_analysis/plots/' + columnname +'_'+self.name + '.png')
         plt.clf()
 
 def plotGenomicregions(GPcount, name):
@@ -80,7 +84,7 @@ def plotGenomicregions(GPcount, name):
     # Set aspect ratio to be equal so that pie is drawn as a circle.
     #plt.legend(['tss', 'intergenic', 'intron', 'exon', 'upstream'], loc='upper left')
     plt.axis('equal')
-    plt.savefig('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/plots/' + name + '.png')
+    plt.savefig(basepath + '/further_analysis/plots/' + name + '.png')
     plt.clf()
 
 
@@ -130,7 +134,7 @@ def stacked_plot_regions(values, GPcount, name):
     plt.xticks(ind+width/2., [name])
     plt.yticks(np.arange(0,100, 100/5))
     plt.legend((p1[0], p2[0], p3[0], p4[0], p5[0]), ('intergenic', 'upstream', 'tss', 'exon', 'intron'), loc='center left', bbox_to_anchor=(1.0, 0.5))
-    plt.savefig('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/plots/stacked' + name + '.png', bbox_inches='tight')
+    plt.savefig(basepath + '/further_analysis/plots/stacked' + name + '.png', bbox_inches='tight')
     plt.clf()
 
 
@@ -209,7 +213,7 @@ def stacke_plot_multiple(names_list, filtered_peaks):
     plt.ylim(0,100)
     plt.yticks(np.arange(0, 100, 100/5))
     plt.legend( (p1[0], p2[0], p3[0], p4[0], p5[0]), ('Intron', 'Exon', 'TSS', 'Upstream', 'Intergenic') ,loc='center left', bbox_to_anchor=(1.0, 0.5))
-    plt.savefig('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/plots/multi_stacked' + ','.join(samples) + '.png', bbox_inches='tight')
+    plt.savefig(basepath + '/further_analysis/plots/multi_stacked' + ','.join(samples) + '.png', bbox_inches='tight')
     plt.clf()
 
 def OverlappingPeaks(dict_peaksdf, name, name1):
@@ -244,7 +248,7 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
     print "Time consumed by method PeakOverlaps:", stop1-start1, 'sec'
     overlap_dict = {name+'_vs_'+name1: overlap_list}
     ddf = pd.DataFrame(overlap_list)
-    ddf.to_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/'+name+'_vs_'+name1+'.txt', sep="\t", encoding='utf-8')
+    ddf.to_csv(basepath + '/further_analysis/overlap/'+name+'_vs_'+name1+'.txt', sep="\t", encoding='utf-8')
     return overlap_dict
 
 

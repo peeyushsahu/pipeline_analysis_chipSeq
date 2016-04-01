@@ -1,5 +1,9 @@
 __author__ = 'peeyush'
 import pandas as pd
+import alignment.commons as paths
+Path = paths.path()
+basepath = Path.basepath
+
 
 def geneid_converter(listofids, input_identifier = None , output_identifier = None):
     '''
@@ -112,7 +116,7 @@ def annotate_intronexon_junction(df, chr_vector):
                         print zip_unique
                         dataFrame.loc[k, 'exon_intron_junction'] = 1
                         dataFrame.loc[k, 'exon_intron_percent'] = float(zip_unique[3])/float(zip_unique[2])
-    dataFrame.to_csv('/home/peeyush/Desktop/exon_intron_junction_PRMT6_RA.csv', sep=",", encoding='utf-8', ignore_index=True, index=False)
+    dataFrame.to_csv(basepath + '/exon_intron_junction_PRMT6_RA.csv', sep=",", encoding='utf-8', ignore_index=True, index=False)
     return dataFrame
 
 
@@ -156,7 +160,7 @@ def next5genes_annotator(dataframe, path):
     stop = timeit.default_timer()
     print '\nTime elapsed:', stop-start,' sec'
     nearGene.to_csv(
-            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/peak_selecetion_B6/PRMT6_new+old_peaks/PRMT6_old+new_only_Enhancer_bound_nearest_6_genes.txt',
+            basepath + '/further_analysis/PRMT6_old+new_only_Enhancer_bound_nearest_6_genes.txt',
             sep="\t", ignore_index=True, header=True)
     return nearGene
 

@@ -1,8 +1,11 @@
+__author__ = 'peeyush'
+
 import gc
 from overlap_analysis.differential_binding import getBam, group_DF
 import pandas as pd
-__author__ = 'peeyush'
-
+import alignment.commons as paths
+Path = paths.path()
+basepath = Path.basepath
 
 def color():
     cnames = {
@@ -153,9 +156,8 @@ def color():
 def make_dir(bam_order, region='All'):
     import os
     # print 'Directory_for_result: ' + '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/'+folder
-    path = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/' + bam_order + '/' + region + '/'
-    if not os.path.exists(path):
-        os.makedirs(path)
+    path = basepath + '/further_analysis/overlapping_plots/' + bam_order + '/' + region + '/'
+    paths.ensure_path(path)
     return path
 
 
@@ -901,7 +903,7 @@ def plot_overlapping_peaks(peak_distribution_sample1, peak_distribution_sample2,
     plt.plot(x, scale_b, linewidth=3)
     plt.legend(['PRMT6', 'H3K4'], loc='upper left')
     # plt.show()
-    plt.savefig('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/' + name + '.png')
+    plt.savefig(basepath + '/further_analysis/overlap/' + name + '.png')
     plt.clf()
 
 
@@ -1040,7 +1042,7 @@ def line_plot_overlapping_peak_intensity(dict_of_bins):
         plt.draw()
         # plt.show()
         plt.savefig(
-            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/overlapping_peak_intensity_' +
+            basepath + '/further_analysis/overlap/overlapping_peak_intensity_' +
             names[0] + names[1] + '.png')
         plt.clf()
 
@@ -1075,7 +1077,7 @@ def line_plot_overlapping_peak_intensity_2(dict_of_bins):
 
     plt.legend([names[1], names[3]], loc='upper left')  # 'Low', 'Medium',
     # plt.show()
-    plt.savefig('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/' + names[2] + '_' + names[
+    plt.savefig(basepath + '/further_analysis/overlap/' + names[2] + '_' + names[
         3] + '.png')
     plt.clf()
 
@@ -1107,6 +1109,6 @@ def peak_position_dataframe(peak_df, name):
         positionDf = positionDf.set_index(pd.Series(geneNames))
         # plot_heatmap_4_peaks_position(positionDf)
     print 'Frequency of peak positions\n', positionDf.sum()
-    positionDf.to_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/' + name + '.csv',
+    positionDf.to_csv(basepath + '/further_analysis/overlap/' + name + '.csv',
                       sep=",", encoding='utf-8', ignore_index=True)
     return positionDf

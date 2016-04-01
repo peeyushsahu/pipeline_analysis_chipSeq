@@ -2,6 +2,9 @@ __author__ = 'peeyush'
 
 import pandas as pd
 import os
+import alignment.commons as paths
+Path = paths.path()
+basepath = Path.basepath
 
 
 class Overlaps():
@@ -106,7 +109,7 @@ class Overlaps():
         if outpath is not None:
             outpath = outpath
         else:
-            outpath = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/' + '_'.join(sample_name) + '.txt'
+            outpath = basepath + '/further_analysis/differential/' + '_'.join(sample_name) + '.txt'
         df.to_csv(outpath, sep="\t", encoding='utf-8', ignore_index=True)
 
 def getBam(name):
@@ -116,8 +119,8 @@ def getBam(name):
     :return:
     '''
     from os import listdir
-    path = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/'
-    bam_list = listdir('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane')
+    path = basepath +'/results/AlignedLane/'
+    bam_list = listdir(basepath + '/results/AlignedLane')
     Dir = None
     file = None
     print name
@@ -224,7 +227,7 @@ def modification4nearestgenes(dataframe, name, modification_list):
                 df.loc[k, sample] = norm_tags
         sample_bam.close()
     df.to_csv(
-            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/' + sample_name + '_'.join(modification_list) + '.csv',
+            basepath + '/further_analysis/differential/' + sample_name + '_'.join(modification_list) + '.csv',
             sep=",", encoding='utf-8', ignore_index=True)
 
 
@@ -284,9 +287,9 @@ def non_overlapping_peaks(self, overlap_no):
     #unchanged_df1 = unchanged_df[unchanged_df['FC_value'] < 4]
     unchanged_df1 = overlaps
     diff_df1.to_csv(
-            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/'+ n1 + '_vs_' + n2 +'_Unique_'+ n1 + '.csv', sep=",", encoding='utf-8')
+            basepath + '/further_analysis/differential/'+ n1 + '_vs_' + n2 +'_Unique_'+ n1 + '.csv', sep=",", encoding='utf-8')
     diff_df2.to_csv(
-            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/Unique_'+ n1 + '_vs_' + n2 +'_Unique_'+ n2 + '.csv', sep=",", encoding='utf-8')
+            basepath + '/further_analysis/differential/Unique_'+ n1 + '_vs_' + n2 +'_Unique_'+ n2 + '.csv', sep=",", encoding='utf-8')
     #unchanged_df1.to_csv(
     #        '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/Unchanged_' + n1 + '_vs_' + n2 + '.csv', sep=",", encoding='utf-8')
     return diff_df1, diff_df2, unchanged_df1

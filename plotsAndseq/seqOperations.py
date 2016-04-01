@@ -5,7 +5,10 @@ import numpy as np
 import os
 
 __author__ = 'peeyush'
-base_path = "/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/"
+import alignment.commons as paths
+Path = paths.path()
+basepath = Path.basepath
+base_path = basepath + "/further_analysis/"
 path_to_seq = "seq4motif/"
 path_to_genome = "/ps/imt/f/Genomes/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/"
 path_to_program = "/home/sahu/meme/bin/"

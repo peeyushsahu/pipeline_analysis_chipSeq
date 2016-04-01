@@ -1,10 +1,13 @@
 __author__ = 'peeyush'
+import alignment.commons as paths
+Path = paths.path()
+basepath = Path.basepath
 
 
 def filterpeaks(peak_data_list):
     filtered_peak_data = {}
     peak_data = peak_data_list
-    file = open('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/filtered/filteredPeaksCount.txt', 'w')
+    file = open(basepath + '/further_analysis/filtered/filteredPeaksCount.txt', 'w')
     file.write('Sample_name\traw_peaks\tfiltered_peaks\n')
     for k, v in peak_data.iteritems():
         print k, v.shape
@@ -66,7 +69,7 @@ def filterpeaks(peak_data_list):
             '''
         file.write(name.split(' ')[0]+'\t'+str(len(df))+'\t'+str(len(final))+'\n')
         filtered_peak_data[name] = final
-        final.to_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/filtered/'+name+'.csv', sep=",", encoding='utf-8')
+        final.to_csv(basepath + '/further_analysis/filtered/'+name+'.csv', sep=",", encoding='utf-8')
     file.close()
     return filtered_peak_data
 

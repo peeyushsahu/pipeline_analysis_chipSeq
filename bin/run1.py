@@ -19,6 +19,9 @@ __author__ = 'peeyush'
 
 
 #time.strftime("%d/%m/%y")
+import alignment.commons as paths
+Path = paths.path()
+basepath = Path.basepath
 
 folders = ["overlap",
            "differential",
@@ -30,7 +33,7 @@ folders = ["overlap",
            "density_based_motif"]
 for folder in folders:
     #print 'Directory_for_result: ' + '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/'+folder
-    path = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/'+folder
+    path = basepath + '/further_analysis/'+folder
     if not os.path.exists(path):
         os.makedirs(path)
 print 'Output folder created'
@@ -92,7 +95,7 @@ if Filtering:
     peak_data = {}
     for a in sample_name:
         df = read_csv(
-            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/csv/' + a + '.csv',
+            basepath + '/csv/' + a + '.csv',
             header=0, sep='\t')
         df = df.rename(columns={'Next Gene name':'Next transcript gene name'})
         peak_data[a] = df
@@ -105,7 +108,7 @@ else:
     print "############ No filtering ###############"
     for a in sample_name:
         df = read_csv(
-            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/csv/' + a + '.csv',
+            basepath + '/csv/' + a + '.csv',
             header=0, sep='\t')
         df = df.rename(columns={'Next Gene name': 'Next transcript gene name'})
         filtered_peak_data[a] = df
@@ -113,7 +116,7 @@ else:
 
 '''
 df = read_csv(
-            '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/improved_PRMT6_E9_B6_B5_all_diff.txt',
+            basepath + '/further_analysis/PRMT6_KO_analysis/improved_PRMT6_E9_B6_B5_all_diff.txt',
             header=0, sep='\t')
 df = df[df['log2FC_PRMT6_KO_E.9_norm_vs_PRMT6_KO_B6.2_norm'] < -0.8]
 filtered_peak_data['PRMT6_peaks_improved'] = df
@@ -141,7 +144,7 @@ for k, v in filtered_peak_data.iteritems():
 '''
 sample = ['H3K27ac_E9', 'H3K27ac_B6.2']
 diffbind = differential_binding.Overlaps(sample, filtered_peak_data)
-diffbind.diffBinding('H3K27ac_E9 vs IgG_E.9 filtered', outpath='/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/H3K27ac_E9_B6_diff.txt')
+diffbind.diffBinding('H3K27ac_E9 vs IgG_E.9 filtered', outpath=basepath + '/further_analysis/PRMT6_KO_analysis/H3K27ac_E9_B6_diff.txt')
 '''
 ### Diff.binding for nearest genes
 '''
@@ -149,7 +152,7 @@ sample = ['Sample_K36me3', 'Sample_K36me3_RA',
           'Sample_pol-2', 'Sample_pol-2_RA',
           'H3K4me3_seq2', 'H3K4me3_RA_seq2',
           'Sample_K27me3', 'Sample_K27me3_RA']
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/diffPeaks_P6_nearest_5_genes.csv',
+peak_df = read_csv(basepath + '/further_analysis/differential/diffPeaks_P6_nearest_5_genes.csv',
     header=0, sep=',')
 
 modification4nearestgenes(peak_df, 'prmt6_nearest5genes', sample)
@@ -174,7 +177,7 @@ for df in multiple_df:
     print peak_df.shape
     filtered_peak = {'loaded_sample': peak_df}
     diffbind = differential_binding.Overlaps(sample, filtered_peak)
-    diffbind.diffBinding('loaded_sample', outpath='/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/peak_selecetion_B6/PRMT6_new+old_peaks/Improved+old_PRMT6_E9_B6_K4m3_diff.txt', genewide=False) #, genewide=True
+    diffbind.diffBinding('loaded_sample', outpath=basepath + '/further_analysis/PRMT6_KO_analysis/peak_selecetion_B6/PRMT6_new+old_peaks/Improved+old_PRMT6_E9_B6_K4m3_diff.txt', genewide=False) #, genewide=True
 
 
 ### Gene-wide chip profile for broad histone marks
@@ -335,7 +338,7 @@ else:
     for i in range(0, len(sample_name1)):
         overlapping_res = cal_genomic_region.OverlappingPeaks(peakAnalysis_df, sample_name1[i], sample_name2[i])
         name = overlapping_res.keys()[0]
-        with open("/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/overlapping_peaks.txt", "a") as file:
+        with open(basepath + "/further_analysis/overlap/overlapping_peaks.txt", "a") as file:
             file.write(
                 name.split('vs')[0] + '\t' + name.split('vs')[2][1:] + '\t' + str(len(overlapping_res.get(name))) + '\n')
 '''
@@ -367,7 +370,7 @@ for i in range(0, len(sample_name3)):
     print 'External sample overlapping:', sample_name3[i], '======', sample_name4[i]
     overlap4diff = cal_genomic_region.OverlappingPeaks(overlapping_samples, sample_name3[i], sample_name4[i])
     name = overlap4diff.keys()[0]
-    with open("/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/overlapping_peaks.txt", "a") as file:
+    with open(basepath + "/further_analysis/overlap/overlapping_peaks.txt", "a") as file:
         file.write(
             name + '\t' + str(len(overlap4diff.get(name))) + '\n')
     overlapping_samples[overlap4diff.keys()[0]] = pd.DataFrame(overlap4diff.get(overlap4diff.keys()[0]))
@@ -389,5 +392,5 @@ bamRNA = {'NT2D1_E9_1':path+'NT2D1_E9_1/NT2D1_E9_1_GRCh37.bam',
           'NT2D1_B6_1':path+'NT2D1_B6_1/NT2D1_B6_1_GRCh37.bam',
           'NT2D1_B6_2':path+'NT2D1_B6_2/NT2D1_B6_2_GRCh37.bam',
           'NT2D1_B6_3':path+'NT2D1_B6_3/NT2D1_B6_3_GRCh37.bam'}
-print(enhancer_rna_analysis(peakdf, bamRNA, outpath='/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/peak_selecetion_B6/PRMT6_new+old_peaks', samplename='eRNA_PRMT6_n+o_enhancer_bound'))
+print(enhancer_rna_analysis(peakdf, bamRNA, outpath=basepath + '/further_analysis/PRMT6_KO_analysis/peak_selecetion_B6/PRMT6_new+old_peaks', samplename='eRNA_PRMT6_n+o_enhancer_bound'))
 '''

@@ -4,10 +4,17 @@ import annotate.Annotate as Annotate
 import pandas as pd
 
 
+class path():
+    def __init__(self):
+        basepath = os.path.abspath(os.getcwd())
+        self.basepath = os.sep.join(basepath.split(os.sep)[:-2])
+        print self.basepath
+
+
 def create_odir():
     odir = 'results'
     indir = ['alignedLane', 'cache', 'peaks']
-    cdpath = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis'##os.getcwd() when run script from the folder of interest
+    cdpath = path().basepath + '/further_analysis'##os.getcwd() when run script from the folder of interest
     if not os.path.exists(os.path.join(cdpath, odir)): os.mkdir(os.path.join(cdpath, odir))
     for i in indir:
         print os.path.join(cdpath, odir, i)
