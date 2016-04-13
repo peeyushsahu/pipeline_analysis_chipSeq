@@ -1,6 +1,6 @@
 __author__ = 'peeyush'
 import subprocess, os
-import annotate.Annotate as Annotate
+import annotate as Annotate
 import pandas as pd
 
 
@@ -15,18 +15,17 @@ def create_odir():
     odir = 'results'
     indir = ['alignedLane', 'cache', 'peaks']
     cdpath = path().basepath + '/further_analysis'##os.getcwd() when run script from the folder of interest
-    if not os.path.exists(os.path.join(cdpath, odir)): os.mkdir(os.path.join(cdpath, odir))
+    ensure_path(os.path.join(cdpath, odir))
     for i in indir:
-        print os.path.join(cdpath, odir, i)
-        if not os.path.exists(os.path.join(cdpath, odir, i)):
-            os.mkdir(os.path.join(cdpath, odir, i))
+        Path = os.path.join(cdpath, odir, i)
+        ensure_path(Path)
     print os.path.join(cdpath, odir)
     return os.path.join(cdpath, odir)
 
 
 def ensure_path(path):
     if not os.path.exists(path):
-        os.mkdir(path)
+        os.makedirs(path)
 
 
 def create_gtf2transcriptDB(gtf_file_path, path, feature='transcript'):

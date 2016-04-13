@@ -1,6 +1,6 @@
 __author__ = 'peeyush'
 
-import gc
+import gc, os
 from overlap_analysis.differential_binding import getBam, group_DF
 import pandas as pd
 import alignment.commons as paths
@@ -156,8 +156,9 @@ def color():
 def make_dir(bam_order, region='All'):
     import os
     # print 'Directory_for_result: ' + '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/'+folder
-    path = basepath + '/further_analysis/overlapping_plots/' + bam_order + '/' + region + '/'
-    paths.ensure_path(path)
+    path = os.path.join(basepath, 'further_analysis/overlapping_plots', bam_order, region)
+    print('Path created:'+path)
+    paths.ensure_path(path+'/')
     return path
 
 
@@ -272,9 +273,9 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
         #big_df.insert(0, 'chr', peak_df['chr'])
     # print big_df.head()
     if normalized:
-        big_df.to_csv(path + bam_order + region + '_norm.txt', sep="\t", encoding='utf-8')  # , ignore_index=True
+        big_df.to_csv(os.path.join(path, bam_order + region + '_norm.txt'), sep="\t", encoding='utf-8')  # , ignore_index=True
     else:
-        big_df.to_csv(path + bam_order + region + '.txt', sep="\t", encoding='utf-8')  # , ignore_index=True
+        big_df.to_csv(os.path.join(path, bam_order + region + '.txt'), sep="\t", encoding='utf-8')  # , ignore_index=True
     gc.collect()
 
 
@@ -314,7 +315,7 @@ def overlapping_peaks_distribution(bam_name, overlap_df, path, normalized=False)
     bam_path = getBam(bam_name)
     sample_bam = pysam.Samfile(bam_path, "rb")
     total_mapped = sample_bam.mapped
-    with open(path+'bam_readCount.txt', 'a') as f:
+    with open(path+'/bam_readCount.txt', 'a') as f:
         f.write('\n'+bam_name+'\t'+str(total_mapped))
     peak_distribution_sample = pd.DataFrame()
     overlap_df = overlap_df[['chr', 'start', 'stop', 'Next transcript strand', 'summit']]
@@ -480,7 +481,7 @@ def broad_clustered_peaks_4_two_samples(dict_df, name, path):
         sname = name.split(',')
         plt.legend([sname[0], sname[1]], loc='upper left')  # 'Low', 'Medium',
         # plt.show()
-        plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.png')
+        plt.savefig(path + '/overlap_' + name + '_cluster:' + str(k) + '.png')
         #plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.svg')
         plt.clf()
 
@@ -543,7 +544,7 @@ def plot_divide_peaks_in_strength(dict_list, name, path):
 
     plt.legend(['High', 'Medium', 'Low'], loc='upper left')  # 'Low', 'Medium',
     # plt.show()
-    plt.savefig(path + name + '.png')
+    plt.savefig(os.path.join(path, name + '.png'))
     plt.savefig(path + name + '.svg')
     plt.clf()
 
@@ -582,7 +583,7 @@ def line_plot_peak_distribution(dict_of_df, name, path):
         plt.plot(xnew, smooth, linewidth=3)  # marker='o'
         # plt.legend([names[1], names[3]], loc='upper left')
         # plt.show()
-        plt.savefig(path + name + '_cluster:' + str(Cluster) + '.png')
+        plt.savefig(os.path.join(path, name + '_cluster:' + str(Cluster) + '.png'))
         # plt.savefig(path + name + '_cluster:' + str(Cluster) + '.svg')
         plt.clf()
 
@@ -634,8 +635,8 @@ def plot_clustered_peaks_4_two_samples(dict_df, name, path):
         sname = name.split(',')
         plt.legend([sname[0], sname[1]], loc='upper left')  # 'Low', 'Medium',
         # plt.show()
-        plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.png')
-        plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.svg')
+        plt.savefig(os.path.join(path, 'overlap_' + name + '_cluster:' + str(k) + '.png'))
+        plt.savefig(os.path.join(path, 'overlap_' + name + '_cluster:' + str(k) + '.svg'))
         plt.clf()
 
 
@@ -694,8 +695,8 @@ def plot_clustered_peaks_4_three_samples(dict_df, name, path):
         sname = name.split(',')
         plt.legend([sname[0], sname[1], sname[2]], loc='upper left')  # 'Low', 'Medium',
         # plt.show()
-        plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.png')
-        plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.svg')
+        plt.savefig(os.path.join(path, 'overlap_' + name + '_cluster:' + str(k) + '.png'))
+        plt.savefig(os.path.join(path, 'overlap_' + name + '_cluster:' + str(k) + '.svg'))
         plt.clf()
 
 
@@ -761,8 +762,8 @@ def plot_clustered_peaks_4_four_samples(dict_df, name, path):
         sname = name.split(',')
         plt.legend([sname[0], sname[1], sname[2], sname[3]], loc='upper left')  # 'Low', 'Medium',
         # plt.show()
-        plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.png')
-        plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.svg')
+        plt.savefig(os.path.join(path, 'overlap_' + name + '_cluster:' + str(k) + '.png'))
+        plt.savefig(os.path.join(path, 'overlap_' + name + '_cluster:' + str(k) + '.svg'))
         plt.clf()
 
 
@@ -808,8 +809,8 @@ def plot_clustered_peaks_4_multiple_samples(dict_df, name, path):
         plt.gca().set_color_cycle(Color.keys()[:len(sname)])
         plt.legend(sample_names, loc='upper left')  # 'Low', 'Medium',
         # plt.show()
-        plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.png')
-        plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.svg')
+        plt.savefig(os.path.join(path, 'overlap_' + name + '_cluster:' + str(k) + '.png'))
+        plt.savefig(os.path.join(path, 'overlap_' + name + '_cluster:' + str(k) + '.svg'))
         plt.clf()
 
 

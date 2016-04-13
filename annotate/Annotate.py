@@ -120,7 +120,7 @@ def annotate_intronexon_junction(df, chr_vector):
     return dataFrame
 
 
-def next5genes_annotator(dataframe, path):
+def next6genes_annotator(dataframe, path):
     '''
     This method will take a datatframe and compute 5 nearest genes from the summit of the peak.
     :param dataframe:
@@ -153,7 +153,7 @@ def next5genes_annotator(dataframe, path):
         #print(v)
         #print(loc)
         if loc != 'KEY OUT OF BOUND':
-            outdf = next5genes(gtfFile, loc, v)
+            outdf = next6genes(gtfFile, loc, v)
             nearGene = nearGene.append(outdf, ignore_index=True)
 
     del(gtfFile)
@@ -195,7 +195,7 @@ def gtf_binary_search(List, key, imin, imax):
             # key is in lower subset
             return imid, imid+1
 
-def next5genes(gtffile, position, row):
+def next6genes(gtffile, position, row):
     '''
     This method actually search for five nearest genes in GTF file.
     :param gtffile:

@@ -77,27 +77,34 @@ class Overlaps():
                         df.loc[k,sample+'_length_norm'] = ((float(tags)/total_reads)*10**6)/((float(stop)-start)/100)
 
                 else:
+                    #strand = v['Next transcript strand']
                     sys.stdout.write("\rNumber of peaks processed:%d" % k)
                     sys.stdout.flush()
+                    '''
                     #print v['start'], v['summit']
                     if v['stop']-v['start'] > 500:
                         chr = str(v['chr'])
                         summit = v['start']+v['summit']
-                        tags = sample_bam.count(chr, summit-500, summit+500)
+                        start = summit - 500
+                        stop = summit + 500
+                        tags = sample_bam.count(chr, start, stop)
                         if tags == 0: tags = 1
-                        df.loc[k,'new_start'] = summit-1000
-                        df.loc[k,'new_stop'] = summit+1000
+                        df.loc[k,'new_start'] = start
+                        df.loc[k,'new_stop'] = stop
                         df.loc[k,sample] = tags
                         df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
+
                     else:
-                        chr = str(v['chr'])
-                        summit = v['start']+v['summit']
-                        tags = sample_bam.count(chr, v['start'], v['stop'])
-                        if tags == 0: tags = 1
-                        df.loc[k,'new_start'] = v['start']
-                        df.loc[k,'new_stop'] = v['stop']
-                        df.loc[k,sample] = tags
-                        df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
+                    '''
+                    chr = str(v['chr'])
+                    summit = v['start']+v['summit']
+                    tags = sample_bam.count(chr, v['start'], v['stop'])
+                    if tags == 0: tags = 1
+                    df.loc[k,'new_start'] = v['start']
+                    df.loc[k,'new_stop'] = v['stop']
+                    df.loc[k,sample] = tags
+                    df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
+
             sample_bam.close()
         ## This will calculate the logFC
         for ind, row in df.iterrows():

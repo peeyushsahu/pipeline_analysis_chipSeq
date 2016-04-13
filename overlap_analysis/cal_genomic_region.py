@@ -17,19 +17,18 @@ basepath = Path.basepath
 class PeaksAnalysis():
     """A dataframe for peak data analysis is created"""
 
-    def __init__(self, peaks_df, con_name):
+    def __init__(self, peaks_df, con_name, dirPath):
         self.peaks = peaks_df
         self.name = con_name
+        self.dirPath = dirPath
         self.GCount = None
 
 
     def genomic_regions(self):
-
         """
         This adds attribute to PeakAnalysis object for distribution of genomic regions
         :return:
         """
-
         GRcount = self.peaks['GenomicPosition TSS=1250 bp, upstream=5000 bp'].value_counts()
         GPcount = zip(GRcount.index, GRcount.values)
         self.GCount = GPcount
@@ -54,7 +53,7 @@ class PeaksAnalysis():
         ax.set_xticklabels(name, rotation=90)
         plt.tight_layout()
         plt.title(self.name)
-        plt.savefig(basepath + '/further_analysis/plots/' + columnname +'_'+self.name + '.png')
+        plt.savefig(os.path.join(self.dirPath, columnname+'_'+self.name + '.png'))
         plt.clf()
 
 def plotGenomicregions(GPcount, name):
@@ -63,7 +62,6 @@ def plotGenomicregions(GPcount, name):
     :return:
     """
     """ Now we produce some pie charts """
-
     gr = ['tss', 'intergenic', 'intron', 'exon', 'upstream']
     size = [0, 0, 0, 0, 0]
     for a, b in GPcount:
@@ -88,60 +86,11 @@ def plotGenomicregions(GPcount, name):
     plt.clf()
 
 
-def stacked_plot_regions(values, GPcount, name):
-    '''
-    This function will plot a stacked bar plot for genomic region percentage.
-    '''
-    import numpy as np
-    import matplotlib.pyplot as plt
-    per = [100.0/sum(values)*i for i in values]
-    gr = ['tss', 'intergenic', 'intron', 'exon', 'upstream']
-    colors = ['yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'cyan']
-    size = [0, 0, 0, 0, 0]
-    for a, b in GPcount:
-        if a == 'tss':
-            size[0] = per[0]
-        if a == 'intergenic':
-            size[1] = per[1]
-        if a == 'intron':
-            size[2] = per[2]
-        if a == 'exon':
-            size[3] = per[3]
-        if a == 'upstream':
-            size[4] = per[4]
-    N = 1
-    tss = size[0]
-    intergenic = size[1]
-    intron = size[2]
-    exon = size[3]
-    upstream = size[4]
-    ind = np.arange(N)    # the x locations for the groups
-    width = 0.5       # the width of the bars: can also be len(x) sequence
-    plt.figure(figsize=(12,8))
-    p1 = plt.bar(ind, intergenic,   width, color='yellowgreen')
-    p2 = plt.bar(ind, upstream, width, color='gold',
-                 bottom=intergenic)
-    p3 = plt.bar(ind, tss, width, color='lightskyblue',
-                 bottom=intergenic + upstream)
-    p4 = plt.bar(ind, exon, width, color='lightcoral',
-                 bottom=intergenic + upstream + tss)
-    p5 = plt.bar(ind, intron, width, color='cyan',
-                 bottom=intergenic + upstream + tss + exon)
-
-    #plt.xlabel(name)
-    plt.ylabel('peaks')
-    plt.title('Genomic region ratio')
-    plt.xticks(ind+width/2., [name])
-    plt.yticks(np.arange(0,100, 100/5))
-    plt.legend((p1[0], p2[0], p3[0], p4[0], p5[0]), ('intergenic', 'upstream', 'tss', 'exon', 'intron'), loc='center left', bbox_to_anchor=(1.0, 0.5))
-    plt.savefig(basepath + '/further_analysis/plots/stacked' + name + '.png', bbox_inches='tight')
-    plt.clf()
-
-
 def sumzip(*items):
     return [sum(values) for values in zip(*items)]
 
-def stacke_plot_multiple(names_list, filtered_peaks):
+
+def stacke_plot_multiple(names_list, filtered_peaks, path):
     '''
     Creating Genomic Region stacked plot for multiple samples
     :param names_list:
@@ -176,8 +125,7 @@ def stacke_plot_multiple(names_list, filtered_peaks):
     ind = np.arange(N)    # the x locations for the groups
     width = 0.25       # the width of the bars: can also be len(x) sequence
 
-    fig, ax = plt.subplots()
-
+    fig, ax = plt.subplots(figsize=(4, 6))
     p1 = plt.bar(ind, intergenic,   width, color='yellowgreen')
     p2 = plt.bar(ind, upstream, width, color='gold',
                  bottom=intergenic)
@@ -212,9 +160,53 @@ def stacke_plot_multiple(names_list, filtered_peaks):
     plt.xticks(ind+width/2., samples)
     plt.ylim(0,100)
     plt.yticks(np.arange(0, 100, 100/5))
-    plt.legend( (p1[0], p2[0], p3[0], p4[0], p5[0]), ('Intron', 'Exon', 'TSS', 'Upstream', 'Intergenic') ,loc='center left', bbox_to_anchor=(1.0, 0.5))
-    plt.savefig(basepath + '/further_analysis/plots/multi_stacked' + ','.join(samples) + '.png', bbox_inches='tight')
-    plt.clf()
+    plt.legend((p1[0], p2[0], p3[0], p4[0], p5[0]), ('Intron', 'Exon', 'TSS', 'Upstream(-1500bp)', 'Intergenic(-1500 to 5000bp)') ,loc='center left', bbox_to_anchor=(1.0, 0.5))
+    plt.savefig(os.path.join(path, 'multi_stacked' + ','.join(samples) + '.png'), bbox_inches='tight')
+    #plt.clf()
+    plt.close()
+
+
+def peakTSSbinning(names, filtered_peaks, path):
+    '''
+    This plots a histogram for peak to TSS distance
+    :param names:
+    :param filtered_peaks:
+    :param path:
+    :return:
+    '''
+    import collections
+    import matplotlib.pyplot as plt
+    binSize = 100
+    keys = range(-5000, 5000, binSize)
+    #bins = collections.OrderedDict.fromkeys(keys)
+    bins = dict(zip(keys, [0]*len(keys)))
+    for k, v in filtered_peaks.iterrows():
+        pos = v['Next Transcript tss distance']
+        if (pos < 4900) and (pos > 0):
+            key = int(math.ceil(pos / 100.0)) * 100
+            bins[key] += 1
+        if (pos > -5000) and (pos < 0):
+            key = int(math.ceil(pos / 100.0)) * 100
+            bins[key] += 1
+        '''
+        if pos < -5000:
+            bins[-5000] += 1
+        if pos > 4900:
+            bins[4900] += 1
+        '''
+    #print(bins)
+    keys.remove(0); keys.append(5000)
+    bins = collections.OrderedDict(sorted(bins.items(), key=lambda t:t[0]))
+    ## plotting barplot
+    plt.subplots(figsize=(20, 6))
+    plt.bar(range(len(bins)), bins.values(), align='center', color='#8A2BE2')
+    plt.xticks(range(len(bins)), keys, rotation='vertical')
+    plt.xlabel('TSS')
+    plt.ylabel('Peak density')
+    plt.title('Peak densities relative to TSS')
+    plt.savefig(os.path.join(path, 'Peak_densities' + names + '.png'), bbox_inches='tight')
+    #plt.clf()
+    plt.close()
 
 def OverlappingPeaks(dict_peaksdf, name, name1):
 
