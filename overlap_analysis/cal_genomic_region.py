@@ -9,6 +9,7 @@ import math
 import numpy as np
 import annotate.Annotate as Annotate
 import overlap_analysis.differential_binding
+from alignment import commons
 import alignment.commons as paths
 Path = paths.path()
 basepath = Path.basepath
@@ -240,7 +241,10 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
     print "Time consumed by method PeakOverlaps:", stop1-start1, 'sec'
     overlap_dict = {name+'_vs_'+name1: overlap_list}
     ddf = pd.DataFrame(overlap_list)
-    ddf.to_csv(basepath + '/further_analysis/overlap/'+name+'_vs_'+name1+'.txt', sep="\t", encoding='utf-8')
+    dirPath = os.path.join(basepath, 'further_analysis', 'overlap', name, '_vs_', name1)
+    commons.ensure_path(dirPath)
+    get_unique_peaks(df1, df2, name, name1, ddf, dirPath)
+    ddf.to_csv(os.path.join(dirPath, name, '_vs_', name1, '.txt'), sep="\t", encoding='utf-8')
     return overlap_dict
 
 
@@ -346,6 +350,58 @@ def PeakOverlaps(df1, df2):
                         num_overlap += 1
                         break
     return overlap_list
+
+
+def get_unique_peaks(dataframe1, dataframe2, name, name1, overlapdf, dirpath):
+    '''
+    Write unique peaks for overlaping samples
+    :param dataframe1:
+    :param dataframe2:
+    :param overlapdf:
+    :param dirpath:
+    :return:
+    '''
+    df1_overlap = list(overlapdf['Sample1_row'])
+    df2_overlap = list(overlapdf['Sample2_row'])
+    uni_df1 = dataframe1[~dataframe1.index.isin(df1_overlap)]
+    uni_df2 = dataframe2[~dataframe2.index.isin(df2_overlap)]
+    uni_df1.to_csv(os.path.join(dirpath, name, '_unique.txt'), sep='\t', index=None, header=True)
+    uni_df2.to_csv(os.path.join(dirpath, name1, '_unique.txt'), sep='\t', index=None, header=True)
+
+
+def non_overlapping_peaks(dataframe1, overlapDF):
+    """
+    Reterive non overlapping data from peak data
+    :param overlapingDF:
+    :param df1:
+    :param df2:
+    :return: tuple of non-overlapping data
+    """
+    print('Writing unique peaks....')
+    print('Size of Df1:',len(dataframe1))
+    print('Size of Df2:',len(overlapDF))
+    uniqueDF = pd.DataFrame(columns=list(dataframe1.columns))
+    dataframe1['chr'] = dataframe1['chr'].astype(str)
+    overlapDF['chr'] = overlapDF['chr'].astype(str)
+    df1_g = dataframe1.groupby('chr')
+    df2_g = overlapDF.groupby('chr')
+    for i in df1_g:
+        #print '\nchr:', i[0]
+        if i[0] in df2_g.groups:
+            for k, v in df1_g.get_group(i[0]).iterrows():
+                sys.stdout.write("\r%s%%" % i[0])
+                sys.stdout.flush()
+                in_overlap = False
+                for ind, row in df2_g.get_group(i[0]).iterrows():
+                    if (v['chr'] == row['chr']) & (v['start'] == row['start']):
+                        #print('here')
+                        in_overlap = True
+                        break
+                if not in_overlap:
+                    uniqueDF = uniqueDF.append(v)
+    uniqueDF = uniqueDF.rename(columns={'Next Gene name':'Next transcript gene name'})
+    print('Size of Unique Df1:',len(uniqueDF))
+    return uniqueDF
 
 
 def significance_of_chipseq_overlap(overlap, peak_df1, peak_df2, iteration=10):

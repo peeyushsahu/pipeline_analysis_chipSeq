@@ -1,6 +1,7 @@
 __author__ = 'peeyush'
 
 import gc, os
+import pysam
 from overlap_analysis.differential_binding import getBam, group_DF
 import pandas as pd
 import alignment.commons as paths
@@ -235,19 +236,21 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
             big_df = kmeans_clustering(big_df, 9, 10000)  # performing k-means clustering
             dict_of_df = group_DF(big_df, 'cluster')  # divide df in smaller dfs basis in clustering
             print len(dict_of_df)
+            line_plot_peak_distribution(dict_of_df, bam_order, path)  # plotting individual clusters
+            #if len(bam_name_list) == 4:
+            print 'No. of sample to plot:', len(bam_name_list)
+            plot_clustered_peaks_4_multiple_samples(dict_of_df, bam_order, path)  # plotting cluster for different bam in overlapping plot
+            '''
+            if len(bam_name_list) == 3:
+                plot_clustered_peaks_4_three_samples(dict_of_df, bam_order, path)
+            if len(bam_name_list) == 2:
+                plot_clustered_peaks_4_two_samples(dict_of_df, bam_order, path)
+            if len(bam_name_list) > 4:
+                plot_clustered_peaks_4_multiple_samples(dict_of_df, bam_order, path)
+            '''
         except:
             print 'Dataframe can not be clustered, scipy error.'
-        line_plot_peak_distribution(dict_of_df, bam_order, path)  # plotting individual clusters
-        if len(bam_name_list) == 4:
-            print 'No. of sample to plot: 4'
-            plot_clustered_peaks_4_four_samples(dict_of_df, bam_order,
-                                                path)  # plotting cluster for different bam in overlapping plot
-        if len(bam_name_list) == 3:
-            plot_clustered_peaks_4_three_samples(dict_of_df, bam_order, path)
-        if len(bam_name_list) == 2:
-            plot_clustered_peaks_4_two_samples(dict_of_df, bam_order, path)
-        if len(bam_name_list) > 4:
-            plot_clustered_peaks_4_multiple_samples(dict_of_df, bam_order, path)
+
 
 
     ### adding columns to heatmap df
@@ -272,6 +275,9 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
         #big_df.insert(0, 'start', peak_df['start'])
         #big_df.insert(0, 'chr', peak_df['chr'])
     # print big_df.head()
+
+    # adding tagcount column for first bam file
+    big_df = totaltagCountinPeak(big_df, bam_name_list)
     if normalized:
         big_df.to_csv(os.path.join(path, bam_order + region + '_norm.txt'), sep="\t", encoding='utf-8')  # , ignore_index=True
     else:
@@ -307,7 +313,6 @@ def overlapping_peaks_distribution(bam_name, overlap_df, path, normalized=False)
     :param overlap_df:
     :return:
     '''
-    import pysam
     import pandas as pd
     import sys
     import timeit
@@ -357,6 +362,30 @@ def overlapping_peaks_distribution(bam_name, overlap_df, path, normalized=False)
     print '\nTime elapsed:' + str((stop - startT) / 60) + 'min'
     sample_bam.close()
     return peak_distribution_sample
+
+
+def totaltagCountinPeak(peakscorDF, sampleBam):
+    '''
+    This will insert a tagcount column in dataframe for first bam file in the list.
+    :param peakscorDF:
+    :param sampleBam:
+    :return:
+    '''
+    bam_path = getBam(sampleBam[0])
+    sample_bam = pysam.Samfile(bam_path, "rb")
+    countList = []
+    #print(peakscorDF.head())
+    for ind, row in peakscorDF.iterrows():
+        chr = str(row['chr'])
+        if 'chr' in chr:
+            chr = row[3:]
+        start = row['start']
+        stop = row['stop']
+        seqcount = sample_bam.count(chr, start, stop)
+        countList.append(seqcount)
+    peakscorDF.insert(5, 'tagcount', pd.Series(countList))
+    return peakscorDF
+
 
 
 def grHeatmap4wholeGene(peaksDF, bam_name, samplename, longestTranscriptDB = '/ps/imt/f/Genomes/geneAnotations/longest_transcript_annotation.db'):
@@ -587,14 +616,14 @@ def line_plot_peak_distribution(dict_of_df, name, path):
         # plt.savefig(path + name + '_cluster:' + str(Cluster) + '.svg')
         plt.clf()
 
-
+'''
 def plot_clustered_peaks_4_two_samples(dict_df, name, path):
-    '''
+
     Plots result of divided_cluster_peaks_in_strength.
     :param dict_df:
     :param name:
     :return:
-    '''
+
     import matplotlib.pyplot as plt
     from scipy.interpolate import spline
     import numpy as np
@@ -641,12 +670,12 @@ def plot_clustered_peaks_4_two_samples(dict_df, name, path):
 
 
 def plot_clustered_peaks_4_three_samples(dict_df, name, path):
-    '''
+
     Plots result of divided_cluster_peaks_in_strength.
     :param dict_df:
     :param name:
     :return:
-    '''
+
     import matplotlib.pyplot as plt
     from scipy.interpolate import spline
     import numpy as np
@@ -701,12 +730,12 @@ def plot_clustered_peaks_4_three_samples(dict_df, name, path):
 
 
 def plot_clustered_peaks_4_four_samples(dict_df, name, path):
-    '''
+
     Plots result of divided_cluster_peaks_in_strength.
     :param dict_df:
     :param name:
     :return:
-    '''
+
     import matplotlib.pyplot as plt
     from scipy.interpolate import spline
     import numpy as np
@@ -765,6 +794,8 @@ def plot_clustered_peaks_4_four_samples(dict_df, name, path):
         plt.savefig(os.path.join(path, 'overlap_' + name + '_cluster:' + str(k) + '.png'))
         plt.savefig(os.path.join(path, 'overlap_' + name + '_cluster:' + str(k) + '.svg'))
         plt.clf()
+
+'''
 
 
 def plot_clustered_peaks_4_multiple_samples(dict_df, name, path):

@@ -80,8 +80,8 @@ class Overlaps():
                     #strand = v['Next transcript strand']
                     sys.stdout.write("\rNumber of peaks processed:%d" % k)
                     sys.stdout.flush()
-                    '''
                     #print v['start'], v['summit']
+                    '''
                     if v['stop']-v['start'] > 500:
                         chr = str(v['chr'])
                         summit = v['start']+v['summit']
@@ -236,70 +236,6 @@ def modification4nearestgenes(dataframe, name, modification_list):
     df.to_csv(
             basepath + '/further_analysis/differential/' + sample_name + '_'.join(modification_list) + '.csv',
             sep=",", encoding='utf-8', ignore_index=True)
-
-
-
-
-def non_overlapping_peaks(self, overlap_no):
-    """
-    Reterive non overlapping data from peak data
-    :param overlapingDF:
-    :param df1:
-    :param df2:
-    :return: tuple of non-overlapping data
-    """
-    print "\nCheck point: Differential peaks selection"
-    iter_overlaps = self.db_overlaps
-    dataframes = self.filter_peaks
-
-    for name, overlap in iter_overlaps.iteritems():
-        n1 = name.split("_vs_")[0]  # split to get the sample name
-        n2 = name.split("_vs_")[1]
-        print n1
-        print n2
-        for k, v in dataframes.iteritems():
-            if n1 in k:
-                df1 = v  # selecting correct dataframe from the list of all dfs
-                # print 'df 1 selected: ', len(df1)
-            if n2 in k:
-                df2 = v
-    overlaps = pd.DataFrame(overlap)
-    overlapingDF_row1 = overlaps['Sample1_row'].tolist()
-    overlapingDF_row2 = overlaps['Sample2_row'].tolist()
-
-    diff_df1 = pd.DataFrame()
-    diff_df2 = pd.DataFrame()
-    for index, value in df1.iterrows():
-        #print index
-        if index in overlapingDF_row1:
-            continue
-            #ind_overlap = overlapingDF_row1.index(index)
-            #print overlaps['FC_value'][ind_overlap]
-            #diff_df1 = diff_df1.append(value)
-            #if overlaps['FC_value'][ind_overlap] >= 4 or overlaps['FC_value'][ind_overlap] <= 0.25:
-                #diff_df1 = diff_df1.append(value)
-        else:
-            diff_df1 = diff_df1.append(value)
-    for index, value in df2.iterrows():
-        # print pos
-        if index in overlapingDF_row2:
-            continue
-            #ind_overlap = overlapingDF_row2.index(index)
-            #diff_df2 = diff_df2.append(value)
-            #if index in set(overlapingDF_row2) and overlaps['FC_value'][ind_overlap] >= 4 or overlaps['FC_value'][ind_overlap] <= 0.25:
-                #diff_df2 = diff_df2.append(value)
-        else:
-            diff_df2 = diff_df2.append(value)
-    #unchanged_df = overlaps[overlaps['FC_value'] > 0.25]
-    #unchanged_df1 = unchanged_df[unchanged_df['FC_value'] < 4]
-    unchanged_df1 = overlaps
-    diff_df1.to_csv(
-            basepath + '/further_analysis/differential/'+ n1 + '_vs_' + n2 +'_Unique_'+ n1 + '.csv', sep=",", encoding='utf-8')
-    diff_df2.to_csv(
-            basepath + '/further_analysis/differential/Unique_'+ n1 + '_vs_' + n2 +'_Unique_'+ n2 + '.csv', sep=",", encoding='utf-8')
-    #unchanged_df1.to_csv(
-    #        '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/differential/Unchanged_' + n1 + '_vs_' + n2 + '.csv', sep=",", encoding='utf-8')
-    return diff_df1, diff_df2, unchanged_df1
 
 
 

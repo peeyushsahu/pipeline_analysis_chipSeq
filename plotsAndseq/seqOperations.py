@@ -8,8 +8,7 @@ __author__ = 'peeyush'
 import alignment.commons as paths
 Path = paths.path()
 basepath = Path.basepath
-base_path = basepath + "/further_analysis/"
-path_to_seq = "seq4motif/"
+path_to_seq = "/further_analysis/seq4motif/"
 path_to_genome = "/ps/imt/f/Genomes/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/"
 path_to_program = "/home/sahu/meme/bin/"
 program = "meme-chip"
@@ -25,7 +24,7 @@ def seq4motif(peak_data):
     for k,df in peak_data.iteritems():
         if len(df) > 0:
             output_dir.append(k.translate(None, ' '))
-            file = open(base_path+path_to_seq+k.translate(None, ' ')+".txt", "w")
+            file = open(basepath+path_to_seq+k.translate(None, ' ')+".txt", "w")
             count = 1
             gc_percent = []
             CpG_ratio = []
@@ -61,7 +60,7 @@ def seq4motif(peak_data):
             df['CG_percent'] = gc_percent
             df = df[df['CpG_ratio'] >= 0.6]
             df = df[df['CG_percent'] >= 50]
-            df.to_csv(base_path+'/CpG/'+k+'.csv', sep=",", encoding='utf-8', ignore_index=True)
+            df.to_csv(basepath+'/CpG/'+k+'.csv', sep=",", encoding='utf-8', ignore_index=True)
     return output_dir
 
 def get_sequence(chr, start, end):
@@ -86,8 +85,8 @@ def motif_analysis(db, nmotif, output_dir):
     :return:
     '''
     for seqFile in output_dir:
-        output = base_path+path_to_seq+"motif_results/"+seqFile
-        input_file = base_path+path_to_seq+seqFile+'.txt'
+        output = basepath+path_to_seq+"motif_results/"+seqFile
+        input_file = basepath+path_to_seq+seqFile+'.txt'
         meme_chip(output, input_file, db, nmotif)
 
 
@@ -145,7 +144,7 @@ def density_based_motif_comparision(dataframe, columnname):
     dfstart = 0
     dfstop = size/4
     for i in range(0,4):
-        file = open(base_path+'density_based_motif/'+columnname.translate(None, ' ')+str(i)+".txt", "w")
+        file = open(basepath+'density_based_motif/'+columnname.translate(None, ' ')+str(i)+".txt", "w")
         for v, row in df[dfstart:dfstop].iterrows():
             summit = int(float(row['summit'])) + int(row['start'])
             #tss = row['Next Transcript tss distance']
@@ -170,7 +169,7 @@ def density_based_motif_comparision(dataframe, columnname):
         dfstop = dfstart+size/4
         file.close()
         print "Motif search for:"+columnname+str(i)
-        meme_chip(base_path+'density_based_motif/'+columnname.translate(None, ' ')+str(i), base_path+'density_based_motif/'+columnname.translate(None, ' ')+str(i)+".txt",
+        meme_chip(basepath+'density_based_motif/'+columnname.translate(None, ' ')+str(i), basepath+'density_based_motif/'+columnname.translate(None, ' ')+str(i)+".txt",
                   ["JASPAR_CORE_2014_vertebrates.meme", "uniprobe_mouse.meme"], 10)
         print dfstart, dfstop
 
