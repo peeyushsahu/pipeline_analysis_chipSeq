@@ -97,11 +97,17 @@ class Overlaps():
                     else:
                     '''
                     chr = str(v['chr'])
+                    start = v['start']-1000
+                    stop = v['stop']+1000
                     summit = v['start']+v['summit']
-                    tags = sample_bam.count(chr, v['start'], v['stop'])
+                    try:
+                        tags = sample_bam.count(chr, v['start'], v['stop'])
+                    except:
+                        tags = sample_bam.count(chr, start, stop)
+                        print('Cordinates can not be extended for', v['start'], v['stop'])
                     if tags == 0: tags = 1
-                    df.loc[k,'new_start'] = v['start']
-                    df.loc[k,'new_stop'] = v['stop']
+                    df.loc[k,'new_start'] = start
+                    df.loc[k,'new_stop'] = stop
                     df.loc[k,sample] = tags
                     df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
 
@@ -118,6 +124,20 @@ class Overlaps():
         else:
             outpath = basepath + '/further_analysis/differential/' + '_'.join(sample_name) + '.txt'
         df.to_csv(outpath, sep="\t", encoding='utf-8', ignore_index=True)
+
+
+def random_sampleing_df(dataframe, nsample):
+    '''
+    Method will return a randomized subset of df
+    :param dataframe:
+    :param nsample:
+    :return:
+    '''
+    import random
+    dataframe.index = list(range(0, len(dataframe), 1))
+    new_dataframe = dataframe[dataframe.index.isin(list(random.sample(list(range(0, len(dataframe))), nsample)))]
+    return new_dataframe
+
 
 def getBam(name):
     '''

@@ -57,6 +57,29 @@ def filterpeaks(peak_data, name, filtering=True):
     return final, dirPATH
 
 
+def rawpeaks_in_allsamples(peaksdirpath=None):
+    import pandas as pd
+    if peaksdirpath is None:
+        peaksdirpath = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/csv/'
+    #print(os.listdir(peaksdirpath))
+    files = os.listdir(peaksdirpath)
+    file = open(basepath + '/further_analysis/RawPeakCount.txt', 'w')
+    file.write('Sample_name\tcontrol_sample\traw_peaks\n')
+    if len(files) > 0:
+        for peakfile in files:
+            sample = peakfile.split('vs')
+            if (os.path.isfile(os.path.join(peaksdirpath, peakfile))) and (peakfile.endswith('.csv')):
+                #print('here')
+                df = pd.read_csv(os.path.join(peaksdirpath, peakfile), sep='\t', header=0)
+                if len(sample) > 1:
+                    file.write(sample[0].strip()+'\t'+sample[1].strip()+'\t'+str(len(df))+'\n')
+                else:
+                    file.write(sample[0].strip()+'\t--\t'+str(len(df))+'\n')
+    print('Done!!')
+    file.close()
+
+
+
 def extract_data(dataset, list_of_values, column):
     '''
     This will filter data based on values in column provided

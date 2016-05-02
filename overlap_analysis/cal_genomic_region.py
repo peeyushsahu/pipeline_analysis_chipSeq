@@ -52,6 +52,7 @@ class PeaksAnalysis():
         plt.bar(x, y, color='coral')
         ax.set_xticks(x+0.5)
         ax.set_xticklabels(name, rotation=90)
+        ax.set_xlim(0, len(name) + 0.5)
         plt.tight_layout()
         plt.title(self.name)
         plt.savefig(os.path.join(self.dirPath, columnname+'_'+self.name + '.png'))
@@ -322,21 +323,6 @@ def PeakOverlaps(df1, df2):
                 sys.stdout.write("\r%d%%" % ind)
                 sys.stdout.flush()
                 for count1, row1 in df2_g.get_group(i[0]).iterrows():
-                    '''
-                    if (row['start'] >= row1['start']) and (row['stop'] <= row1['stop']):
-                          #
-                          #
-                          # it is an complete overlap 1
-                          #
-                          #
-                        overlaps = {'Next transcript strand':row['Next transcript strand'],'Sample1_row':count, 'Sample2_row':count1, 'chr':row['chr'], 'start':row['start'], 'stop':row['stop'], 'GenomicPosition TSS=1250 bp, upstream=5000 bp':row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
-                        'Next transcript gene name':row['Next transcript gene name'], 'Next Transcript tss distance':row['Next Transcript tss distance'], 'start1':row1['start'], 'stop1':row1['stop'],
-                        'Next transcript gene name1':row1['Next transcript gene name'], 'overlap':1, 'summit':row['summit'], 'summit1':row1['summit']}
-                        overlap_list.append(overlaps)
-                        num_overlap += 1
-                        #print overlaps
-                        break
-                    '''
                     if max(row['start'], row1['start']) < min(row['stop'], row1['stop']):
                           #
                           #
@@ -345,7 +331,7 @@ def PeakOverlaps(df1, df2):
                           #
                         overlaps = {'Next transcript strand':row['Next transcript strand'],'Sample1_row':count, 'Sample2_row':count1, 'chr':row['chr'], 'start':row['start'], 'stop':row['stop'], 'GenomicPosition TSS=1250 bp, upstream=5000 bp':row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
                         'Next transcript gene name':row['Next transcript gene name'], 'Next Transcript tss distance':row['Next Transcript tss distance'], 'start1':row1['start'], 'stop1':row1['stop'],
-                        'Next transcript gene name1':row1['Next transcript gene name'], 'overlap':2, 'summit':row['summit'], 'summit1':row1['summit']}
+                        'Next transcript gene name1':row1['Next transcript gene name'], 'summit':row['summit'], 'summit1':row1['summit']}
                         overlap_list.append(overlaps)
                         num_overlap += 1
                         break

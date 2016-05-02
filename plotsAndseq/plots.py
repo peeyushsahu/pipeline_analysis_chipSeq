@@ -11,18 +11,9 @@ basepath = Path.basepath
 def color():
     cnames = {
     'aliceblue':            '#F0F8FF',
-    'antiquewhite':         '#FAEBD7',
-    'aqua':                 '#00FFFF',
     'aquamarine':           '#7FFFD4',
-    'azure':                '#F0FFFF',
-    'beige':                '#F5F5DC',
-    'bisque':               '#FFE4C4',
-    'black':                '#000000',
-    'blanchedalmond':       '#FFEBCD',
-    'blue':                 '#0000FF',
     'blueviolet':           '#8A2BE2',
     'brown':                '#A52A2A',
-    'burlywood':            '#DEB887',
     'cadetblue':            '#5F9EA0',
     'chartreuse':           '#7FFF00',
     'chocolate':            '#D2691E',
@@ -31,8 +22,6 @@ def color():
     'cornsilk':             '#FFF8DC',
     'crimson':              '#DC143C',
     'cyan':                 '#00FFFF',
-    'darkblue':             '#00008B',
-    'darkcyan':             '#008B8B',
     'darkgoldenrod':        '#B8860B',
     'darkgray':             '#A9A9A9',
     'darkgreen':            '#006400',
@@ -45,12 +34,10 @@ def color():
     'darksalmon':           '#E9967A',
     'darkseagreen':         '#8FBC8F',
     'darkslateblue':        '#483D8B',
-    'darkslategray':        '#2F4F4F',
     'darkturquoise':        '#00CED1',
     'darkviolet':           '#9400D3',
     'deeppink':             '#FF1493',
     'deepskyblue':          '#00BFFF',
-    'dimgray':              '#696969',
     'dodgerblue':           '#1E90FF',
     'firebrick':            '#B22222',
     'floralwhite':          '#FFFAF0',
@@ -62,12 +49,10 @@ def color():
     'goldenrod':            '#DAA520',
     'gray':                 '#808080',
     'green':                '#008000',
-    'greenyellow':          '#ADFF2F',
     'honeydew':             '#F0FFF0',
     'hotpink':              '#FF69B4',
     'indianred':            '#CD5C5C',
     'indigo':               '#4B0082',
-    'ivory':                '#FFFFF0',
     'khaki':                '#F0E68C',
     'lavender':             '#E6E6FA',
     'lavenderblush':        '#FFF0F5',
@@ -97,7 +82,6 @@ def color():
     'mediumpurple':         '#9370DB',
     'mediumseagreen':       '#3CB371',
     'mediumslateblue':      '#7B68EE',
-    'mediumspringgreen':    '#00FA9A',
     'mediumturquoise':      '#48D1CC',
     'mediumvioletred':      '#C71585',
     'midnightblue':         '#191970',
@@ -105,19 +89,14 @@ def color():
     'mistyrose':            '#FFE4E1',
     'moccasin':             '#FFE4B5',
     'navajowhite':          '#FFDEAD',
-    'navy':                 '#000080',
     'oldlace':              '#FDF5E6',
     'olive':                '#808000',
     'olivedrab':            '#6B8E23',
-    'orange':               '#FFA500',
     'orangered':            '#FF4500',
     'orchid':               '#DA70D6',
     'palegoldenrod':        '#EEE8AA',
-    'palegreen':            '#98FB98',
     'paleturquoise':        '#AFEEEE',
     'palevioletred':        '#DB7093',
-    'papayawhip':           '#FFEFD5',
-    'peachpuff':            '#FFDAB9',
     'peru':                 '#CD853F',
     'pink':                 '#FFC0CB',
     'plum':                 '#DDA0DD',
@@ -130,14 +109,12 @@ def color():
     'salmon':               '#FA8072',
     'sandybrown':           '#FAA460',
     'seagreen':             '#2E8B57',
-    'seashell':             '#FFF5EE',
     'sienna':               '#A0522D',
     'silver':               '#C0C0C0',
     'skyblue':              '#87CEEB',
     'slateblue':            '#6A5ACD',
     'slategray':            '#708090',
     'snow':                 '#FFFAFA',
-    'springgreen':          '#00FF7F',
     'steelblue':            '#4682B4',
     'tan':                  '#D2B48C',
     'teal':                 '#008080',
@@ -146,11 +123,13 @@ def color():
     'turquoise':            '#40E0D0',
     'violet':               '#EE82EE',
     'wheat':                '#F5DEB3',
-    'white':                '#FFFFFF',
     'whitesmoke':           '#F5F5F5',
     'yellow':               '#FFFF00',
     'yellowgreen':          '#9ACD32'}
-    return cnames
+
+    cnames4plot = ['mediumorchid', 'r', 'dodgerblue', 'green', 'peru', 'brown', 'springgreen', 'chartreuse', 'yellow', 'olive', 'turquoise', 'indigo',
+                   'teal', 'blue', 'purple', 'coral']
+    return cnames, cnames4plot
 
 
 
@@ -237,9 +216,9 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
             dict_of_df = group_DF(big_df, 'cluster')  # divide df in smaller dfs basis in clustering
             print len(dict_of_df)
             line_plot_peak_distribution(dict_of_df, bam_order, path)  # plotting individual clusters
-            #if len(bam_name_list) == 4:
             print 'No. of sample to plot:', len(bam_name_list)
             plot_clustered_peaks_4_multiple_samples(dict_of_df, bam_order, path)  # plotting cluster for different bam in overlapping plot
+
             '''
             if len(bam_name_list) == 3:
                 plot_clustered_peaks_4_three_samples(dict_of_df, bam_order, path)
@@ -250,9 +229,6 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
             '''
         except:
             print 'Dataframe can not be clustered, scipy error.'
-
-
-
     ### adding columns to heatmap df
     try:
         if sort: big_df.insert(0, sort_column, peak_df[sort_column])
@@ -810,7 +786,8 @@ def plot_clustered_peaks_4_multiple_samples(dict_df, name, path):
     import numpy as np
     #print 'shape', dict_df[0].shape
     sname = name.split(',')
-    Color = color()
+    cdict, clist = color()
+    fig = plt.figure()
     for k, v in dict_df:
         sample_dict = {}
         start = 1
@@ -823,10 +800,11 @@ def plot_clustered_peaks_4_multiple_samples(dict_df, name, path):
 
         x = np.array(range(-3000, 3000, 100))
         Max = 0
-        sample_names = []
-        for sample, df in sample_dict.iteritems():
+        plt.gca().set_color_cycle(clist[:len(sname)])
+        for sample in sname:
+        #for sample, df in sample_dict.iteritems():
             # print x
-            sample_names.append(sample)
+            df = sample_dict.get(sample)
             s = np.array(df.sum(axis=0)) / float(len(df))
             s = np.subtract(s, min(s))
             if max(s) > Max: Max = max(s)
@@ -837,12 +815,14 @@ def plot_clustered_peaks_4_multiple_samples(dict_df, name, path):
         plt.xlabel('Binding profile cluster' + str(k))
         plt.ylabel('Avg. norm. tag density per peaks')
         plt.title('Genomic distribution of peaks with datapoints: ' + str(size[0]))
-        plt.gca().set_color_cycle(Color.keys()[:len(sname)])
-        plt.legend(sample_names, loc='upper left')  # 'Low', 'Medium',
+        lgd = plt.legend(sname, loc='center left', bbox_to_anchor=(1, 0.5))  # 'Low', 'Medium',
         # plt.show()
-        plt.savefig(os.path.join(path, 'overlap_' + name + '_cluster:' + str(k) + '.png'))
-        plt.savefig(os.path.join(path, 'overlap_' + name + '_cluster:' + str(k) + '.svg'))
+        #plt.tight_layout()
+        plt.savefig(os.path.join(path, 'overlap_' + name + '_cluster:' + str(k) + '.png'), bbox_extra_artists=(lgd,), bbox_inches='tight')
+        plt.savefig(os.path.join(path, 'overlap_' + name + '_cluster:' + str(k) + '.svg'), bbox_extra_artists=(lgd,), bbox_inches='tight')
         plt.clf()
+    plt.close()
+
 
 
 def scale(val, src, dst):
