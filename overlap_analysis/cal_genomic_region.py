@@ -431,3 +431,42 @@ def significance_of_chipseq_overlap(overlap, peak_df1, peak_df2, iteration=10):
     #calculate p-value for the iterations
     pval = len([elem for elem in overlap_list.values() if elem >= overlap])/iteration
     return overlap_list, pval
+
+
+def get_combined_peaks(df1, df2):
+    '''
+    This method returns combined peaks from two peak df after asserting overlaps.
+    :param df1:
+    :param df2:
+    :return:
+    '''
+    columns = ['chr','start','stop','GenomicPosition TSS=1250 bp, upstream=5000 bp','Next Gene name','Next Transcript tss distance','Next transcript strand', 'summit', 'length']
+    combinedDF = pd.DataFrame(columns=columns)
+    df1['chr'] = df1['chr'].astype(str)
+    df2['chr'] = df2['chr'].astype(str)
+    df1_g = df1.groupby('chr')
+    df2_g = df2.groupby('chr')
+    num_overlap = 0
+    indexdf1 = []
+    indexdf2 = []
+    for i in df1_g:
+        #print '\nchr:',i[0]
+        if i[0] in df2_g.groups:
+            for count, row in df1_g.get_group(i[0]).iterrows():
+                #print count
+                sys.stdout.write("\rChr:%s" % row['chr'])
+                sys.stdout.flush()
+                for count1, row1 in df2_g.get_group(i[0]).iterrows():
+                    if max(row['start'], row1['start']) < min(row['stop'], row1['stop']):
+                        num_overlap += 1
+                        combinedDF = combinedDF.append(row[columns])
+                        indexdf1.append(count)
+                        indexdf2.append(count1)
+                        break
+    # Finding uniques & appending to combinedDF
+    uni_df1 = df1[~df1.index.isin(indexdf1)]
+    uni_df2 = df2[~df2.index.isin(indexdf2)]
+    combinedDF = combinedDF.append(uni_df1[columns])
+    combinedDF = combinedDF.append(uni_df2[columns])
+    print('Size of DF1:', len(df1), 'Size of DF2:', len(df2), 'Size of overlap:', num_overlap, 'Size of combined df:', len(combinedDF))
+    return combinedDF

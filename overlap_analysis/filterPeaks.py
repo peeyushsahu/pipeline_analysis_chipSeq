@@ -57,7 +57,12 @@ def filterpeaks(peak_data, name, filtering=True):
     return final, dirPATH
 
 
-def rawpeaks_in_allsamples(peaksdirpath=None):
+def peaks_in_allsamples(peaksdirpath=None):
+    '''
+    Create a txt file for peaks count in all the files in csv folder
+    :param peaksdirpath:
+    :return:
+    '''
     import pandas as pd
     if peaksdirpath is None:
         peaksdirpath = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/csv/'
