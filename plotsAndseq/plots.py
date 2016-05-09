@@ -138,13 +138,14 @@ def make_dir(bam_order, region='All'):
     # print 'Directory_for_result: ' + '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/'+folder
     path = os.path.join(basepath, 'further_analysis/overlapping_plots', bam_order, region)
     print('Path created:'+path)
-    paths.ensure_path(path+'/')
+    paths.ensure_path(os.path.join(path, 'raw'))
+    paths.ensure_path(os.path.join(path, 'norm'))
     return path
 
 
 # @profile
 def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, sort_column=None, scale_df=True,
-                             sample_name=None, normalized=False, strength_divide=False):
+                             sample_name=None, strength_divide=False):
     '''
     Suggestion: Please do not use more then 3 samples at a time.
     This function will take a list of bam files path and create a heatmap of genomic region for the provided peak dataset.
@@ -156,6 +157,7 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     :return: A dataframe; Column: additive length of genomic regions for all the bam files, Rows: Number of peaks defined in the peak dataframe
     '''
     big_df = pd.DataFrame()
+    big_df_raw = pd.DataFrame()
 
     region = region.strip()
     peak_df = peak_df
@@ -198,67 +200,64 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
 
     # print peak_df.head()
     for v in bam_name_list:
-        df = overlapping_peaks_distribution(v, peak_df, path, normalized=normalized)
+        df, df1 = overlapping_peaks_distribution(v, peak_df, path)
         if scale_df:
             df = scale_dataframe(df)  # scaling of dataframe
             print 'scaled df'
         big_df = pd.concat([big_df, df], axis=1)
-    # big_df = overlapping_peaks_distribution_improved(bam_name_list, peak_df)
+        big_df_raw = pd.concat([big_df_raw, df1], axis=1)
     big_df.columns = range(0, big_df.shape[1])
-    print(big_df.head())
-    plot_all_peaks_4_multiple_samples(big_df, bam_order, path)
+    big_df_raw.columns = range(0, big_df_raw.shape[1])
+    #print(big_df.head())
+
+    # Plot all sample in one line plot
+    plot_all_peaks_4_multiple_samples(big_df, bam_order, path, 'norm')
+    plot_all_peaks_4_multiple_samples(big_df_raw, bam_order, path, 'raw')
+
     # Plot peaks after dividing them into strength basis
     if strength_divide:
         divide_peaks_in_strength(big_df, bam_order, path)
+        divide_peaks_in_strength(big_df_raw, bam_order, path)
+
     # Plot peaks based on K-means clustering
     else:
         try:
             big_df = kmeans_clustering(big_df, 9, 10000)  # performing k-means clustering
+            big_df_raw = kmeans_clustering(big_df_raw, 9, 10000)  # performing k-means clustering
             dict_of_df = group_DF(big_df, 'cluster')  # divide df in smaller dfs basis in clustering
+            dict_of_df_raw = group_DF(big_df_raw, 'cluster')
             print len(dict_of_df)
-            line_plot_peak_distribution(dict_of_df, bam_order, path)  # plotting individual clusters
+            line_plot_peak_distribution(dict_of_df, bam_order, path, 'norm')  # plotting individual clusters
+            line_plot_peak_distribution(dict_of_df_raw, bam_order, path, 'raw')
             print 'No. of sample to plot:', len(bam_name_list)
-            plot_clustered_peaks_4_multiple_samples(dict_of_df, bam_order, path)  # plotting cluster for different bam in overlapping plot
+            plot_clustered_peaks_4_multiple_samples(dict_of_df, bam_order, path, 'norm')  # plotting cluster for different bam in overlapping plot
+            plot_clustered_peaks_4_multiple_samples(dict_of_df_raw, bam_order, path, 'raw')
 
-            '''
-            if len(bam_name_list) == 3:
-                plot_clustered_peaks_4_three_samples(dict_of_df, bam_order, path)
-            if len(bam_name_list) == 2:
-                plot_clustered_peaks_4_two_samples(dict_of_df, bam_order, path)
-            if len(bam_name_list) > 4:
-                plot_clustered_peaks_4_multiple_samples(dict_of_df, bam_order, path)
-            '''
         except:
             print 'Dataframe can not be clustered, scipy error.'
     ### adding columns to heatmap df
     try:
-        if sort: big_df.insert(0, sort_column, peak_df[sort_column])
-        big_df.insert(0, 'GenomicPosition TSS=1250 bp, upstream=5000 bp',
-                      peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'])
-        big_df.insert(0, 'Next Transcript tss distance', peak_df['Next Transcript tss distance'])
-        big_df.insert(0, 'Next transcript gene name', peak_df['Next transcript gene name'])
-        big_df.insert(0, 'Next transcript strand', peak_df['Next transcript strand'])
-        big_df.insert(0, 'summit', peak_df['summit'])
-        big_df.insert(0, 'length', peak_df['stop'] - peak_df['start'])
-        big_df.insert(0, 'stop', peak_df['stop'])
-        big_df.insert(0, 'start', peak_df['start'])
-        big_df.insert(0, 'chr', peak_df['chr'])
+        colList = ['GenomicPosition TSS=1250 bp, upstream=5000 bp', 'Next Transcript tss distance',
+                   'Next transcript gene name', 'Next transcript strand', 'summit', 'length', 'stop', 'start', 'chr']#
+        for col in colList:
+            print(col, peak_df[col])
+            big_df.insert(0, col, peak_df[col])
+            big_df_raw.insert(0, col, peak_df[col])
+        if sort:
+            big_df.insert(0, sort_column, peak_df[sort_column])
+            big_df_raw.insert(0, sort_column, peak_df[sort_column])
     except:
         raise ValueError('Needed columns for peak profile are missing')
-        #big_df.insert(0, 'Next transcript strand', peak_df['Next transcript strand'])
-        #big_df.insert(0, 'summit', peak_df['summit'])
-        #big_df.insert(0, 'length', peak_df['stop'] - peak_df['start'])
-        #big_df.insert(0, 'stop', peak_df['stop'])
-        #big_df.insert(0, 'start', peak_df['start'])
-        #big_df.insert(0, 'chr', peak_df['chr'])
-    # print big_df.head()
+
+    #print (big_df.head())
+    #print (big_df_raw.head())
 
     # adding tagcount column for first bam file
     big_df = totaltagCountinPeak(big_df, bam_name_list)
-    if normalized:
-        big_df.to_csv(os.path.join(path, bam_order + region + '_norm.txt'), sep="\t", encoding='utf-8')  # , ignore_index=True
-    else:
-        big_df.to_csv(os.path.join(path, bam_order + region + '.txt'), sep="\t", encoding='utf-8')  # , ignore_index=True
+    big_df_raw = totaltagCountinPeak(big_df_raw, bam_name_list)
+
+    big_df.to_csv(os.path.join(path, 'norm', 'tagcountDF_' + region + '_norm.txt'), sep="\t", encoding='utf-8')  # , ignore_index=True
+    big_df_raw.to_csv(os.path.join(path, 'raw', 'tagcountDF_' + region + '_raw.txt'), sep="\t", encoding='utf-8')  # , ignore_index=True
     gc.collect()
 
 
@@ -282,7 +281,7 @@ def kmeans_clustering(df, nClus, iter):
 
 
 # @profile
-def overlapping_peaks_distribution(bam_name, overlap_df, path, normalized=False):
+def overlapping_peaks_distribution(bam_name, overlap_df, path):
     '''
     Returns dataframe for tag count distribution for overlapping peaks within 3000bp (+,-) from summit.
     This function also considers the gene transcrition direction.
@@ -300,6 +299,7 @@ def overlapping_peaks_distribution(bam_name, overlap_df, path, normalized=False)
     with open(path+'/bam_readCount.txt', 'a') as f:
         f.write('\n'+bam_name+'\t'+str(total_mapped))
     peak_distribution_sample = pd.DataFrame()
+    peak_distribution_sample1 = pd.DataFrame()
     overlap_df = overlap_df[['chr', 'start', 'stop', 'Next transcript strand', 'summit']]
     print 'Process: Feature extraction from BAM started'
     count = 1
@@ -315,30 +315,32 @@ def overlapping_peaks_distribution(bam_name, overlap_df, path, normalized=False)
         start = middle - 3000  # Distance on one side of the peaks
         stop = start + 100
         list_sample = []
+        list_sample1 = []
         # total_tags = int(bam_peak1.mapped) will get total no of mapped reads
         if start > 0:
             for i in range(0, 60):  # Please set based on distance on one side = s*distance/50
                 seqcount = sample_bam.count(chr, start, stop)
                 # Normalized tag count per 5 million
-                if normalized:
-                    list_sample.append((float(seqcount)/total_mapped)*(5*10**6))
-                # Real tag count
-                else:
-                    list_sample.append(seqcount)
+                list_sample.append((float(seqcount)/total_mapped)*(5*10**6))
+                # raw tag count
+                list_sample1.append(seqcount)
                 start = stop
                 stop = start + 100  # divide peaks into length of 50 bp
             if orientation == 1:  # Direction gene transcription
                 # print 'Towards 5 prime'
                 peak_distribution_sample = peak_distribution_sample.append(pd.Series(list_sample), ignore_index=True)
+                peak_distribution_sample1 = peak_distribution_sample1.append(pd.Series(list_sample1), ignore_index=True)
             else:
                 # print 'Towards 3 prime'
                 peak_distribution_sample = peak_distribution_sample.append(pd.Series(list_sample[::-1]),
+                                                                           ignore_index=True)
+                peak_distribution_sample1 = peak_distribution_sample1.append(pd.Series(list_sample1[::-1]),
                                                                            ignore_index=True)
         del list_sample, middle, start, stop
     stop = timeit.default_timer()
     print '\nTime elapsed:' + str((stop - startT) / 60) + 'min'
     sample_bam.close()
-    return peak_distribution_sample
+    return peak_distribution_sample, peak_distribution_sample1
 
 
 def totaltagCountinPeak(peakscorDF, sampleBam):
@@ -555,7 +557,7 @@ def plot_divide_peaks_in_strength(dict_list, name, path):
     plt.clf()
 
 
-def line_plot_peak_distribution(dict_of_df, name, path):
+def line_plot_peak_distribution(dict_of_df, name, path, which):
     '''
     This will plot clusters individually
     :param dict_of_df:
@@ -589,12 +591,12 @@ def line_plot_peak_distribution(dict_of_df, name, path):
         plt.plot(xnew, smooth, linewidth=3)  # marker='o'
         # plt.legend([names[1], names[3]], loc='upper left')
         # plt.show()
-        plt.savefig(os.path.join(path, name + '_cluster:' + str(Cluster) + '.png'))
+        plt.savefig(os.path.join(path, which, name + '_cluster:' + str(Cluster) + '.png'))
         # plt.savefig(path + name + '_cluster:' + str(Cluster) + '.svg')
         plt.clf()
 
 
-def plot_clustered_peaks_4_multiple_samples(dict_df, name, path):
+def plot_clustered_peaks_4_multiple_samples(dict_df, name, path, which):
     '''
     Plots result of divided_cluster_peaks_in_strength.
     :param dict_df:
@@ -638,13 +640,13 @@ def plot_clustered_peaks_4_multiple_samples(dict_df, name, path):
         lgd = plt.legend(sname, loc='center left', bbox_to_anchor=(1, 0.5))  # 'Low', 'Medium',
         # plt.show()
         #plt.tight_layout()
-        plt.savefig(os.path.join(path, 'overlap_' + name + '_cluster:' + str(k) + '.png'), bbox_extra_artists=(lgd,), bbox_inches='tight')
-        plt.savefig(os.path.join(path, 'overlap_' + name + '_cluster:' + str(k) + '.svg'), bbox_extra_artists=(lgd,), bbox_inches='tight')
+        plt.savefig(os.path.join(path, which, 'overlap_' + name + '_cluster:' + str(k) + '.png'), bbox_extra_artists=(lgd,), bbox_inches='tight')
+        plt.savefig(os.path.join(path, which, 'overlap_' + name + '_cluster:' + str(k) + '.svg'), bbox_extra_artists=(lgd,), bbox_inches='tight')
         plt.clf()
     plt.close()
 
 
-def plot_all_peaks_4_multiple_samples(big_df, name, path):
+def plot_all_peaks_4_multiple_samples(big_df, name, path, which):
     '''
     Plots result of all peaks in strength.
     :param dict_df:
@@ -687,8 +689,8 @@ def plot_all_peaks_4_multiple_samples(big_df, name, path):
     lgd = plt.legend(sname, loc='center left', bbox_to_anchor=(1, 0.5))  # 'Low', 'Medium',
     # plt.show()
     #plt.tight_layout()
-    plt.savefig(os.path.join(path, 'overlap_' + name + '_all:' + str(len(big_df)) + '.png'), bbox_extra_artists=(lgd,), bbox_inches='tight')
-    plt.savefig(os.path.join(path, 'overlap_' + name + '_all:' + str(len(big_df)) + '.svg'), bbox_extra_artists=(lgd,), bbox_inches='tight')
+    plt.savefig(os.path.join(path, which, 'overlap_' + name + '_all:' + str(len(big_df)) + '.png'), bbox_extra_artists=(lgd,), bbox_inches='tight')
+    plt.savefig(os.path.join(path, which, 'overlap_' + name + '_all:' + str(len(big_df)) + '.svg'), bbox_extra_artists=(lgd,), bbox_inches='tight')
     plt.clf()
     #plt.close()
 

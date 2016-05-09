@@ -162,7 +162,7 @@ def stacke_plot_multiple(names_list, filtered_peaks, path):
     plt.xticks(ind+width/2., samples)
     plt.ylim(0,100)
     plt.yticks(np.arange(0, 100, 100/5))
-    plt.legend((p1[0], p2[0], p3[0], p4[0], p5[0]), ('Intron', 'Exon', 'TSS', 'Upstream(-1500bp)', 'Intergenic(-1500 to 5000bp)') ,loc='center left', bbox_to_anchor=(1.0, 0.5))
+    plt.legend((p1[0], p2[0], p3[0], p4[0], p5[0]), ('Intron', 'Exon', 'TSS(+-1500bp)', 'Upstream(-1500 to -5000bp)', 'Intergenic(> 5000bp)') ,loc='center left', bbox_to_anchor=(1.0, 0.5))
     plt.savefig(os.path.join(path, 'multi_stacked' + ','.join(samples) + '.png'), bbox_inches='tight')
     #plt.clf()
     plt.close()
@@ -240,13 +240,16 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
         overlap_list = PeakOverlaps_concise(df1, df2)
     stop1 = timeit.default_timer()
     print "Time consumed by method PeakOverlaps:", stop1-start1, 'sec'
-    overlap_dict = {name+'_vs_'+name1: overlap_list}
     ddf = pd.DataFrame(overlap_list)
-    dirPath = os.path.join(basepath, 'further_analysis', 'overlap', name, '_vs_', name1)
+    dirPath = os.path.join(basepath, 'further_analysis', 'overlap', name+'_vs_'+name1)
     commons.ensure_path(dirPath)
     get_unique_peaks(df1, df2, name, name1, ddf, dirPath)
-    ddf.to_csv(os.path.join(dirPath, name, '_vs_', name1, '.txt'), sep="\t", encoding='utf-8')
-    return overlap_dict
+    ddf.to_csv(os.path.join(dirPath, name+'_vs_'+name1+'.txt'), sep="\t", encoding='utf-8')
+
+    overlap_dict = {name+'_vs_'+name1: ddf}
+    stacke_plot_multiple(list(overlap_dict.keys()), overlap_dict, dirPath)
+    peakTSSbinning(overlap_dict.keys()[0], ddf, dirPath)
+    return ddf
 
 
 def PeakOverlaps_concise(df1, df2):
@@ -331,7 +334,7 @@ def PeakOverlaps(df1, df2):
                           #
                         overlaps = {'Next transcript strand':row['Next transcript strand'],'Sample1_row':count, 'Sample2_row':count1, 'chr':row['chr'], 'start':row['start'], 'stop':row['stop'], 'GenomicPosition TSS=1250 bp, upstream=5000 bp':row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
                         'Next transcript gene name':row['Next transcript gene name'], 'Next Transcript tss distance':row['Next Transcript tss distance'], 'start1':row1['start'], 'stop1':row1['stop'],
-                        'Next transcript gene name1':row1['Next transcript gene name'], 'summit':row['summit'], 'summit1':row1['summit']}
+                        'Next transcript gene name1':row1['Next transcript gene name'], 'summit':row['summit'], 'summit1':row1['summit'], 'length':row['length']}
                         overlap_list.append(overlaps)
                         num_overlap += 1
                         break
@@ -351,8 +354,8 @@ def get_unique_peaks(dataframe1, dataframe2, name, name1, overlapdf, dirpath):
     df2_overlap = list(overlapdf['Sample2_row'])
     uni_df1 = dataframe1[~dataframe1.index.isin(df1_overlap)]
     uni_df2 = dataframe2[~dataframe2.index.isin(df2_overlap)]
-    uni_df1.to_csv(os.path.join(dirpath, name, '_unique.txt'), sep='\t', index=None, header=True)
-    uni_df2.to_csv(os.path.join(dirpath, name1, '_unique.txt'), sep='\t', index=None, header=True)
+    uni_df1.to_csv(os.path.join(dirpath, name + '_unique.txt'), sep='\t', index=None, header=True)
+    uni_df2.to_csv(os.path.join(dirpath, name1 + '_unique.txt'), sep='\t', index=None, header=True)
 
 
 def non_overlapping_peaks(dataframe1, overlapDF):
