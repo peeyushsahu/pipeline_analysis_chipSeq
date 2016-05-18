@@ -16,8 +16,7 @@ class Overlaps():
         self.samples_names = overlappinglist
         self.filter_peaks = filter_peaks
 
-
-    def diffBinding(self, basepeakfile, outpath=None, genewide=False):
+    def diffBinding(self, basepeakfile, outpath=None, genewide=False, use_second_start=False, from_sample=2):
         '''
         This function will extract summit (+-500) peak data if peak length is >1000 from provided peaks.
         This dataframe can be used with DESeq for differential binding calculation.
@@ -25,38 +24,31 @@ class Overlaps():
         '''
         import pysam
         import sys, math
-        print "\nCheck point: diffBinding"
+        print ("\nCheck point: diffBinding and using second:"+str(use_second_start))
         sample_name = self.samples_names
-        dataframes = self.filter_peaks
+        dataframe = self.filter_peaks.get(basepeakfile)
+
+        column = ['chr', 'start', 'stop', 'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'Next transcript gene name',
+                  'Next transcript strand', 'Next transcript strand', 'Next Transcript tss distance', 'summit']
         if genewide:
             print("Gene-wide calculation is on....")
             longestTranscriptDB = '/ps/imt/f/Genomes/geneAnotations/longest_transcript_annotation.db'
             transcriptDB = pd.read_csv(longestTranscriptDB, header=0, sep='\t')
-            df = pd.DataFrame()
-            df = pd.concat([df, dataframes.get(basepeakfile)['Next transcript gene name']], axis=1)
+            df = pd.DataFrame(index=range(len(dataframe)))
         # print type(sample_name)
         #df = dataframes.get(sample_name[0]).iloc[:, 0:1]
         else:
-            df = pd.DataFrame()
-            df = pd.concat([df, dataframes.get(basepeakfile)['chr']], axis=1)
-            df = pd.concat([df, dataframes.get(basepeakfile)['start']], axis=1)
-            df = pd.concat([df, dataframes.get(basepeakfile)['stop']], axis=1)
-            df = pd.concat([df, dataframes.get(basepeakfile)['GenomicPosition TSS=1250 bp, upstream=5000 bp']], axis=1)
-            df = pd.concat([df, dataframes.get(basepeakfile)['Next transcript gene name']], axis=1)
-            df = pd.concat([df, dataframes.get(basepeakfile)['Next transcript strand']], axis=1)
-            df = pd.concat([df, dataframes.get(basepeakfile)['Next Transcript tss distance']], axis=1)
-            df = pd.concat([df, dataframes.get(basepeakfile)['summit']], axis=1)
-            df['new_start'] = 0
-            df['new_stop'] = 0
+            df = pd.DataFrame(columns=column, index=range(len(dataframe)))
         #print df.head()
         print df.dtypes
+        whichsample = 0
         for sample in sample_name:
             df[sample] = 0
             #print '\n'+sample
             sample_bam_path = getBam(sample) #.split(' vs ')[0]
             sample_bam = pysam.Samfile(sample_bam_path, "rb")
             total_reads = sample_bam.mapped
-            for k, v in df.iterrows():
+            for k, v in dataframe.iterrows():
                 ## Gene wide differential calculation
                 if genewide:
                     gene_name = v['Next transcript gene name']
@@ -75,42 +67,34 @@ class Overlaps():
                         df.loc[k,sample] = tags
                         df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
                         df.loc[k,sample+'_length_norm'] = ((float(tags)/total_reads)*10**6)/((float(stop)-start)/100)
+                        df.loc[k,'Next transcript gene name'] = v['Next transcript gene name']
 
                 else:
                     #strand = v['Next transcript strand']
                     sys.stdout.write("\rNumber of peaks processed:%d" % k)
                     sys.stdout.flush()
-                    #print v['start'], v['summit']
-                    '''
-                    if v['stop']-v['start'] > 500:
-                        chr = str(v['chr'])
-                        summit = v['start']+v['summit']
-                        start = summit - 500
-                        stop = summit + 500
-                        tags = sample_bam.count(chr, start, stop)
-                        if tags == 0: tags = 1
-                        df.loc[k,'new_start'] = start
-                        df.loc[k,'new_stop'] = stop
-                        df.loc[k,sample] = tags
-                        df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
-
+                    Chr = str(v['chr'])
+                    if use_second_start and (whichsample >= from_sample):
+                        # catiching the highest point of peaks
+                        #summit = v['start1']+v['summit1']
+                        #start = summit - 50
+                        #stop = summit + 50
+                        start = v['start1']
+                        stop = v['stop1']
                     else:
-                    '''
-                    chr = str(v['chr'])
-                    start = v['start']-1000
-                    stop = v['stop']+1000
-                    summit = v['start']+v['summit']
+                        start = v['start']
+                        stop = v['stop']
+                    #summit = v['start']+v['summit']
                     try:
-                        tags = sample_bam.count(chr, v['start'], v['stop'])
+                        tags = sample_bam.count(Chr, start, stop)
                     except:
-                        tags = sample_bam.count(chr, start, stop)
-                        print('Cordinates can not be extended for', v['start'], v['stop'])
+                        raise ValueError('Tags cannot be retrieved, check peak position:', Chr, start, stop)
+                    for col in column:
+                        df.loc[k, col] = v[col]
                     if tags == 0: tags = 1
-                    df.loc[k,'new_start'] = start
-                    df.loc[k,'new_stop'] = stop
-                    df.loc[k,sample] = tags
-                    df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
-
+                    df.loc[k, sample] = tags
+                    df.loc[k, sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
+            whichsample += 1
             sample_bam.close()
         ## This will calculate the logFC
         for ind, row in df.iterrows():
@@ -124,6 +108,7 @@ class Overlaps():
         else:
             outpath = basepath + '/further_analysis/differential/' + '_'.join(sample_name) + '.txt'
         df.to_csv(outpath, sep="\t", encoding='utf-8', ignore_index=True)
+        return df
 
 
 def random_sampleing_df(dataframe, nsample):
@@ -150,7 +135,7 @@ def getBam(name):
     bam_list = listdir(basepath + '/results/AlignedLane')
     Dir = None
     file = None
-    print name
+    #print name
     for i in bam_list:
         if name in i and 'dedup' in i:
             if 'RA' in name and 'RA' in i:

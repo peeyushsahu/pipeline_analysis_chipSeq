@@ -7,8 +7,6 @@ basepath = Path.basepath
 
 def filterpeaks(peak_data, name, filtering=True):
     #filtered_peak_data = {}
-    file = open(basepath + '/further_analysis/filtered/filteredPeaksCount.txt', 'w')
-    file.write('Sample_name\traw_peaks\tfiltered_peaks\n')
     #for k, v in peak_data.iteritems():
     #print k, v.shape
     name = name
@@ -34,26 +32,31 @@ def filterpeaks(peak_data, name, filtering=True):
             break
     else:
         raise ValueError("Filtering Sample name differs from column name.")
-    print control
-    print condition
+    print('Sample lane:'+condition)
+    print ('Control lane:'+control)
     #inputcol = colnames[indices3[0]]
     #print inputcol
+    exclude_from_filtering = ['H3K36me3', 'H3K27me3', 'H3K4me1']
     if filtering:
         ## condition for simple filtering of preaks
-        df1 = df[df[condition] >= 3*df[control]]
-        df2 = df1[((df1['stop']-df1['start'])/df1[condition]) <= 15]
-        final = df2
+        if any(s in condition for s in exclude_from_filtering):
+            df1 = df[df[condition] >= 2*df[control]]
+            final = df1
+        else:
+            df1 = df[df[condition] >= 2*df[control]]
+            df2 = df1[((df1['stop']-df1['start'])/df1[condition]) <= 15]
+            final = df2
         print final.shape
     else:
         final = df
         print final.shape
-    file.write(name.split(' ')[0]+'\t'+str(len(df))+'\t'+str(len(final))+'\n')
+    with open(basepath + '/further_analysis/filtered/filteredPeaksCount.txt', 'a') as file:
+        file.write(name.split(' ')[0]+'\t'+name.split(' ')[2]+'\t'+str(len(df))+'\t'+str(len(final))+'\n')
     #filtered_peak_data[name] = final
     dirPATH = basepath + '/further_analysis/filtered/'+name
     paths.ensure_path(dirPATH)
     samPath = os.path.join(dirPATH, name+'.txt')
     final.to_csv(samPath, sep="\t", header=True)
-    file.close()
     return final, dirPATH
 
 

@@ -105,13 +105,17 @@ def stacke_plot_multiple(names_list, filtered_peaks, path):
     exon = [2]
     upstream = [3]
     samples = ['Human']
+    total_peaks = 0
     for name in names_list:
         samples.append(name.split(' ')[0])
         df = filtered_peaks.get(name)
-        GRcount = df['GenomicPosition TSS=1250 bp, upstream=5000 bp'].value_counts()
-        per = [100.0/sum(GRcount.values)*i for i in GRcount.values]
-        GPcount = zip(GRcount.index, per)
-        for G,C in GPcount:
+        total_peaks = len(df)
+        GRcount = df['GenomicPosition TSS=1250 bp, upstream=5000 bp'].value_counts(normalize=True)
+        for loc in ['tss','intergenic','intron','exon','upstream']:
+            if not loc in GRcount.keys():
+                GRcount[loc] = 0
+        for G, C in GRcount.iteritems():
+            C *= 100
             if G == 'tss':
                 tss.append(C)
             if G == 'intergenic':
@@ -156,9 +160,9 @@ def stacke_plot_multiple(names_list, filtered_peaks, path):
     gr_list = autolabel(p4, gr_list)
     autolabel(p5, gr_list)
 
-    plt.xlabel('Samples')
+    #plt.xlabel('Samples')
     plt.ylabel('% genomic distribution')
-    plt.title('Genomic region ratio')
+    plt.title('Total peaks '+str(total_peaks))
     plt.xticks(ind+width/2., samples)
     plt.ylim(0,100)
     plt.yticks(np.arange(0, 100, 100/5))
@@ -210,6 +214,26 @@ def peakTSSbinning(names, filtered_peaks, path):
     #plt.clf()
     plt.close()
 
+
+def venn4overlap(df1, df2, overlap, dirPath, name):
+    from matplotlib import pyplot as plt
+    import numpy as np
+    from matplotlib_venn import venn2, venn2_circles
+    name1 = name[0].split(' ')[0]
+    name2 = name[1].split(' ')[0]
+    noverlap = len(set(overlap['Sample1_row']))
+    plt.figure(figsize=(5, 5))
+    v = venn2(subsets=(1, 1, 1), set_labels=(name1, name2))
+    v.get_label_by_id('10').set_text(str(df1-noverlap))
+    v.get_label_by_id('01').set_text(str(df2-noverlap))
+    v.get_label_by_id('11').set_text(str(noverlap))
+    #venn2_circles(subsets=(1, 1, 1), linestyle='solid')
+    plt.title("Sample overlap")
+    plt.tight_layout()
+    plt.savefig(os.path.join(dirPath, 'venn_diagram.png'))
+    plt.close()
+
+
 def OverlappingPeaks(dict_peaksdf, name, name1):
 
     """
@@ -243,9 +267,9 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
     ddf = pd.DataFrame(overlap_list)
     dirPath = os.path.join(basepath, 'further_analysis', 'overlap', name+'_vs_'+name1)
     commons.ensure_path(dirPath)
-    get_unique_peaks(df1, df2, name, name1, ddf, dirPath)
+    u_df1, u_df2 = get_unique_peaks(df1, df2, name, name1, ddf, dirPath)
     ddf.to_csv(os.path.join(dirPath, name+'_vs_'+name1+'.txt'), sep="\t", encoding='utf-8')
-
+    venn4overlap(len(df1), len(df2), ddf, dirPath, [name,name1])
     overlap_dict = {name+'_vs_'+name1: ddf}
     stacke_plot_multiple(list(overlap_dict.keys()), overlap_dict, dirPath)
     peakTSSbinning(overlap_dict.keys()[0], ddf, dirPath)
@@ -305,7 +329,8 @@ def PeakOverlaps(df1, df2):
     :param df2:
     :return:
     '''
-
+    print('Dataframe1 nof peaks:', len(df1))
+    print('Dataframe2 nof peaks:', len(df2))
     df1['chr'] = df1['chr'].astype(str)
     df2['chr'] = df2['chr'].astype(str)
     df1_g = df1.groupby('chr')
@@ -334,10 +359,10 @@ def PeakOverlaps(df1, df2):
                           #
                         overlaps = {'Next transcript strand':row['Next transcript strand'],'Sample1_row':count, 'Sample2_row':count1, 'chr':row['chr'], 'start':row['start'], 'stop':row['stop'], 'GenomicPosition TSS=1250 bp, upstream=5000 bp':row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
                         'Next transcript gene name':row['Next transcript gene name'], 'Next Transcript tss distance':row['Next Transcript tss distance'], 'start1':row1['start'], 'stop1':row1['stop'],
-                        'Next transcript gene name1':row1['Next transcript gene name'], 'summit':row['summit'], 'summit1':row1['summit'], 'length':row['length']}
+                        'Next transcript gene name1':row1['Next transcript gene name'], 'summit':row['summit'], 'summit1':row1['summit'], 'length':row1['length']}
                         overlap_list.append(overlaps)
                         num_overlap += 1
-                        break
+                        #break
     return overlap_list
 
 
@@ -350,13 +375,19 @@ def get_unique_peaks(dataframe1, dataframe2, name, name1, overlapdf, dirpath):
     :param dirpath:
     :return:
     '''
-    df1_overlap = list(overlapdf['Sample1_row'])
-    df2_overlap = list(overlapdf['Sample2_row'])
+    df1_overlap = set(list(overlapdf['Sample1_row']))
+    df2_overlap = set(list(overlapdf['Sample2_row']))
     uni_df1 = dataframe1[~dataframe1.index.isin(df1_overlap)]
     uni_df2 = dataframe2[~dataframe2.index.isin(df2_overlap)]
     uni_df1.to_csv(os.path.join(dirpath, name + '_unique.txt'), sep='\t', index=None, header=True)
     uni_df2.to_csv(os.path.join(dirpath, name1 + '_unique.txt'), sep='\t', index=None, header=True)
-
+    file = open(os.path.join(dirpath, 'stats.txt'), 'w')
+    file.write('Peaks in dataframe1:'+str(len(dataframe1)))
+    file.write('\nPeaks in dataframe2:'+str(len(dataframe2)))
+    file.write('\nPeaks in overlap:'+str(len(overlapdf)))
+    file.write('\nUnique peaks from dataframe1:'+str(len(df1_overlap)))
+    file.write('\nUnique peaks from dataframe2:'+str(len(df2_overlap)))
+    return uni_df1, uni_df2
 
 def non_overlapping_peaks(dataframe1, overlapDF):
     """
@@ -391,49 +422,6 @@ def non_overlapping_peaks(dataframe1, overlapDF):
     uniqueDF = uniqueDF.rename(columns={'Next Gene name':'Next transcript gene name'})
     print('Size of Unique Df1:',len(uniqueDF))
     return uniqueDF
-
-
-def significance_of_chipseq_overlap(overlap, peak_df1, peak_df2, iteration=10):
-    from statistics import mean
-    import sys
-    '''
-    A permutation method to access the significance of overlap.
-    :return:
-    '''
-    n_peak_df1 = peak_df1[['chr', 'start', 'stop']]
-    n_peak_df2 = peak_df2[['chr', 'start', 'stop']]
-    overlaps = overlap
-    n_peak_df1['chr'] = n_peak_df1['chr'].astype(str)
-    n_peak_df2['chr'] = n_peak_df2['chr'].astype(str)
-    df = n_peak_df1.append(n_peak_df2, ignore_index=True)
-    datapoints = min(len(n_peak_df1), len(n_peak_df2))
-    print n_peak_df1.shape, n_peak_df2.shape, df.shape, datapoints
-    ## Number of iterations
-    overlap_list = {}
-    for ite in range(0, iteration):
-        sys.stdout.write("\r%d%%" % ite)
-        sys.stdout.flush()
-        df1_g = df.sample(n=datapoints)
-        df2_g = df.loc[~df.index.isin(df1_g.index)]
-        #print len(df1_g), len(df2_g)
-        df1_g = df1_g.groupby(df1_g['chr'])
-        df2_g = df2_g.groupby(df2_g['chr'])
-        num_overlap = 0
-        for i in df1_g:
-            #print len(i[1])
-            if i[0] in df2_g.groups:
-                #print len(df2_g.get_group(i[0]))
-                for count, row in df1_g.get_group(i[0]).iterrows():
-                    for count1, row1 in df2_g.get_group(i[0]).iterrows():
-                        if max(row['start'], row1['start']) < min(row['stop'], row1['stop']):
-                            #print row['start'], row1['start']
-                            num_overlap += 1
-                            break
-        #print 'Overlap for iteration', num_overlap
-        overlap_list[ite] = num_overlap
-    #calculate p-value for the iterations
-    pval = len([elem for elem in overlap_list.values() if elem >= overlap])/iteration
-    return overlap_list, pval
 
 
 def get_combined_peaks(df1, df2):

@@ -222,8 +222,8 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     # Plot peaks based on K-means clustering
     else:
         try:
-            big_df = kmeans_clustering(big_df, 9, 10000)  # performing k-means clustering
-            big_df_raw = kmeans_clustering(big_df_raw, 9, 10000)  # performing k-means clustering
+            big_df = kmeans_clustering(big_df, 9, 1000)  # performing k-means clustering
+            big_df_raw = kmeans_clustering(big_df_raw, 9, 1000)  # performing k-means clustering
             dict_of_df = group_DF(big_df, 'cluster')  # divide df in smaller dfs basis in clustering
             dict_of_df_raw = group_DF(big_df_raw, 'cluster')
             print len(dict_of_df)
@@ -238,9 +238,9 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     ### adding columns to heatmap df
     try:
         colList = ['GenomicPosition TSS=1250 bp, upstream=5000 bp', 'Next Transcript tss distance',
-                   'Next transcript gene name', 'Next transcript strand', 'summit', 'length', 'stop', 'start', 'chr']#
+                   'Next transcript gene name', 'Next transcript strand', 'summit', 'stop', 'start', 'chr']#
         for col in colList:
-            print(col, peak_df[col])
+            #print(col, peak_df[col])
             big_df.insert(0, col, peak_df[col])
             big_df_raw.insert(0, col, peak_df[col])
         if sort:
