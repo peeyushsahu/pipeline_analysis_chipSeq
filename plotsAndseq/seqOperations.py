@@ -21,7 +21,7 @@ def seq4motif(peak_data, seqLength='small'):
     :return: Create a file of sequence for the given dataframe
     '''
     if seqLength == 'small':
-        extend = 50
+        extend = 25
     elif seqLength == 'large':
         extend = 100
     output_dir = []
