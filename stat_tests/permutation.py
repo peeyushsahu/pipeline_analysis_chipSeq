@@ -48,9 +48,10 @@ def significance_of_chipseq_overlap(overlap, peak_df1, peak_df2, iteration=10):
     return overlap_list, pval
 
 
-def permutation_test4peakdensity(peak_df, name, comparisions, n=None, niter=100, outdir=None, testtype='greater'):
+def permutation_test4peakdensity(peak_df, name, comparisions, sname=None, n=None, niter=100, outdir=None, testtype='greater'):
     import matplotlib.pyplot as plt
     import seaborn as sns
+    import numpy as np
     '''
     This will test for the factor binding difference between two condition.
     :return:
@@ -60,7 +61,7 @@ def permutation_test4peakdensity(peak_df, name, comparisions, n=None, niter=100,
     print('Permutation test is randomly selecting '+str(n)+' peaks for '+str(niter)+' iterations')
     print(outdir)
     commons.ensure_path(outdir)
-    outpath = os.path.join(outdir, 'permutation_test')
+    outpath = os.path.join(outdir, 'permutation_test', sname)
     commons.ensure_path(outpath)
 
     peak_df = peak_df.rename(columns={'Next Gene name':'Next transcript gene name'})
@@ -70,9 +71,13 @@ def permutation_test4peakdensity(peak_df, name, comparisions, n=None, niter=100,
         print('reading count data from old file')
         diffbindDF = pd.read_csv(os.path.join(outpath,'count_data.txt'), sep='\t', header=0)
     except:
+        highest = True
         diffbind = differential_binding.Overlaps(name, filtered_peak)
-        diffbindDF = diffbind.diffBinding('loaded_sample')
-        diffbindDF.to_csv(os.path.join(outpath, 'count_data.txt'), sep='\t', header=True, index=None)
+        diffbindDF = diffbind.diffBinding('loaded_sample', highest=highest)
+        if highest:
+            diffbindDF.to_csv(os.path.join(outpath, 'count_data.txt'), sep='\t', header=True, index=None)
+        else:
+            diffbindDF.to_csv(os.path.join(outpath, 'count_data.txt'), sep='\t', header=True, index=None)
     #print(diffbindDF.head())
 
     def plot_permuation(iterDF, mediandiff, pval, outpath, niter):
@@ -82,9 +87,10 @@ def permutation_test4peakdensity(peak_df, name, comparisions, n=None, niter=100,
         plt.bar(mediandiff,5, width=0.01)
         low = min(min(iterDF['median_diff']), mediandiff)
         high = max(max(iterDF['median_diff']), mediandiff)
-        plt.xlim(low-low/8, high+high/8)
+        print(low+(low/8), mediandiff, high+(high/8), mediandiff)
+        plt.xlim(low+(low/8), high+(high/8))
         plt.ylabel('Freq. of difference')
-        plt.xlabel('Difference')
+        plt.xlabel('log2 difference')
         plt.title('p-val of difference:'+str(pval)+' ;trial:'+str(niter))
         plt.savefig(os.path.join(outpath, '_'.join(samples)+'.png'))
         plt.clf()
@@ -93,9 +99,9 @@ def permutation_test4peakdensity(peak_df, name, comparisions, n=None, niter=100,
 
     def test_significance_of_difference(iterDF, mediandiff, testtype, trial):
         import scipy.stats as stats
-        if mediandiff > 1:  # testtype == 'greater':
+        if mediandiff > 0:  # testtype == 'greater':
             count = len(iterDF[iterDF['median_diff'] >= mediandiff])
-        if mediandiff < 1:  # testtype == 'smaller':
+        if mediandiff < 0:  # testtype == 'smaller':
             count = len(iterDF[iterDF['median_diff'] <= mediandiff])
         print(count, mediandiff, trial)
         pval = (count+1.)/trial
@@ -112,8 +118,8 @@ def permutation_test4peakdensity(peak_df, name, comparisions, n=None, niter=100,
             iterDF.iloc[i, 1] = peakdf[samples[1]].mean()
             iterDF.iloc[i, 2] = peakdf[samples[0]].median()
             iterDF.iloc[i, 3] = peakdf[samples[1]].median()
-            iterDF.iloc[i, 4] = peakdf[samples[0]].mean() - peakdf[samples[1]].mean()
-            iterDF.iloc[i, 5] = peakdf[samples[0]].median() - peakdf[samples[1]].median()
+            iterDF.iloc[i, 4] = np.log2(peakdf[samples[0]].mean()) - np.log2(peakdf[samples[1]].mean())
+            iterDF.iloc[i, 5] = np.log2(peakdf[samples[0]].median()) - np.log2(peakdf[samples[1]].median())
         iterDF.to_csv(os.path.join(outpath, '_'.join(samples)+'.txt'), sep='\t', header=True, index=None)
         pval = test_significance_of_difference(iterDF, mediandiff, testtype, niter)
         plot_permuation(iterDF, mediandiff, pval, outpath, niter)

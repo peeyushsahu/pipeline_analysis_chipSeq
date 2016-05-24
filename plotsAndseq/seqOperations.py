@@ -14,12 +14,16 @@ path_to_program = "/home/sahu/meme/bin/"
 program = "meme-chip"
 motif_db_base = "/home/sahu/Documents/motif_databases/"
 
-def seq4motif(peak_data):
+def seq4motif(peak_data, seqLength='small'):
     '''
     This function will take dataframe with chr, start and stop position.
     :param peak_data:
     :return: Create a file of sequence for the given dataframe
     '''
+    if seqLength == 'small':
+        extend = 50
+    elif seqLength == 'large':
+        extend = 100
     output_dir = []
     for k,df in peak_data.iteritems():
         if len(df) > 0:
@@ -31,8 +35,8 @@ def seq4motif(peak_data):
             for v, row in df.iterrows():
                 summit = int(float(row['summit'])) + int(row['start'])
                 #tss = row['Next Transcript tss distance']
-                start = summit - 250
-                stop = summit + 250
+                start = summit - extend
+                stop = summit + extend
                 if 'GL' in str(row['chr']):
                     CpG_ratio.append(0)
                     gc_percent.append(0)
@@ -42,11 +46,11 @@ def seq4motif(peak_data):
                         seq = get_sequence(row['chr'], start, stop)
                         if "NNNNNN" in seq or len(seq) == 0:
                             #print row
-                            print "chr", row['chr'], "Start", start, "end", stop
+                            print "chr", row['chr'], "start", start, "stop", stop
                     else:
                         seq = get_sequence(int(float((row['chr']))), start, stop)
                         if "NNNNNN" in seq or len(seq) == 0 :
-                            print "chr", int(float((row['chr']))), "Start", start, "end", stop
+                            print "chr", int(float((row['chr']))), "start", start, "stop", stop
                     CpG = CpG_value(seq)
                     CpG_ratio.append(CpG[0])
                     gc_percent.append(CpG[1])
@@ -60,7 +64,7 @@ def seq4motif(peak_data):
             df['CG_percent'] = gc_percent
             df = df[df['CpG_ratio'] >= 0.6]
             df = df[df['CG_percent'] >= 50]
-            df.to_csv(basepath+'/CpG/'+k+'.csv', sep=",", encoding='utf-8', ignore_index=True)
+            df.to_csv(basepath+'/further_analysis/CpG/'+k+'.txt', sep="\t", header=True, ignore_index=True)
     return output_dir
 
 def get_sequence(chr, start, end):
@@ -125,7 +129,7 @@ def CpG_value(seq):
     :return:
     '''
     seq = seq.upper()
-    return float(seq.count('CG')) / (seq.count('C') * seq.count('G') ) * len(seq), float(100)/len(seq) * (seq.count('C') + seq.count('G'))
+    return float(seq.count('CG')) / ((seq.count('C') * seq.count('G'))+1) * len(seq), float(100)/len(seq) * (seq.count('C') + seq.count('G'))
 
 
 def density_based_motif_comparision(dataframe, columnname):

@@ -261,7 +261,7 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     gc.collect()
 
 
-def kmeans_clustering(df, nClus, iter):
+def kmeans_clustering(df, nClus, iter, method='sklearn'):
     '''
     This will perform clustering on a dataframe
     :param df: DataFrame
@@ -270,13 +270,19 @@ def kmeans_clustering(df, nClus, iter):
     :return: Dataframe attached with cluster information column
     '''
     import scipy.cluster.vq as cluster
+    import sklearn.cluster as sk_cluster
     import pandas as pd
-
     print '\nProcess: Clustering of DataFrame'
     df_fin = df
     df_mat = df.as_matrix()
-    res = cluster.kmeans2(df_mat, nClus, iter)
-    df_fin.insert(0, 'cluster', pd.Series(res[1]))
+    if method == 'scipy':
+        res = cluster.kmeans2(df_mat, nClus, iter)
+        df_fin.insert(0, 'cluster', pd.Series(res[1]))
+    ###
+    if method == 'sklearn':
+        cl = sk_cluster.KMeans(n_clusters=nClus, max_iter=iter)
+        cld = cl.fit(df_mat)
+        df_fin.insert(0, 'cluster', cld.labels_)
     return df_fin
 
 
@@ -643,7 +649,7 @@ def plot_clustered_peaks_4_multiple_samples(dict_df, name, path, which):
         plt.savefig(os.path.join(path, which, 'overlap_' + name + '_cluster:' + str(k) + '.png'), bbox_extra_artists=(lgd,), bbox_inches='tight')
         plt.savefig(os.path.join(path, which, 'overlap_' + name + '_cluster:' + str(k) + '.svg'), bbox_extra_artists=(lgd,), bbox_inches='tight')
         plt.clf()
-    plt.close()
+    plt.close('all')
 
 
 def plot_all_peaks_4_multiple_samples(big_df, name, path, which):

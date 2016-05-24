@@ -131,7 +131,7 @@ def stacke_plot_multiple(names_list, filtered_peaks, path):
     ind = np.arange(N)    # the x locations for the groups
     width = 0.25       # the width of the bars: can also be len(x) sequence
 
-    fig, ax = plt.subplots(figsize=(4, 6))
+    fig, ax = plt.subplots(figsize=(6, 6))
     p1 = plt.bar(ind, intergenic,   width, color='yellowgreen')
     p2 = plt.bar(ind, upstream, width, color='gold',
                  bottom=intergenic)
@@ -162,12 +162,13 @@ def stacke_plot_multiple(names_list, filtered_peaks, path):
 
     #plt.xlabel('Samples')
     plt.ylabel('% genomic distribution')
-    plt.title('Total peaks '+str(total_peaks))
-    plt.xticks(ind+width/2., samples)
+    plt.title('Overlap peaks '+str(total_peaks))
+    plt.xticks(ind+width/2., samples, rotation=45)
     plt.ylim(0,100)
     plt.yticks(np.arange(0, 100, 100/5))
     plt.legend((p1[0], p2[0], p3[0], p4[0], p5[0]), ('Intron', 'Exon', 'TSS(+-1500bp)', 'Upstream(-1500 to -5000bp)', 'Intergenic(> 5000bp)') ,loc='center left', bbox_to_anchor=(1.0, 0.5))
     plt.savefig(os.path.join(path, 'multi_stacked' + ','.join(samples) + '.png'), bbox_inches='tight')
+    plt.tight_layout()
     #plt.clf()
     plt.close()
 
@@ -270,7 +271,7 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
     u_df1, u_df2 = get_unique_peaks(df1, df2, name, name1, ddf, dirPath)
     ddf.to_csv(os.path.join(dirPath, name+'_vs_'+name1+'.txt'), sep="\t", encoding='utf-8')
     venn4overlap(len(df1), len(df2), ddf, dirPath, [name,name1])
-    overlap_dict = {name+'_vs_'+name1: ddf}
+    overlap_dict = {'overlap': ddf, name:u_df1, name1:u_df2}
     stacke_plot_multiple(list(overlap_dict.keys()), overlap_dict, dirPath)
     peakTSSbinning(overlap_dict.keys()[0], ddf, dirPath)
     return ddf

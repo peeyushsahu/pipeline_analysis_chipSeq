@@ -13,12 +13,12 @@ raw_lanes = [
     #alignment.lanes.Lane('NT2D1_B6_1', '/ps/imt/f/20151127_RNA/Sample_B6_2_C1_091115_R14'),
     #alignment.lanes.Lane('NT2D1_B6_2', '/ps/imt/f/20151127_RNA/Sample_B6_2_C2_091115_R15'),
     #alignment.lanes.Lane('NT2D1_B6_3', '/ps/imt/f/20151127_RNA/Sample_B6_2_C3_091115_R16'),
-    alignment.lanes.Lane('NT2D1_E9_1_RA', '/ps/imt/f/20160128_RNA/Sample_R17_E9_1p_141215'),
-    alignment.lanes.Lane('NT2D1_E9_2_RA', '/ps/imt/f/20160128_RNA/Sample_R18_E9_2p_141215'),
-    alignment.lanes.Lane('NT2D1_E9_3_RA', '/ps/imt/f/20160128_RNA/Sample_R19_E9_3p_141215'),
-    alignment.lanes.Lane('NT2D1_B6_1_RA', '/ps/imt/f/20160128_RNA/Sample_R20_B62_1p_141215'),
-    alignment.lanes.Lane('NT2D1_B6_2_RA', '/ps/imt/f/20160128_RNA/Sample_R21_B62_2p_141215'),
-    alignment.lanes.Lane('NT2D1_B6_3_RA', '/ps/imt/f/20160128_RNA/Sample_R22_B62_3p_141215'),
+    #alignment.lanes.Lane('NT2D1_E9_1_RA', '/ps/imt/f/20160128_RNA/Sample_R17_E9_1p_141215'),
+    #alignment.lanes.Lane('NT2D1_E9_2_RA', '/ps/imt/f/20160128_RNA/Sample_R18_E9_2p_141215'),
+    #alignment.lanes.Lane('NT2D1_E9_3_RA', '/ps/imt/f/20160128_RNA/Sample_R19_E9_3p_141215'),
+    #alignment.lanes.Lane('NT2D1_B6_1_RA', '/ps/imt/f/20160128_RNA/Sample_R20_B62_1p_141215'),
+    #alignment.lanes.Lane('NT2D1_B6_2_RA', '/ps/imt/f/20160128_RNA/Sample_R21_B62_2p_141215'),
+    #alignment.lanes.Lane('NT2D1_B6_3_RA', '/ps/imt/f/20160128_RNA/Sample_R22_B62_3p_141215'),
 ]
 
 # Aliging read files with chosen aligner

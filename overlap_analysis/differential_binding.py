@@ -16,7 +16,7 @@ class Overlaps():
         self.samples_names = overlappinglist
         self.filter_peaks = filter_peaks
 
-    def diffBinding(self, basepeakfile, outpath=None, genewide=False, use_second_start=False, from_sample=2):
+    def diffBinding(self, basepeakfile, outpath=None, genewide=False, use_second_start=False, from_sample=4, highest=False, twoK=False):
         '''
         This function will extract summit (+-500) peak data if peak length is >1000 from provided peaks.
         This dataframe can be used with DESeq for differential binding calculation.
@@ -82,8 +82,19 @@ class Overlaps():
                         start = v['start1']
                         stop = v['stop1']
                     else:
-                        start = v['start']
-                        stop = v['stop']
+                        if highest:
+                            # Take only 100 bp from peak summit
+                            summit = v['start']+v['summit']
+                            start = summit - 50
+                            stop = summit + 50
+                        elif twoK and (whichsample >= from_sample):
+                            # Take 2000 bp from peak summit
+                            summit = v['start']+v['summit']
+                            start = summit - 1000
+                            stop = summit + 1000
+                        else:
+                            start = v['start']
+                            stop = v['stop']
                     #summit = v['start']+v['summit']
                     try:
                         tags = sample_bam.count(Chr, start, stop)

@@ -7,6 +7,7 @@ import pandas as pd
 class path():
     def __init__(self):
         basepath = os.path.abspath(os.getcwd())
+        #print(basepath)
         self.basepath = os.sep.join(basepath.split(os.sep)[:-2])
         print self.basepath
 

@@ -66,11 +66,11 @@ def count_Data_featureCounts(bam_files, gtf_file, feature_type='exon', id_attrib
     stranded = '-s '+str(stranded)
     count_out = '-o '+count_out
     cmd = ' '.join([program, thread, feature, attribute, stranded, annotation, count_out, bam_files])
-    print cmd
+    print(cmd)
     try:
          proc = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
          stdout, stdrr = proc.communicate()
-         print stdrr
+         print(stdrr)
          proc.wait()
     except:
         raise IOError ('Subprocess SubRead.featureCounts exited with error')
