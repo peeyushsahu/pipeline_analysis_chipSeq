@@ -16,7 +16,7 @@ class Overlaps():
         self.samples_names = overlappinglist
         self.filter_peaks = filter_peaks
 
-    def diffBinding(self, basepeakfile, outpath=None, genewide=False, use_second_start=False, from_sample=4, highest=False, twoK=False):
+    def diffBinding(self, basepeakfile, outpath=None, genewide=False, use_second_start=False, from_sample=None, highest=False, twoK=False):
         '''
         This function will extract summit (+-500) peak data if peak length is >1000 from provided peaks.
         This dataframe can be used with DESeq for differential binding calculation.
@@ -25,6 +25,8 @@ class Overlaps():
         import pysam
         import sys, math
         print ("\nCheck point: diffBinding and using second:"+str(use_second_start))
+        if use_second_start and (from_sample is None):
+            raise ValueError('Please provide from which sample you want to start considering second start site.')
         sample_name = self.samples_names
         dataframe = self.filter_peaks.get(basepeakfile)
 
@@ -73,30 +75,42 @@ class Overlaps():
                     #strand = v['Next transcript strand']
                     sys.stdout.write("\rNumber of peaks processed:%d" % k)
                     sys.stdout.flush()
+
                     Chr = str(v['chr'])
-                    if use_second_start and (whichsample >= from_sample):
-                        # catiching the highest point of peaks
-                        #summit = v['start1']+v['summit1']
-                        #start = summit - 50
-                        #stop = summit + 50
-                        start = v['start1']
-                        stop = v['stop1']
-                    else:
-                        if highest:
-                            # Take only 100 bp from peak summit
-                            summit = v['start']+v['summit']
-                            start = summit - 50
-                            stop = summit + 50
-                        elif twoK and (whichsample >= from_sample):
-                            # Take 2000 bp from peak summit
-                            summit = v['start']+v['summit']
-                            start = summit - 1000
-                            stop = summit + 1000
+                    if use_second_start and not highest:
+                        if whichsample >= from_sample:
+                            #print('I am here2')
+                            start = v['start1']
+                            stop = v['stop1']
                         else:
                             start = v['start']
                             stop = v['stop']
-                    #summit = v['start']+v['summit']
+                    elif use_second_start and highest:
+                        if whichsample >= from_sample:
+                            #print('I am here')
+                            summit = v['start1']+v['summit1']
+                            start = summit - 50
+                            stop = summit + 50
+                        else:
+                            summit = v['start']+v['summit']
+                            start = summit - 50
+                            stop = summit + 50
+                    elif highest and not use_second_start:
+                        # Take only 100 bp from peak summit
+                        summit = v['start']+v['summit']
+                        start = summit - 50
+                        stop = summit + 50
+                    elif twoK:
+                        # Take 2000 bp from peak summit
+                        summit = v['start']+v['summit']
+                        start = summit - 1000
+                        stop = summit + 1000
+                    else:
+                        start = v['start']
+                        stop = v['stop']
+
                     try:
+                        #print(start, stop)
                         tags = sample_bam.count(Chr, start, stop)
                     except:
                         raise ValueError('Tags cannot be retrieved, check peak position:', Chr, start, stop)
@@ -130,6 +144,7 @@ def random_sampleing_df(dataframe, nsample):
     :return:
     '''
     import random
+    #random.seed([234])
     dataframe.index = list(range(0, len(dataframe), 1))
     new_dataframe = dataframe[dataframe.index.isin(list(random.sample(list(range(0, len(dataframe))), nsample)))]
     return new_dataframe

@@ -116,6 +116,7 @@ def stacke_plot_multiple(names_list, filtered_peaks, path):
                 GRcount[loc] = 0
         for G, C in GRcount.iteritems():
             C *= 100
+            C = int(round(C))
             if G == 'tss':
                 tss.append(C)
             if G == 'intergenic':

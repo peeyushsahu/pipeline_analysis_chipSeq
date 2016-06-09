@@ -54,7 +54,7 @@ def seq4motif(peak_data, seqLength='small'):
                     CpG = CpG_value(seq)
                     CpG_ratio.append(CpG[0])
                     gc_percent.append(CpG[1])
-                    file.write(">seq:"+str(count)+":"+row['Next transcript gene name']+"\n")
+                    file.write(">"+row['Next transcript gene name']+"_seq-"+str(count)+"\n")
                     file.write(seq+"\n")
                 count += 1
             file.close()
@@ -92,6 +92,8 @@ def motif_analysis(db, nmotif, output_dir):
         output = basepath+path_to_seq+"motif_results/"+seqFile
         input_file = basepath+path_to_seq+seqFile+'.txt'
         meme_chip(output, input_file, db, nmotif)
+        # perform motif occurrence analysis
+        seq_based_motif_occurrence(output)
 
 
 
@@ -130,6 +132,75 @@ def CpG_value(seq):
     '''
     seq = seq.upper()
     return float(seq.count('CG')) / ((seq.count('C') * seq.count('G'))+1) * len(seq), float(100)/len(seq) * (seq.count('C') + seq.count('G'))
+
+
+def seq_based_motif_occurrence(path):
+    '''
+    # This method first load all fimo.txt from a motif analysis,
+    # saves all sequence information wrt to a motif,
+    # count all motif found on one sequence,
+    # gives a table with sequence to motif frequncy
+    '''
+    import os
+    #path = '/ps/imt/e/HL60_Christene/further_analysis/seq4motif/motif_results/SKI_only_100bp'
+    fimoDir = os.listdir(path)
+    #print(fimoDir)
+    motif4seq = {}
+    for Dir in fimoDir:
+        npath = os.path.join(path,Dir)
+        if ('fimo_out' in Dir) and (os.path.isdir(npath)):
+            #print(Dir, npath)
+            df = read_csv(os.path.join(npath,'fimo.txt'), sep='\t', header=0)
+            #print(df.head())
+            if len(df) > 0:
+                motif4seq[list(df['#pattern name'][:1])[0]] = df # #pattern name or matched sequence
+                #print(df.head())
+    #print(motif4seq)
+
+    # Count motif per sequence
+    from collections import defaultdict
+    motifOccurrence = defaultdict(list)
+    for k, v in motif4seq.items():
+        for ind, row in v.iterrows():
+            motifOccurrence[row['sequence name']].append(k)
+    #print(motifOccurrence)
+
+    # Count sequence with same combination of motifs
+    from collections import defaultdict
+    motifCombi = defaultdict(list)
+    for k, v in motifOccurrence.items():
+        motifCombi[str(set(v))].append(k) #= motifCombi.get(str(set(v)), 0) + 1
+
+    # associate most significant known motif to found motif
+    meme_tomtom = read_csv(path+'/meme_tomtom_out/tomtom.txt', sep='\t', header=0)
+    dreme_tomtom = read_csv(path+'/dreme_tomtom_out/tomtom.txt', sep='\t', header=0)
+    #print(meme_tomtom.columns)
+    #print(dreme_tomtom.columns)
+    group_meme = meme_tomtom.groupby('#Query ID')
+    group_dreme = dreme_tomtom.groupby('#Query ID')
+
+
+    # Write motif combination with found in sequence
+    file = open(path+'/motif_combination_peeyush.txt', 'w')
+    file.write('motif\tknown motif\tno. of seq\tsequences')
+    for k, v in motifCombi.items():
+        knownMotif = ''
+        k = eval(k)
+        for i in k:
+            if isinstance( i, int ):
+                try:
+                    motif = ' '.join(group_meme.get_group(i).sort_values(by='p-value', axis=0)['Target ID'][:2])
+                except:
+                    motif = 'na'
+                knownMotif = knownMotif+motif+','
+            else:
+                try:
+                    motif = ' '.join(group_dreme.get_group(i).sort_values(by='p-value', axis=0)['Target ID'][:2])
+                except:
+                    motif = 'na'
+                knownMotif = knownMotif+motif+','
+        file.write('\n'+str(k)+'\t'+knownMotif+'\t'+str(len(v))+'\t'+','.join(v))
+    file.close()
 
 
 def density_based_motif_comparision(dataframe, columnname):
