@@ -29,31 +29,33 @@ class Overlaps():
             raise ValueError('Please provide from which sample you want to start considering second start site.')
         sample_name = self.samples_names
         dataframe = self.filter_peaks.get(basepeakfile)
+        #print(dataframe.head())
+        #print(set(list(dataframe['Next transcript gene name'])))
 
-        column = ['chr', 'start', 'stop', 'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'Next transcript gene name',
-                  'Next transcript strand', 'Next transcript strand', 'Next Transcript tss distance', 'summit']
         if genewide:
+            column = ['chr', 'start', 'stop', 'length', 'Next transcript gene name', 'Next transcript strand']
             print("Gene-wide calculation is on....")
             longestTranscriptDB = '/ps/imt/f/Genomes/geneAnotations/longest_transcript_annotation.db'
             transcriptDB = pd.read_csv(longestTranscriptDB, header=0, sep='\t')
-            df = pd.DataFrame(index=range(len(dataframe)))
-        # print type(sample_name)
-        #df = dataframes.get(sample_name[0]).iloc[:, 0:1]
-        else:
             df = pd.DataFrame(columns=column, index=range(len(dataframe)))
-        #print df.head()
+
+        else:
+            column = ['chr', 'start', 'stop', 'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'Next transcript gene name',
+                  'Next transcript strand', 'Next Transcript tss distance', 'summit']
+            df = pd.DataFrame(columns=column, index=range(len(dataframe)))
         print df.dtypes
+
         whichsample = 0
         for sample in sample_name:
-            df[sample] = 0
+            #df[sample] = 0
             #print '\n'+sample
             sample_bam_path = getBam(sample) #.split(' vs ')[0]
             sample_bam = pysam.Samfile(sample_bam_path, "rb")
             total_reads = sample_bam.mapped
-            for k, v in dataframe.iterrows():
-                ## Gene wide differential calculation
-                if genewide:
-                    gene_name = v['Next transcript gene name']
+            ## Gene wide differential calculation
+            if genewide:
+                k = 0
+                for gene_name in set(list(dataframe['Next transcript gene name'])):
                     if gene_name in list(transcriptDB['gene_name']):    # checking coordinates of genes in the database
                         gene_ind = transcriptDB['gene_name'][transcriptDB['gene_name'] == gene_name].index[0]
                         #print transcriptDB.loc[gene_ind,:]
@@ -65,13 +67,16 @@ class Overlaps():
                         df.loc[k,'chr'] = chr
                         df.loc[k,'start'] = start
                         df.loc[k,'stop'] = stop
-                        df.loc[k,'strand'] = strand
+                        df.loc[k,'length'] = int(stop-start)
+                        df.loc[k,'Next transcript strand'] = strand
                         df.loc[k,sample] = tags
                         df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
                         df.loc[k,sample+'_length_norm'] = ((float(tags)/total_reads)*10**6)/((float(stop)-start)/100)
-                        df.loc[k,'Next transcript gene name'] = v['Next transcript gene name']
+                        df.loc[k,'Next transcript gene name'] = gene_name
+                        k += 1
 
-                else:
+            else:
+                for k, v in dataframe.iterrows():
                     #strand = v['Next transcript strand']
                     sys.stdout.write("\rNumber of peaks processed:%d" % k)
                     sys.stdout.flush()
@@ -132,7 +137,7 @@ class Overlaps():
             outpath = outpath
         else:
             outpath = basepath + '/further_analysis/differential/' + '_'.join(sample_name) + '.txt'
-        df.to_csv(outpath, sep="\t", encoding='utf-8', ignore_index=True)
+        df.to_csv(outpath, sep="\t", encoding='utf-8', index=None)
         return df
 
 

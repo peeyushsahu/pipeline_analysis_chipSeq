@@ -183,15 +183,15 @@ modification4nearestgenes(peak_df, 'prmt6_nearest5genes', sample)
 #overlapping_res = cal_genomic_region.OverlappingPeaks(peakAnalysis_df, 'H3K4me3_E9 vs IgG_E.9 filtered', 'H3R2ame2_E9 vs IgG_E.9 filtered')
 
 #'H3R2ame2_E9', 'H3K36me3_E9', 'H3K36me3_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2', 'H3K27ac_E9','H3K27ac_B6.2','PRMT6_E9_commer', 'PRMT6_B6_commer','PRMT6_KO_E.9', 'PRMT6_KO_B6.2','H3K4me1_E9','H3K4me1_B6','H3K27me3_E9','H3K27me3_B6'
-multiple_df = ['/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/H3R2ame2_E9 vs IgG_E.9 filtered_vs_H3K4me3_E9 vs IgG_E.9 filtered/H3R2ame2_E9 vs IgG_E.9 filtered_vs_H3K4me3_E9 vs IgG_E.9 filtered.txt',
-               #''
-               ]
+path = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/Compare -ATRA&+ATRA'
+multiple_df = ['H3R2me2+-RA_K4me3_+RA_expr']
 
 for df in multiple_df:
-    peak_df = read_csv(df, header=0, sep='\t')
-    #peak_df = peak_df[peak_df['log2FC_PRMT6_E9_commer_norm_vs_PRMT6_B6_commer_norm'] <= -0.8]
+    peak_df = read_csv(os.path.join(path, df+'.txt'), header=0, sep='\t')
+    peak_df = peak_df[(peak_df['log2FC'] <= -1) & (peak_df['pvalue'] <= 0.05)]
+    print(peak_df.shape)
     #peak_df = peak_df[:10]
-    sample = ['H3R2ame2_E9','H3R2me2a_B6.2','H3K4me3_E9','H3K4me3_B6.2','H3K27ac_E9','H3K27ac_B6.2']
+    sample = ['H3K27me3_E9', 'H3K27me3_B6', 'H3K27me3_E9_RA', 'H3K27me3_B6_RA']
 
     # random sampling of df
     #peak_df = differential_binding.random_sampleing_df(peak_df, 1459)
@@ -203,17 +203,7 @@ for df in multiple_df:
     filtered_peak = {'loaded_sample': peak_df}
     diffbind = differential_binding.Overlaps(sample, filtered_peak)
     outpath = basepath + '/further_analysis/H3R2me2a_analysis'
-    diffbind.diffBinding('loaded_sample', outpath=outpath+'/H3R2+promoter_E9_B6_diff+highest-test.txt', genewide=False, use_second_start=True, from_sample=2, twoK=False, highest=False) #, genewide=True
-'''
-
-### Gene-wide chip profile for broad histone marks
-'''
-bam_list = ['H3K36me3_E9', 'H3K36me3_B6.2']
-sample_name = 'R2_K36_all946'
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/multidimensional_analysis/H3R2me2a/H3R2ame2_E9,H3K36me3_E9,H3K36me3_B6.2,H3K4me3_E9,H3K4me3_B6.2,H3K27ac_E9,H3K27ac_B6.2'
-                   '/diff_binding_all946.txt', header=0, sep='\t')
-#peak_df = peak_df[peak_df['log2FC_H3K27ac_E9_norm_vs_H3K27ac_B6.2_norm'] > 2]
-plots.grHeatmap4wholeGene(peak_df, bam_list, sample_name)
+    diffbind.diffBinding('loaded_sample', outpath=outpath+'/H3R2me2_+-RA_H3K4me3_down_expr+RA_K27me3.txt', genewide=True, use_second_start=False, from_sample=2, twoK=False, highest=False) #, genewide=True
 '''
 
 ### Transposone analysis
@@ -293,20 +283,29 @@ peaks_df_n = cal_genomic_region.get_combined_peaks(df1,df2)
 peaks_df_n.to_csv(basepath+'/further_analysis/combined/combined_H3R2me2a_E9+B6_RA.txt', sep='\t', header=True)
 '''
 
-### Comapre ChIP-Seq profile from altered sample (external)
+
+### Gene-wide chip profile for broad histone marks
 '''
+bam_list = ['H3K36me3_E9', 'H3K36me3_B6.2']
+sample_name = 'H3R2ame2_E9 vs IgG_E.9 filtered_vs_H3K4me3_E9 vs IgG_E.9 filtered'
+peak_df = read_csv(basepath + '/further_analysis/H3R2me2a_analysis/H3R2ame2_E9 vs IgG_E.9 filtered_vs_H3K4me3_E9 vs IgG_E.9 filtered/'+sample_name+'.txt', sep='\t', header=0)
+#peak_df = peak_df[:200]
+plots.grHeatmap4wholeGene(peak_df, bam_list, sample_name)
+'''
+
+### Comapre ChIP-Seq profile from altered sample (external)
+
 # Perform overlap
 #overlapping_res = cal_genomic_region.OverlappingPeaks(peakAnalysis_df, 'H3R2ame2_E9 vs IgG_E.9 filtered', 'H3K4me3_E9 vs IgG_E.9 filtered')
-
-listGroups = ['H3R2me2a+H3K4me3_Up0.5','H3R2me2a+H3K4me3_Down0.5']#,'chip_H3K4me1_up','chip_H3K4me3_down','chip_H3K4me3_up','chip_H3K27ac_down','chip_H3K27ac_up']
+listGroups = ['H3R2ame2_E9 vs IgG_E.9 filtered']#,'chip_H3K4me1_up','chip_H3K4me3_down','chip_H3K4me3_up','chip_H3K27ac_down','chip_H3K27ac_up']
 
 for sampleName in listGroups:
-    peaks_df_n = read_csv(basepath + '/further_analysis/H3R2me2a_analysis/'+sampleName+'.txt', sep='\t', header=0)
+    peaks_df_n = read_csv(basepath + '/further_analysis/filtered/H3R2ame2_E9 vs IgG_E.9 filtered/'+sampleName+'.txt', sep='\t', header=0)
     #peaks_df_n = overlapping_res #overlapping_res
     #peaks_df_n = peaks_df_n[peaks_df_n['log2FC_PRMT6_E9_commer_norm_vs_PRMT6_B6_commer_norm'] <= -0.8]
     print 'Dim of DF', peaks_df_n.shape
-    bam_list = [['H3R2ame2_E9','H3R2me2a_B6.2','H3K4me3_E9','H3K4me3_B6.2','H3K27ac_E9','H3K27ac_B6.2']]
-    #'H3K4me3_E9', 'H3K4me3_B6.2', 'H3K4me3_E9_RA', 'H3K4me3_B6.2_RA','H3K27ac_E9', 'H3K27ac_B6.2', 'H3K27ac_E9_RA', 'H3K27ac_B6_RA'
+    bam_list = [['H3R2ame2_E9', 'H3R2me2a_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2', 'H3K27me3_E9', 'H3K27me3_B6']]
+    #'H3K4me3_E9', 'H3K4me3_B6.2', 'H3K4me3_E9_RA', 'H3K4me3_B6.2_RA','H3K27ac_E9', 'H3K27ac_B6.2', 'H3K27ac_E9_RA', 'H3K27ac_B6_RA', 'H3K4me1_E9_RA', 'H3K4me1_B6_RA'
     #'Sample_18F3_RA', 'Sample_18F3', 'H3R2ame2_E9','H3R2me2a_B6.2','H3K27ac_E9','H3K27ac_B6.2','H3K4me1_E9','H3K4me1_B6','H3K27me3_E9','H3K27me3_B6',
     #'H3K27me3_E9', 'H3K27me3_B6', 'H3R2me2a_E9_RA', 'H3R2me2a_B6.2_RA', 'H3R2ame2_E9', 'H3R2me2a_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2','H3K27ac_E9','H3K27ac_B6.2','H3K4me1_E9', 'H3K4me1_B6', 'PRMT6_KO_E.9', 'PRMT6_KO_B6.2', 'PRMT6_KO_B5.1'
 
@@ -329,10 +328,10 @@ for sampleName in listGroups:
             GR_heatmaps_DF_for_peaks(List, peaks_df_n, region=i, sort=False, sort_column='PRMT6_KO_E.9_norm_millon', scale_df=False,
                                      sample_name=sampleName, strength_divide=False)
 gc.collect()
-'''
+
 
 ### permutation test for difference in median/mean
-
+'''
 name = ['H3K4me3_E9','H3K4me3_B6.2','H3K27ac_E9','H3K27ac_B6.2']
 comparisions = {-0.64:['H3K27ac_E9', 'H3K27ac_B6.2'],
                 0.05:['H3K4me3_E9', 'H3K4me3_B6.2']}
@@ -340,7 +339,7 @@ peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_anal
 print(peak_df.head())
 outdir = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis'
 permutation.permutation_test4peakdensity(peak_df, name, comparisions, n=310, niter=10000, outdir=outdir, sname='H3K4me3_down')
-
+'''
 
 
 

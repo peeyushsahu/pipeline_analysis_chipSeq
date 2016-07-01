@@ -127,7 +127,7 @@ def color():
     'yellow':               '#FFFF00',
     'yellowgreen':          '#9ACD32'}
 
-    cnames4plot = ['mediumorchid', 'r', 'dodgerblue', 'green', 'peru', 'brown', 'springgreen', 'chartreuse', 'yellow', 'olive', 'turquoise', 'indigo',
+    cnames4plot = ['green', 'mediumorchid', 'r', 'dodgerblue', 'peru', 'brown', 'springgreen', 'chartreuse', 'yellow', 'olive', 'turquoise', 'indigo',
                    'teal', 'blue', 'purple', 'coral']
     return cnames, cnames4plot
 
@@ -383,15 +383,22 @@ def grHeatmap4wholeGene(peaksDF, bam_name, samplename, longestTranscriptDB = '/p
     '''
     import pysam, math
     import pandas as pd
-    normalized = False
+    ## creating dir
+    bam_order = ','.join(bam_name)
+    path = make_dir(bam_order, samplename+'_'+str(len(peaksDF)))
+    file = open(os.path.join(path,'lib_size.txt'), 'w')
+
     transcriptDB = pd.read_csv(longestTranscriptDB, header=0, sep='\t')
     #print transcriptDB.head()
     peak_distribution_df = pd.DataFrame()
+    peak_distribution_df_norm = pd.DataFrame()
     for bam in bam_name:
         bam_path = getBam(bam)
         sample_bam = pysam.Samfile(bam_path, "rb")
         total_mapped = sample_bam.mapped
+        file.write(bam+'\t'+str(total_mapped)+'\n')
         distribution_df = pd.DataFrame()
+        distribution_df_norm = pd.DataFrame()
 
         for ind, row in peaksDF.iterrows(): # reading peaksdf
             gene_name = row['Next transcript gene name']
@@ -401,48 +408,56 @@ def grHeatmap4wholeGene(peaksDF, bam_name, samplename, longestTranscriptDB = '/p
                 chr = transcriptDB.loc[gene_ind, 'chr']; startT = transcriptDB.loc[gene_ind, 'start']; stopT = transcriptDB.loc[gene_ind, 'stop']; strand = transcriptDB.loc[gene_ind, 'strand']
                 interval = math.ceil((stopT-startT)/100.0)
 
-                start = startT  # Distance on one side of the peaks
+                start = startT - (interval*50)  # Distance on one side of the peaks
                 stop = start + interval
                 list_sample = []
+                list_sample_norm = []
                 # total_tags = int(bam_peak1.mapped) will get total no of mapped reads
                 if start > 0:
-                    for i in range(0, 100):  # Please set based on distance on one side = s*distance/50
+                    for i in range(0, 150):  # Please set based on distance on one side = s*distance/50
                         seqcount = sample_bam.count(chr, start, stop)
-                        if normalized: list_sample.append((seqcount/total_mapped)*10**6)    # Normalized count per million
-                        list_sample.append(seqcount/interval)    # count real
+                        list_sample_norm.append((seqcount*(5.*10**6)/total_mapped))    # Normalized count per million
+                        list_sample.append(seqcount)    # count real
                         start = stop
                         stop = start + interval  # divide peaks into length of 50 bp
                     if strand == '+':  # Direction gene transcription
                         # print 'Towards 5 prime'
                         distribution_df = distribution_df.append(pd.Series(list_sample), ignore_index=True)
+                        distribution_df_norm = distribution_df_norm.append(pd.Series(list_sample_norm), ignore_index=True)
                     else:
                         # print 'Towards 3 prime'
                         distribution_df = distribution_df.append(pd.Series(list_sample[::-1]), ignore_index=True)
+                        distribution_df_norm = distribution_df_norm.append(pd.Series(list_sample_norm[::-1]), ignore_index=True)
             else:
                 print gene_name
         sample_bam.close()
-
         peak_distribution_df = pd.concat([peak_distribution_df, distribution_df], axis=1)
+        peak_distribution_df_norm = pd.concat([peak_distribution_df_norm, distribution_df_norm], axis=1)
         peak_distribution_df.columns = range(0, peak_distribution_df.shape[1])
-    bam_order = ','.join(bam_name)
-    path = make_dir(bam_order, samplename + str(len(peaksDF)))
+        peak_distribution_df_norm.columns = range(0, peak_distribution_df_norm.shape[1])
+    file.close()
     # Plot peaks based on K-means clustering
-    try:
-        peak_distribution_df = kmeans_clustering(peak_distribution_df, 9, 100)
-        dict_of_df = group_DF(peak_distribution_df, 'cluster')  # divide df in smaller dfs basis in clustering
-        line_plot_peak_distribution(dict_of_df, bam_order, path)  # plotting individual clusters
+    #try:
+    for which, sample in {'raw':peak_distribution_df, 'norm':peak_distribution_df_norm}.iteritems():
+        peak_distribution_df = kmeans_clustering(sample, 9, 1000)
+        print('Clustered' + which + 'dataset...')
+        dict_of_df = group_DF(sample, 'cluster')  # divide df in smaller dfs basis in clustering
+        print('Dataset grouping...')
+        line_plot_peak_distribution(dict_of_df, bam_order, path, which)  # plotting individual clusters
+        print('plotting line plots')
+        plot_all_peaks_4_multiple_samples_genewide(sample, bam_order, path, which)
         if len(bam_name) == 2:
             print 'In here'
-            broad_clustered_peaks_4_two_samples(dict_of_df, bam_order, path)
-    except:
-        print 'Not enough data point for clustering.'
-    peak_distribution_df.insert(0, 'Next transcript gene name', peaksDF['Next transcript gene name'])
-    peak_distribution_df.to_csv(path + samplename + bam_order + '.txt', sep="\t", encoding='utf-8')  # , ignore_index=True
+            broad_clustered_peaks_4_two_samples(dict_of_df, bam_order, path, which)
+        sample.insert(0, 'Next transcript gene name', peaksDF['Next transcript gene name'])
+        sample.to_csv(os.path.join(path, which, 'tagcountDF_all_' + which + '.txt'), sep="\t", encoding='utf-8')
+    #except:
+    #    print('Not enough data point for clustering.')
     gc.collect()
-    return peak_distribution_df
+    return peak_distribution_df, peak_distribution_df_norm
 
 
-def broad_clustered_peaks_4_two_samples(dict_df, name, path):
+def broad_clustered_peaks_4_two_samples(dict_df, name, path, which):
     '''
     Plots result of divided_cluster_peaks_in_strength.
     :param dict_df:
@@ -454,7 +469,7 @@ def broad_clustered_peaks_4_two_samples(dict_df, name, path):
     import numpy as np
     import scipy as sp
     # print 'shape', dict_list[0].shape
-    for k, v in dict_df.iteritems():
+    for k, v in dict_df:
         size = v.shape
         size_one_df = size[1] / 2
         df1 = v.iloc[:, 1:size_one_df + 1]
@@ -480,7 +495,7 @@ def broad_clustered_peaks_4_two_samples(dict_df, name, path):
         plt.xlabel('Binding profile cluster' + str(k))
         plt.ylabel('Normalized tag density')
         plt.title('Genomic distribution of peaks with datapoints: ' + str(size[0]))
-        plt.gca().set_color_cycle(['mediumorchid', 'r', 'dodgerblue'])  # 'mediumorchid', 'coral',
+        plt.gca().set_color_cycle(['r', 'dodgerblue'])  # 'mediumorchid', 'coral',
         '''
         xnew = np.linspace(x.min(), x.max(), 300)
         smooth = spline(x, s, xnew)
@@ -493,11 +508,61 @@ def broad_clustered_peaks_4_two_samples(dict_df, name, path):
         plt.plot(x, s, linewidth=3)
         plt.plot(x, l, linewidth=3)
         sname = name.split(',')
-        plt.legend([sname[0], sname[1]], loc='upper left')  # 'Low', 'Medium',
+        lgd = plt.legend(sname, loc='center left', bbox_to_anchor=(1, 0.5))  # 'Low', 'Medium',
         # plt.show()
-        plt.savefig(path + '/overlap_' + name + '_cluster:' + str(k) + '.png')
+        #plt.tight_layout()
+        plt.savefig(os.path.join(path, which, 'overlap_' + name + '_cluster:' + str(k) + '.png'), bbox_extra_artists=(lgd,), bbox_inches='tight')
         #plt.savefig(path + 'overlap_' + name + '_cluster:' + str(k) + '.svg')
         plt.clf()
+
+
+def plot_all_peaks_4_multiple_samples_genewide(big_df, name, path, which):
+    '''
+    Plots result of all peaks in strength.
+    :param dict_df:
+    :param name:
+    :return:
+    '''
+    import matplotlib.pyplot as plt
+    from scipy.interpolate import spline
+    import numpy as np
+    #print 'shape', dict_df[0].shape
+    sname = name.split(',')
+    cdict, clist = color()
+    plt.figure(figsize=[11,9])
+    sample_dict = {}
+    start = 0
+    stop = 150
+    size = big_df.shape
+    for sample in sname:
+        sample_dict[sample] = big_df.iloc[:, start:stop]
+        start = stop
+        stop += 150
+
+    x = np.array(range(-50, 100))
+    plt.gca().set_color_cycle(clist[:len(sname)])
+    Max = 0
+    for sample in sname:
+    #for sample, df in sample_dict.iteritems():
+        # print x
+        df = sample_dict.get(sample)
+        s = np.array(df.sum(axis=0)) / float(len(df))
+        s = np.subtract(s, min(s))
+        xnew = np.linspace(x.min(), x.max(), 200)
+        smooth = spline(x, s, xnew)
+        if max(smooth) > Max: Max = max(smooth)
+        plt.plot(xnew, smooth, linewidth=3)
+    plt.ylim(0, Max + Max/8)
+    plt.xlabel('Binding profile cluster' + str(len(big_df)))
+    plt.ylabel('Avg. norm. tag density per peaks')
+    plt.title('Genomic distribution of peaks with datapoints: ' + str(size[0]))
+    lgd = plt.legend(sname, loc='center left', bbox_to_anchor=(1, 0.5))  # 'Low', 'Medium',
+    # plt.show()
+    #plt.tight_layout()
+    plt.savefig(os.path.join(path, which, 'overlap_' + name + '_all:' + str(len(big_df)) + '.png'), bbox_extra_artists=(lgd,), bbox_inches='tight')
+    #plt.savefig(os.path.join(path, which, 'overlap_' + name + '_all:' + str(len(big_df)) + '.svg'), bbox_extra_artists=(lgd,), bbox_inches='tight')
+    plt.clf()
+    #plt.close()
 
 
 def divide_peaks_in_strength(df, name, path):
