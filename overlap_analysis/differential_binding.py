@@ -18,8 +18,13 @@ class Overlaps():
 
     def diffBinding(self, basepeakfile, outpath=None, genewide=False, use_second_start=False, from_sample=None, highest=False, twoK=False):
         '''
-        This function will extract summit (+-500) peak data if peak length is >1000 from provided peaks.
+        This function will extract tag counts from provided peaks.
         This dataframe can be used with DESeq for differential binding calculation.
+        :parameter: highest: consider peak summit and take tags +-50bp around
+        :parameter: use_second_start: use second start from the overlapping peak list.
+        :parameter: from_sample: from which sample should use_second_start be considered.
+        :parameter: twoK: select +-1000bp from the summit.
+        :parameter: genewdse: calculate tag count for longest transcript of gene
         :return:
         '''
         import pysam
@@ -107,9 +112,14 @@ class Overlaps():
                         stop = summit + 50
                     elif twoK:
                         # Take 2000 bp from peak summit
-                        summit = v['start']+v['summit']
-                        start = summit - 1000
-                        stop = summit + 1000
+                        if whichsample >= from_sample:
+                            summit = v['start']+v['summit']
+                            start = summit - 1000
+                            stop = summit + 1000
+                        else:
+                            #summit = +v['summit']
+                            start = v['start']
+                            stop = v['stop']
                     else:
                         start = v['start']
                         stop = v['stop']

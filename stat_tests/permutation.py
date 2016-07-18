@@ -87,8 +87,11 @@ def permutation_test4peakdensity(peak_df, name, comparisions, sname=None, n=None
         plt.bar(mediandiff,5, width=0.01)
         low = min(min(iterDF['median_diff']), mediandiff)
         high = max(max(iterDF['median_diff']), mediandiff)
-        print(low+(low/8), mediandiff, high+(high/8), mediandiff)
-        plt.xlim(low+(low/8), high+(high/8))
+        print(low+(low/8), high+(high/8), mediandiff)
+        if low < 0:
+            xlow = low+(low/8.)
+        else: xlow = low-(low/8.)
+        plt.xlim(xlow, high+(abs(high)/8.))
         plt.ylabel('Freq. of difference')
         plt.xlabel('log2 difference')
         plt.title('p-val of difference:'+str(pval)+' ;trial:'+str(niter))

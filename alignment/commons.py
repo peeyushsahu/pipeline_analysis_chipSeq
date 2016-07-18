@@ -64,38 +64,4 @@ def create_gtf2transcriptDB(gtf_file_path, path, feature='transcript'):
     create_longestTranscriptDB(trdb_path) # Def for longest transcript
     #########################################
 
-def create_longestTranscriptDB(path):
-    '''
-    This will filter longest transcript per gene.
-    :param path: path of transcript_annotation.db from def create_gtf2transcriptDB()
-    :return:
-    '''
-    ## Parsing gtf file and storing gene names with position.
-    gene_gtf = pd.read_csv(os.path.join(path,'transcript_annotation.db'), sep='\t', header=0)
-    gene_gtf['chr'] = gene_gtf['chr'].astype('str')
-    gene_gtf = gene_gtf[gene_gtf['chr'].str.strip.len() < 4]
-    gene_gtf = gene_gtf.sort('gene_name', ascending=True)
-    gene_name = None
-    chr = ''
-    start = None
-    stop = None
-    strand = ''
-    pid = '-'
-    gene_id = ''
-    gene_biotype = ''
-    transcript_id = ''
-    length = 0
-    with open(os.path.join(path,'longest_transcript_annotation.db'), 'a') as annotationDB:
-        annotationDB.write('chr'+'\t'+'start'+'\t'+'stop'+'\t'+'length'+'\t'+'strand'+'\t'+'gene_name'+'\t'+'pid'+'\t'+'gene_id'+'\t'+'gene_biotype'+'\t'+'transcript_id\n')
-        for index, rows in gene_gtf.iterrows():
-            if gene_name == rows['gene_name']:
-                if length < (int(rows['stop']) - int(rows['start'])):
-                    #print length
-                    length = rows['stop'] - rows['start']
-                    gene_name = rows['gene_name']; start = rows['start']; stop =rows['stop']; chr=str(rows['chr']); pid=rows['pid']; gene_id=rows['gene_id']; gene_biotype=rows['gene_biotype']; transcript_id=rows['transcript_id']; strand=rows['strand']
-            if not gene_name == rows['gene_name']:
-                if gene_name is not None:
-                    annotationDB.write(chr+'\t'+str(start)+'\t'+str(stop)+'\t'+str(stop-start)+'\t'+strand+'\t'+gene_name+'\t'+pid+'\t'+gene_id+'\t'+gene_biotype+'\t'+transcript_id+'\n')
-                length = 0
-                gene_name = rows['gene_name']; start = rows['start']; stop =rows['stop']; chr=str(rows['chr']); pid=rows['pid']; gene_id=rows['gene_id']; gene_biotype=rows['gene_biotype']; transcript_id=rows['transcript_id']; strand=rows['strand']
-    annotationDB.close()
+

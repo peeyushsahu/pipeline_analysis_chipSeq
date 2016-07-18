@@ -1,7 +1,7 @@
 import os
 from pandas import read_csv
 from alignment import retroT_analysis
-from annotate.Annotate import next6genes_annotator
+from annotate.Annotate import AnnotateNearestGenes
 from overlap_analysis import cal_genomic_region, differential_binding, filterPeaks
 from overlap_analysis.differential_binding import modification4nearestgenes
 from plotsAndseq import seqOperations
@@ -183,27 +183,27 @@ modification4nearestgenes(peak_df, 'prmt6_nearest5genes', sample)
 #overlapping_res = cal_genomic_region.OverlappingPeaks(peakAnalysis_df, 'H3K4me3_E9 vs IgG_E.9 filtered', 'H3R2ame2_E9 vs IgG_E.9 filtered')
 
 #'H3R2ame2_E9', 'H3K36me3_E9', 'H3K36me3_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2', 'H3K27ac_E9','H3K27ac_B6.2','PRMT6_E9_commer', 'PRMT6_B6_commer','PRMT6_KO_E.9', 'PRMT6_KO_B6.2','H3K4me1_E9','H3K4me1_B6','H3K27me3_E9','H3K27me3_B6'
-path = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/Compare -ATRA&+ATRA'
-multiple_df = ['H3R2me2+-RA_K4me3_+RA_expr']
+path = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/filtered/H3K27ac_E9_RA vs IgG_E9_RA filtered'
+multiple_df = ['H3K27ac_E9_RA vs IgG_E9_RA filtered']
 
 for df in multiple_df:
     peak_df = read_csv(os.path.join(path, df+'.txt'), header=0, sep='\t')
-    peak_df = peak_df[(peak_df['log2FC'] <= -1) & (peak_df['pvalue'] <= 0.05)]
+    # peak_df = peak_df[(peak_df['log2FC'] <= -1) & (peak_df['pvalue'] <= 0.05)]
     print(peak_df.shape)
     #peak_df = peak_df[:10]
-    sample = ['H3K27me3_E9', 'H3K27me3_B6', 'H3K27me3_E9_RA', 'H3K27me3_B6_RA']
-
+    sample = ['H3K27ac_E9', 'H3K27ac_E9_RA', 'H3K27ac_B6_RA']
+    # 'H3R2ame2_E9', 'H3R2me2a_E9_RA', 'H3R2me2a_B6.2_RA', 'H3K4me3_E9', 'H3K4me3_E9_RA', 'H3K4me3_B6.2_RA', 'H3K27ac_E9', 'H3K27ac_E9_RA', 'H3K27ac_B6_RA', 'H3K4me1_E9', 'H3K4me1_E9_RA', 'H3K4me1_B6_RA'
     # random sampling of df
-    #peak_df = differential_binding.random_sampleing_df(peak_df, 1459)
+    # peak_df = differential_binding.random_sampleing_df(peak_df, 1459)
 
     peak_df = peak_df.rename(columns={'Next Gene name':'Next transcript gene name'})
     print peak_df.shape
-    #peak_df = peak_df.drop_duplicates(['Next transcript gene name'])
-    #print peak_df.shape
+    # peak_df = peak_df.drop_duplicates(['Next transcript gene name'])
+    # print peak_df.shape
     filtered_peak = {'loaded_sample': peak_df}
     diffbind = differential_binding.Overlaps(sample, filtered_peak)
     outpath = basepath + '/further_analysis/H3R2me2a_analysis'
-    diffbind.diffBinding('loaded_sample', outpath=outpath+'/H3R2me2_+-RA_H3K4me3_down_expr+RA_K27me3.txt', genewide=True, use_second_start=False, from_sample=2, twoK=False, highest=False) #, genewide=True
+    diffbind.diffBinding('loaded_sample', outpath=outpath+'/H3K27ac+RA_E9_all_peaks.txt', genewide=False, use_second_start=False, from_sample=3, twoK=False, highest=False) #, genewide=True
 '''
 
 ### Transposone analysis
@@ -294,17 +294,17 @@ plots.grHeatmap4wholeGene(peak_df, bam_list, sample_name)
 '''
 
 ### Comapre ChIP-Seq profile from altered sample (external)
-
+'''
 # Perform overlap
 #overlapping_res = cal_genomic_region.OverlappingPeaks(peakAnalysis_df, 'H3R2ame2_E9 vs IgG_E.9 filtered', 'H3K4me3_E9 vs IgG_E.9 filtered')
-listGroups = ['H3R2ame2_E9 vs IgG_E.9 filtered']#,'chip_H3K4me1_up','chip_H3K4me3_down','chip_H3K4me3_up','chip_H3K27ac_down','chip_H3K27ac_up']
+listGroups = ['tagcountDF_all_norm']#,'chip_H3K4me1_up','chip_H3K4me3_down','chip_H3K4me3_up','chip_H3K27ac_down','chip_H3K27ac_up']
 
 for sampleName in listGroups:
-    peaks_df_n = read_csv(basepath + '/further_analysis/filtered/H3R2ame2_E9 vs IgG_E.9 filtered/'+sampleName+'.txt', sep='\t', header=0)
+    peaks_df_n = read_csv(basepath + '/further_analysis/H3R2me2a_analysis/H3R2ame2_E9,H3R2me2a_B6.2,H3R2me2a_E9_RA,H3R2me2a_B6.2_RA,H3K4me3_E9,H3K4me3_B6.2,H3K4me3_E9_RA,H3K4me3_B6.2_RA,H3K27ac_E9,H3K27ac_B6.2,H3K27ac_E9_RA,H3K27ac_B6_RA/all6519_H3R2me2a_E9_RA vs IgG_E9_RA filtered_unique/norm/'+sampleName+'.txt', sep='\t', header=0)
     #peaks_df_n = overlapping_res #overlapping_res
-    #peaks_df_n = peaks_df_n[peaks_df_n['log2FC_PRMT6_E9_commer_norm_vs_PRMT6_B6_commer_norm'] <= -0.8]
+    #peaks_df_n = peaks_df_n.sort('cluster', ascending=True)
     print 'Dim of DF', peaks_df_n.shape
-    bam_list = [['H3R2ame2_E9', 'H3R2me2a_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2', 'H3K27me3_E9', 'H3K27me3_B6']]
+    bam_list = [['H3R2ame2_E9', 'H3R2me2a_E9_RA', 'H3R2me2a_B6.2_RA', 'H3K4me3_E9', 'H3K4me3_E9_RA', 'H3K4me3_B6.2_RA', 'H3K27ac_E9', 'H3K27ac_E9_RA', 'H3K27ac_B6_RA', 'H3K4me1_E9', 'H3K4me1_E9_RA', 'H3K4me1_B6_RA']]
     #'H3K4me3_E9', 'H3K4me3_B6.2', 'H3K4me3_E9_RA', 'H3K4me3_B6.2_RA','H3K27ac_E9', 'H3K27ac_B6.2', 'H3K27ac_E9_RA', 'H3K27ac_B6_RA', 'H3K4me1_E9_RA', 'H3K4me1_B6_RA'
     #'Sample_18F3_RA', 'Sample_18F3', 'H3R2ame2_E9','H3R2me2a_B6.2','H3K27ac_E9','H3K27ac_B6.2','H3K4me1_E9','H3K4me1_B6','H3K27me3_E9','H3K27me3_B6',
     #'H3K27me3_E9', 'H3K27me3_B6', 'H3R2me2a_E9_RA', 'H3R2me2a_B6.2_RA', 'H3R2ame2_E9', 'H3R2me2a_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2','H3K27ac_E9','H3K27ac_B6.2','H3K4me1_E9', 'H3K4me1_B6', 'PRMT6_KO_E.9', 'PRMT6_KO_B6.2', 'PRMT6_KO_B5.1'
@@ -328,17 +328,17 @@ for sampleName in listGroups:
             GR_heatmaps_DF_for_peaks(List, peaks_df_n, region=i, sort=False, sort_column='PRMT6_KO_E.9_norm_millon', scale_df=False,
                                      sample_name=sampleName, strength_divide=False)
 gc.collect()
-
+'''
 
 ### permutation test for difference in median/mean
 '''
 name = ['H3K4me3_E9','H3K4me3_B6.2','H3K27ac_E9','H3K27ac_B6.2']
-comparisions = {-0.64:['H3K27ac_E9', 'H3K27ac_B6.2'],
-                0.05:['H3K4me3_E9', 'H3K4me3_B6.2']}
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/H3K4me3_all_+K27ac+-RA.txt', sep='\t', header=0)
+comparisions = {-1.67:['H3K27ac_E9_norm_millon', 'H3K27ac_E9_RA_norm_millon'],
+                1.29:['H3K27ac_E9_RA_norm_millon', 'H3K27ac_B6_RA_norm_millon']}
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/H3K27ac+RA_E9_all_peaks.txt', sep='\t', header=0)
 print(peak_df.head())
 outdir = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis'
-permutation.permutation_test4peakdensity(peak_df, name, comparisions, n=310, niter=10000, outdir=outdir, sname='H3K4me3_down')
+permutation.permutation_test4peakdensity(peak_df, name, comparisions, n=3800, niter=10000, outdir=outdir, sname='H3R2me2a_H3K27ac_enhancer')
 '''
 
 
@@ -371,21 +371,27 @@ seqOperations.motif_analysis_homer(peak_df, path=outpath, samplename='H3R2_PRMT6
 #uniqueDF = cal_genomic_region.non_overlapping_peaks(df1, df2)
 
 sample_dict = {}
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/H3R2ame2_E9 vs IgG_E.9 filtered/H3R2ame2_E9 vs IgG_E.9 filtered.txt',
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/Compare -ATRA&+ATRA/genereg_+RA_CT-onlyUPvsKO_61%.txt',
     header=0, sep='\t')
-sample_dict['H3R2me2_E9_50bp'] = peak_df
-seq = seqOperations.seq4motif(sample_dict, seqLength='small')
+sample_dict['genereg_+RA_CT-onlyUPvsKO_61'] = peak_df
+seq = seqOperations.seq4motif(sample_dict, seqLength='large')
 db = ["JASPAR_CORE_2016_vertebrates.meme", "HOCOMOCOv9.meme", "SwissRegulon_human_and_mouse.meme"]
 seqOperations.motif_analysis(db, 10, seq)
 '''
 
-### Annotate peaks with 6 nearest genes (+,-) strand
-'''
-diffpeaks = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/PRMT6_KO_analysis/peak_selecetion_B6/PRMT6_new+old_peaks/PRMT6_old+new_only_Enhancer_bound.txt',
-    header=0, sep='\t')
+### Annotate peaks with 'n' nearest genes (+,-) strand
+
+path = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/H3R2ame2_E9,H3R2me2a_B6.2,H3R2me2a_E9_RA,H3R2me2a_B6.2_RA,H3K4me3_E9,H3K4me3_B6.2,H3K4me3_E9_RA,H3K4me3_B6.2_RA,H3K27ac_E9,H3K27ac_B6.2,H3K27ac_E9_RA,H3K27ac_B6_RA/all6519_H3R2me2a_E9_RA vs IgG_E9_RA filtered_unique/norm'
+diffpeaks = read_csv(path+'/tagcountDF_all_norm.txt', header=0, sep='\t')
+diffpeaks = diffpeaks[diffpeaks['cluster'].isin([1, 7])]
+diffpeaks['chr'] = diffpeaks['chr'].astype('str')
+
 gtf_path = '/ps/imt/f/Genomes/Homo_sapiens/Ensembl/GRCh37/Annotation/Genes/genes.gtf'
-next5genes_annotator(diffpeaks, gtf_path)
-'''
+next_gene_annotation = AnnotateNearestGenes(diffpeaks, gtf_path, maxdist=1000, maxgenes=2)
+nearGeneDf = next_gene_annotation.next_genes_annotator()
+nearGeneDf.to_csv(basepath + '/further_analysis/H3R2me2a_analysis/Compare -ATRA&+ATRA/nearest_genes_H3R2me2+RA_only_k27ac.txt',
+                  sep="\t", ignore_index=True, header=True)
+
 
 ### calculate overlaps between peaks
 '''

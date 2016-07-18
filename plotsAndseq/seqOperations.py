@@ -23,7 +23,7 @@ def seq4motif(peak_data, seqLength='small'):
     if seqLength == 'small':
         extend = 25
     elif seqLength == 'large':
-        extend = 100
+        extend = 50
     output_dir = []
     for k,df in peak_data.iteritems():
         if len(df) > 0:
