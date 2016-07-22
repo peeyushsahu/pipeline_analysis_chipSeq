@@ -164,29 +164,29 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     if region != 'all':
         peak_df = peak_df[peak_df['GenomicPosition TSS=1250 bp, upstream=5000 bp'] == region]
     if region == 'tss':  # Reduce peaks based on their distance from TSS
-        print 'Selecting peaks only within +-300bp'
+        print('Selecting peaks only within +-300bp')
         peak_df = peak_df[peak_df['Next Transcript tss distance'] < 300]
         peak_df = peak_df[peak_df['Next Transcript tss distance'] > -300]
         if len(peak_df) == 0:
             raise ValueError('selected region does not contain any peaks')
-    print region + ' found in dataframe: ', len(peak_df)
+    print(region + ' found in dataframe: ', len(peak_df))
     # print peak_df.head()
     peak_df.index = range(0, len(peak_df))
     if sort:
-        print 'Dataframe is being sort...'
+        print('Dataframe is being sort...')
         colnames = peak_df.columns.tolist()
         indices1 = [i for i, s in enumerate(colnames) if sort_column in s]
         #print peak_df.head()
         for i in indices1:
             if "RA" not in colnames[i] and "RA" not in sort_column and "norm" not in colnames[i]:
                 condition = colnames[i]
-                print 'Sorted on column: ' + condition
+                print('Sorted on column: ' + condition)
                 peak_df = peak_df.sort(condition, ascending=False)
                 sort_column = condition
                 break
             elif "RA" in colnames[i] and "RA" in sort_column and "norm" not in colnames[i]:
                 condition = colnames[i]
-                print 'Sorted on column: ' + condition
+                print('Sorted on column: ' + condition)
                 peak_df = peak_df.sort(condition, ascending=False)
                 sort_column = condition
                 break
@@ -203,7 +203,7 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
         df, df1 = overlapping_peaks_distribution(v, peak_df, path)
         if scale_df:
             df = scale_dataframe(df)  # scaling of dataframe
-            print 'scaled df'
+            print('scaled df')
         big_df = pd.concat([big_df, df], axis=1)
         big_df_raw = pd.concat([big_df_raw, df1], axis=1)
     big_df.columns = range(0, big_df.shape[1])
@@ -226,15 +226,15 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
             big_df_raw = kmeans_clustering(big_df_raw, 9, 1000)  # performing k-means clustering
             dict_of_df = group_DF(big_df, 'cluster')  # divide df in smaller dfs basis in clustering
             dict_of_df_raw = group_DF(big_df_raw, 'cluster')
-            print len(dict_of_df)
+            print(len(dict_of_df))
             line_plot_peak_distribution(dict_of_df, bam_order, path, 'norm')  # plotting individual clusters
             line_plot_peak_distribution(dict_of_df_raw, bam_order, path, 'raw')
-            print 'No. of sample to plot:', len(bam_name_list)
+            print('No. of sample to plot:', len(bam_name_list))
             plot_clustered_peaks_4_multiple_samples(dict_of_df, bam_order, path, 'norm')  # plotting cluster for different bam in overlapping plot
             plot_clustered_peaks_4_multiple_samples(dict_of_df_raw, bam_order, path, 'raw')
 
         except:
-            print 'Dataframe can not be clustered, scipy error.'
+            print('Dataframe can not be clustered, scipy error.')
     ### adding columns to heatmap df
     try:
         colList = ['GenomicPosition TSS=1250 bp, upstream=5000 bp', 'Next Transcript tss distance',
@@ -272,7 +272,7 @@ def kmeans_clustering(df, nClus, iter, method='sklearn'):
     import scipy.cluster.vq as cluster
     import sklearn.cluster as sk_cluster
     import pandas as pd
-    print '\nProcess: Clustering of DataFrame'
+    print('\nProcess: Clustering of DataFrame')
     df_fin = df
     df_mat = df.as_matrix()
     if method == 'scipy':
@@ -307,7 +307,7 @@ def overlapping_peaks_distribution(bam_name, overlap_df, path):
     peak_distribution_sample = pd.DataFrame()
     peak_distribution_sample1 = pd.DataFrame()
     overlap_df = overlap_df[['chr', 'start', 'stop', 'Next transcript strand', 'summit']]
-    print 'Process: Feature extraction from BAM started'
+    print('Process: Feature extraction from BAM started')
     count = 1
     for ind in overlap_df.T.to_dict().values():
         sys.stdout.write("\rFeature extraction for peak:%d" % count)
@@ -344,7 +344,7 @@ def overlapping_peaks_distribution(bam_name, overlap_df, path):
                                                                            ignore_index=True)
         del list_sample, middle, start, stop
     stop = timeit.default_timer()
-    print '\nTime elapsed:' + str((stop - startT) / 60) + 'min'
+    print('\nTime elapsed:' + str((stop - startT) / 60) + 'min')
     sample_bam.close()
     return peak_distribution_sample, peak_distribution_sample1
 
@@ -429,7 +429,7 @@ def grHeatmap4wholeGene(peaksDF, bam_name, samplename, longestTranscriptDB = '/p
                         distribution_df = distribution_df.append(pd.Series(list_sample[::-1]), ignore_index=True)
                         distribution_df_norm = distribution_df_norm.append(pd.Series(list_sample_norm[::-1]), ignore_index=True)
             else:
-                print gene_name
+                print(gene_name)
         sample_bam.close()
         peak_distribution_df = pd.concat([peak_distribution_df, distribution_df], axis=1)
         peak_distribution_df_norm = pd.concat([peak_distribution_df_norm, distribution_df_norm], axis=1)
@@ -447,7 +447,6 @@ def grHeatmap4wholeGene(peaksDF, bam_name, samplename, longestTranscriptDB = '/p
         print('plotting line plots')
         plot_all_peaks_4_multiple_samples_genewide(sample, bam_order, path, which)
         if len(bam_name) == 2:
-            print 'In here'
             broad_clustered_peaks_4_two_samples(dict_of_df, bam_order, path, which)
         sample.insert(0, 'Next transcript gene name', peaksDF['Next transcript gene name'])
         sample.to_csv(os.path.join(path, which, 'tagcountDF_all_' + which + '.txt'), sep="\t", encoding='utf-8')
@@ -809,8 +808,8 @@ def scale_dataframe(df):
     new_max = 100
     new_min = 0
     list_of_rows = []
-    print 'Process: scaling of dataframe'
-    print 'Max value in df:', old_max
+    print('Process: scaling of dataframe')
+    print('Max value in df:', old_max)
     if old_max > 30:  # Scale values only when the highest in dataframe is > 50
         for r, v in df.iterrows():
             rows = []
@@ -879,7 +878,7 @@ def overlapping_peak_intensity(peakdf1, name1, peakdf2, name2, overlappingdf, ov
     end = df1_length
     for i in range(0, 10):
         df1_bin.append(sum(df1_tags[start:end]) / df1_length)
-        print 'df1', sum(df1_tags[start:end]) / df1_length
+        print('df1', sum(df1_tags[start:end]) / df1_length)
         start = end
         end = start + df1_length
 
@@ -889,7 +888,7 @@ def overlapping_peak_intensity(peakdf1, name1, peakdf2, name2, overlappingdf, ov
     end = df2_length
     for i in range(0, 10):
         df2_bin.append(sum(df2_tags[start:end]) / df2_length)
-        print 'df2', sum(df2_tags[start:end]) / df2_length
+        print('df2', sum(df2_tags[start:end]) / df2_length)
         start = end
         end = start + df2_length
 
@@ -898,10 +897,10 @@ def overlapping_peak_intensity(peakdf1, name1, peakdf2, name2, overlappingdf, ov
 
     overlap_name_list = re.split(" vs |_vs_", overlap_name)
     o_colist = overlappingdf.columns.values.tolist()
-    print overlap_name_list
+    print(overlap_name_list)
     o_indices1 = [s for i, s in enumerate(o_colist) if 'norm_' + overlap_name_list[0] in s]
     o_indices2 = [s for i, s in enumerate(o_colist) if 'norm_' + overlap_name_list[2] in s]
-    print o_indices1
+    print(o_indices1)
 
     overlappingdf = overlappingdf.sort(o_indices1[0], ascending=True)
     o_df1_tags = overlappingdf[o_indices1]
@@ -913,7 +912,7 @@ def overlapping_peak_intensity(peakdf1, name1, peakdf2, name2, overlappingdf, ov
     end = df_length
     for i in range(0, 10):
         ol_df1_bin.append(o_df1_tags[start:end].sum()[0] / df_length)
-        print 'df1', o_df1_tags[start:end].sum()[0] / df_length
+        print('df1', o_df1_tags[start:end].sum()[0] / df_length)
         start = end
         end = start + df_length
 
@@ -922,7 +921,7 @@ def overlapping_peak_intensity(peakdf1, name1, peakdf2, name2, overlappingdf, ov
     end = df_length
     for i in range(0, 10):
         ol_df2_bin.append(o_df2_tags[start:end].sum()[0] / df_length)
-        print 'df2', o_df2_tags[start:end].sum()[0] / df_length
+        print('df2', o_df2_tags[start:end].sum()[0] / df_length)
         start = end
         end = start + df_length
 
@@ -1061,7 +1060,7 @@ def peak_position_dataframe(peak_df, name):
         # positionDf['Next transcript gene name'] = pd.Series(geneNames)
         positionDf = positionDf.set_index(pd.Series(geneNames))
         # plot_heatmap_4_peaks_position(positionDf)
-    print 'Frequency of peak positions\n', positionDf.sum()
+    print('Frequency of peak positions\n', positionDf.sum())
     positionDf.to_csv(basepath + '/further_analysis/overlap/' + name + '.csv',
                       sep=",", encoding='utf-8', ignore_index=True)
     return positionDf

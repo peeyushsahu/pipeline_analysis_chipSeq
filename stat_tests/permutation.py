@@ -19,7 +19,7 @@ def significance_of_chipseq_overlap(overlap, peak_df1, peak_df2, iteration=10):
     n_peak_df2['chr'] = n_peak_df2['chr'].astype(str)
     df = n_peak_df1.append(n_peak_df2, ignore_index=True)
     datapoints = min(len(n_peak_df1), len(n_peak_df2))
-    print n_peak_df1.shape, n_peak_df2.shape, df.shape, datapoints
+    print(n_peak_df1.shape, n_peak_df2.shape, df.shape, datapoints)
     ## Number of iterations
     overlap_list = {}
     for ite in range(0, iteration):

@@ -46,10 +46,10 @@ def filterpeaks(peak_data, name, filtering=True):
             df1 = df[df[condition] >= 2*df[control]]
             df2 = df1[((df1['stop']-df1['start'])/df1[condition]) <= 15]
             final = df2
-        print final.shape
+        print(final.shape)
     else:
         final = df
-        print final.shape
+        print(final.shape)
     with open(basepath + '/further_analysis/filtered/filteredPeaksCount.txt', 'a') as file:
         file.write(name.split(' ')[0]+'\t'+name.split(' ')[2]+'\t'+str(len(df))+'\t'+str(len(final))+'\n')
     #filtered_peak_data[name] = final

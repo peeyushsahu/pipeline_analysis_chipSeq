@@ -59,7 +59,7 @@ class Transposones():
             repeat_db = self.repeat_db
             repeat_db = repeat_db[repeat_db['repeat'] == rep]
             repeat_db = repeat_db[repeat_db['chr'].str.len() < 6]
-            print 'DF Size of repeat'+rep, len(repeat_db)
+            print('DF Size of repeat' + rep, len(repeat_db))
             repeat_pos_db[rep] = repeat_db
         self.repeat_pos_db = repeat_pos_db
 

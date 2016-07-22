@@ -48,7 +48,7 @@ class Overlaps():
             column = ['chr', 'start', 'stop', 'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'Next transcript gene name',
                   'Next transcript strand', 'Next Transcript tss distance', 'summit']
             df = pd.DataFrame(columns=column, index=range(len(dataframe)))
-        print df.dtypes
+        print(df.dtypes)
 
         whichsample = 0
         for sample in sample_name:
@@ -185,14 +185,14 @@ def getBam(name):
                 for j in listdir(Dir):
                     if j.endswith('.bam'):
                         file = j
-                        print '\nBam file selected: '+j
+                        print('\nBam file selected: '+j)
             if 'RA' not in name and 'RA' not in i:
                 Dir = path+i
                 #print Dir
                 for j in listdir(Dir):
                     if j.endswith('.bam'):
                         file = j
-                        print '\nBam file selected: '+j
+                        print('\nBam file selected: '+j)
 
     if file is None:
         raise KeyError('Bam file cannot be found for '+name)
@@ -210,10 +210,10 @@ def group_DF(dataframe, factor):
     """
     if not factor in dataframe.columns:
         raise ValueError('Not valid column for df groupping.')
-    print 'DF grouping based on: '+factor
+    print('DF grouping based on: ' + factor)
     grouppedDF = dataframe.groupby(factor)
     for k, v in grouppedDF:
-        print 'Cluster:', k, 'Size:', len(v)
+        print('Cluster:', k, 'Size:', len(v))
     return grouppedDF
 
 def col_position(dataframe, colname):
@@ -237,7 +237,7 @@ def modification4nearestgenes(dataframe, name, modification_list):
     '''
     import pysam
     import sys
-    print "\nCheck point: diffBinding"
+    print("\nCheck point: diffBinding")
     sample_name = name
     dataframes = dataframe
     # print type(sample_name)
@@ -245,7 +245,7 @@ def modification4nearestgenes(dataframe, name, modification_list):
     df = pd.DataFrame()
 
     ### create df from nearest genes
-    print 'Reassembling dataframe'
+    print('Reassembling dataframe')
     genewidpos = zip(dataframes['next5genes'], dataframes['position'])
     for i in genewidpos:
         gene = i[0].split(',')
@@ -258,7 +258,7 @@ def modification4nearestgenes(dataframe, name, modification_list):
 
     ### Extract tag count for the specific region of peak
     for sample in modification_list:
-        print '\n'+sample+' sample being processed.'
+        print('\n' + sample + ' sample being processed.')
         df[sample] = 0
         sample_bam_path = getBam(sample) #.split(' vs ')[0]
         sample_bam = pysam.Samfile(sample_bam_path, "rb")

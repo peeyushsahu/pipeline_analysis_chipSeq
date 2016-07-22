@@ -244,7 +244,7 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
     :return: A dictionary of list of overlapping regions list(dict) and name
     """
     import timeit
-    print 'Check point: Overlapping analysis'
+    print('Check point: Overlapping analysis')
     for k, v in dict_peaksdf.iteritems():
         if k == name:
             df1 = v
@@ -253,7 +253,7 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
             df2 = v
             #print 'size of df2: ', len(df2)
             #print name1
-    print '\n',name,'vs',name1
+    print('\n', name, 'vs', name1)
     df1 = df1.peaks.sort(['chr'], ascending=True)
     df2 = df2.peaks.sort(['chr'], ascending=True)
     ### Method test PeakOverlaps
@@ -261,11 +261,11 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
     try:
         overlap_list = PeakOverlaps(df1, df2)
     except:
-        print '\nWarning: Dataframe does not contain all the columns required for overlap, ' \
-              'switching to minimal column requirement.'
+        print('\nWarning: Dataframe does not contain all the columns required for overlap, '
+              'switching to minimal column requirement.')
         overlap_list = PeakOverlaps_concise(df1, df2)
     stop1 = timeit.default_timer()
-    print "Time consumed by method PeakOverlaps:", stop1-start1, 'sec'
+    print("Time consumed by method PeakOverlaps:", stop1 - start1, 'sec')
     ddf = pd.DataFrame(overlap_list)
     dirPath = os.path.join(basepath, 'further_analysis', 'overlap', name+'_vs_'+name1)
     commons.ensure_path(dirPath)
@@ -390,6 +390,7 @@ def get_unique_peaks(dataframe1, dataframe2, name, name1, overlapdf, dirpath):
     file.write('\nUnique peaks from dataframe1:'+str(len(df1_overlap)))
     file.write('\nUnique peaks from dataframe2:'+str(len(df2_overlap)))
     return uni_df1, uni_df2
+
 
 def non_overlapping_peaks(dataframe1, overlapDF):
     """

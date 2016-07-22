@@ -2,12 +2,14 @@ __author__ = 'peeyush'
 import pandas as pd
 import alignment.commons as paths
 import re, os
+import mygene
 import numpy as np
+import sys, traceback
 Path = paths.path()
 basepath = Path.basepath
 
 
-def geneid_converter(listofids, input_identifier = None , output_identifier = None):
+def geneid_converter(listofids, input_identifier = None, output_identifier = None):
     '''
     Method will take gene identifier and convert into desired one. Identifiers availble:
     [u'accession', u'alias', u'biocarta', u'chr', u'end', u'ensemblgene', u'ensemblprotein', u'ensembltranscript',
@@ -21,7 +23,6 @@ def geneid_converter(listofids, input_identifier = None , output_identifier = No
     :param listofids: list of ids to be mapped eg. ['1', '10', '10001']
     :return: DataFrame of mapped ids
     '''
-    import mygene
     if input_identifier is None:
         input_identifier = "entrezgene"
     if output_identifier is None:
@@ -29,7 +30,6 @@ def geneid_converter(listofids, input_identifier = None , output_identifier = No
     mygene_object = mygene.MyGeneInfo()
     mapped_dataframe = mygene_object.querymany(listofids, scopes=input_identifier, fields=output_identifier, species="human", as_dataframe=True)
     return mapped_dataframe
-
 
 
 def parse_gtf(path):
@@ -41,87 +41,6 @@ def parse_gtf(path):
     gtf_file.columns = colnames
     gtf_file['chr'] = gtf_file['chr'].astype(str)
     return gtf_file
-
-
-def vectors_4_chromosome():
-    import numpy as np
-    chr_lengths = pd.read_csv('', header=None, sep='\t')
-    chr = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','X','Y']
-    position = [249250621,243199373,198022430,191154276,180915260,171115067,159138663,146364022,141213431,135534747,135006516,
-            133851895,115169878,107349540,102531392,90354753,81195210,78077248,59128983,63025520,48129895,51304566, 155270560, 59373566]
-    chr_len = dict(zip(chr, position))
-    chr_vector = {}
-    for k, v in chr_len.iteritems():
-        chr_vector[k] = np.zeros(v, dtype=np.uint32)
-    return chr_vector
-
-def exon_intron_vector(path):
-    import re
-    print "reading GTF file"
-    gtf_file = parse_gtf(path)
-    print "creating chromosome vector"
-    chr_vector = vectors_4_chromosome()
-    print "Annotating chr_vector"
-    region = ['exon', 'transcript']
-    for i in region:
-        if i == 'exon':
-            print 'exon'
-            gene_name = ''
-            index = 0
-            stop = 0
-            for k, v in gtf_file[gtf_file['region'] == i].iterrows():
-                if len(str(v['chr'])) < 5 and v['chr'] != 'MT':
-                    chr_vector[str(v['chr'])][v['start']: v['stop']] = 2
-                    #print v['start'], v['stop']
-                    name = re.split(';| |"', v['further_information']).index('gene_name')
-                    new_gene_name = re.split(';| |"', v['further_information'])[name+2]
-                    if index > 0 and new_gene_name == gene_name:
-                    #print gene_name
-                    #print index
-                        chr_vector[str(v['chr'])][stop+1: v['start']-1] = 3
-                        gene_name = new_gene_name
-                        index += 1
-                    stop = v['stop']
-                    gene_name = new_gene_name
-                    index += 1
-        if i == 'transcript':
-            print 'transcript'
-            for k, v in gtf_file[gtf_file['region'] == i].iterrows():
-                if len(str(v['chr'])) < 5 and v['chr'] != 'MT':
-                    chr_vector[str(v['chr'])][v['start']] = 1
-                    if str(v['chr'])=='X':
-                        print k, 'Start', v['start']
-    del(gtf_file)
-    return chr_vector
-
-def annotate_intronexon_junction(df, chr_vector):
-    '''
-    Calculate Intron-Exon juction will be called for the cookie-cut (+-250) peaks from summit
-    :param df: Dataframe
-    :param chr_vector: annotated chromosome vector
-    :return:
-    '''
-    import numpy as np
-    dataFrame = df
-    dataFrame[['chr']] = dataFrame[['chr']].astype(str)
-    dataFrame['exon_intron_junction'] = 0
-    dataFrame['exon_intron_percent'] = 0
-    for k, v in dataFrame.iterrows():
-        if len(v['chr']) < 5:
-            #print v
-            #print type(v['chr']),type(v['start']),type(v['stop'])
-            summit = v['start']+v['summit']
-            unique_elements = set(chr_vector[v['chr']][summit-250:summit+250])
-            unique_count = np.bincount(chr_vector[v['chr']][v['start']:v['stop']])
-            zip_unique = dict(zip(unique_elements, unique_count))
-            if unique_elements.issuperset([2,3]) and zip_unique[2]>0 and zip_unique[3]>0:
-                if unique_elements.issuperset([0]) and zip_unique[0]<10 or unique_elements.issuperset([0]) == False:
-                    if float(zip_unique[3])/float(zip_unique[2]) < 2 and float(zip_unique[3]) / float(zip_unique[2]) > 0.5:
-                        print zip_unique
-                        dataFrame.loc[k, 'exon_intron_junction'] = 1
-                        dataFrame.loc[k, 'exon_intron_percent'] = float(zip_unique[3])/float(zip_unique[2])
-    dataFrame.to_csv(basepath + '/exon_intron_junction_PRMT6_RA.csv', sep=",", encoding='utf-8', ignore_index=True, index=False)
-    return dataFrame
 
 
 class AnnotateNearestGenes:
@@ -143,7 +62,7 @@ class AnnotateNearestGenes:
         '''
         import sys
         import timeit
-        print 'Process: Reading GTF file'
+        print('Process: Reading GTF file')
         start = timeit.default_timer()
         gtfFile = parse_gtf(self.gtfpath)
         #print(gtfFile.head())
@@ -154,9 +73,9 @@ class AnnotateNearestGenes:
         chr_group = gtfFile.groupby('chr')['start']
         dataframe = self.dataframe.sort(['chr'], ascending=True)
         nearGene_df = pd.DataFrame(columns=['chr', 'start', 'stop', 'Next transcript strand', 'Next transcript gene name',
-                                         'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'gene_name', 'transcript_name', 'distance2tss', 'strand'])
+                                         'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'gene_name', 'transcript_name', 'distance2tss', 'strand', 'summit'])
         count = 0
-        print 'Process: Annotating peaks with genes'
+        print('Process: Annotating peaks with genes')
         for k, v in dataframe.iterrows():
             if len(v['chr']) < 4:
                 sys.stdout.write("\rNumber of peaks annotated:%d" % count)
@@ -174,7 +93,7 @@ class AnnotateNearestGenes:
 
         del(gtfFile)
         stop = timeit.default_timer()
-        print '\nTime elapsed:', stop-start,' sec'
+        print('\nTime elapsed:', stop-start,' sec')
         return nearGene_df
 
     def next_genes(self, gtffile, position, row):
@@ -191,7 +110,7 @@ class AnnotateNearestGenes:
         geneList = []
         plusindex = position[0]
         minusindex = position[1]
-        neargene = pd.DataFrame(columns=['chr', 'start', 'stop', 'Next transcript strand', 'Next transcript gene name', 'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'gene_name', 'transcript_name', 'distance2tss', 'strand'])
+        neargene = pd.DataFrame(columns=['chr', 'start', 'stop', 'Next transcript strand', 'Next transcript gene name', 'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'gene_name', 'transcript_name', 'distance2tss', 'strand', 'summit'])
 
         while len(geneList) < self.maxgenes:
             # print geneList, upstreamindex, downstreamindex
@@ -220,6 +139,7 @@ class AnnotateNearestGenes:
                             'gene_name': gene_name,
                             'transcript_name': tns_name,
                             'strand': strand,
+                            'summit': row['summit'],
                             'distance2tss': int(dist2tss)*-1}
                     neargene = neargene.append(pd.Series(newrow), ignore_index=True)
                     geneList.append(gene_name)
@@ -232,28 +152,64 @@ class AnnotateNearestGenes:
         return neargene
 
 
-class Generate_annotate_vectors:
+class GenerateAnnotationDB:
 
-    def __init__(self, gtf_path, tss_distance_up=1500, tss_distance_down=500, upstream=5000):
+    def __init__(self, gtf_path, outpath, tss_distance_up=1500, tss_distance_down=500, upstream=5000):
         self.gtf_path = gtf_path
+        self.outpath = outpath
         self.tssdistance_up = tss_distance_up
         self.tssdistance_down = tss_distance_down
         self.upstream = upstream
         self.gtf_file = parse_gtf(self.gtf_path)
         self.chr_lengths = self.get_chr_size()
-        self.longest_transcript = self.get_longest_transcript()
+
+    def call_me(self):
+        '''
+        Create transcript db and chr vectors
+        :return:
+        '''
+        self.make_gtf_transcript_db()
+        self.annotate_chrvectors()
 
     def get_chr_size(self):
         print('Reading chr sizes...')
-        chr_size_path = os.path.join('/ps/imt/f/Genomes/geneAnotations', 'chrom_sizes')
+        chr_size_path = os.path.join(self.outpath, 'chrom_sizes')
         chr_lengths = pd.read_csv(chr_size_path, header=None, sep='\t')
+        chr_lengths[0] = chr_lengths[0].astype(str)
         return chr_lengths
 
-    def get_longest_transcript(self):
-        print('Estimating longest transcript per gene...')
-        longest_tr_path = os.path.join('/ps/imt/f/Genomes/geneAnotations', 'longest_transcript_annotation.db')
-        longest_tr = pd.read_csv(longest_tr_path, header=0, sep='\t')
-        return longest_tr
+    def make_gtf_transcript_db(self):
+        print('Creating transcript db from GTF...')
+        gtf_file = self.gtf_file
+        gtf_file = gtf_file[gtf_file['feature'] == 'transcript']
+        f = open(os.path.join(self.outpath, 'gtf_transcript4vector.db'), mode='wb')
+        a = open(os.path.join(self.outpath, 'gtf_transcript4annotation.db'), mode='wb')
+        f.write(bytes('chr\tstart\tstop\tstrand\tgene_name\tgene_id\ttranscript_name\ttranscript_id\tgene_biotype\n', 'UTF-8'))
+        a.write(bytes('chr\tstart\tstop\tstrand\tgene_name\tgene_id\ttranscript_name\ttranscript_id\tgene_biotype\n', 'UTF-8'))
+        for ind, row in gtf_file.iterrows():
+            strand = row['strand']
+            chr = row['chr']
+            start = str(row['start'])
+            stop = str(row['stop'])
+            gtf_anno = re.split(';| |"', row['further_information'])
+            gene_name = gtf_anno[gtf_anno.index('gene_name') + 2]
+            tnx_name = gtf_anno[gtf_anno.index('transcript_name') + 2]
+            gene_id = gtf_anno[gtf_anno.index('gene_id') + 2]
+            tnx_id = gtf_anno[gtf_anno.index('transcript_id') + 2]
+            biotype = gtf_anno[gtf_anno.index('gene_biotype') + 2]
+            f.write(bytes(chr+'\t'+start+'\t'+stop+'\t'+strand+'\t'+gene_name+'\t'+gene_id+'\t'+tnx_name+'\t'+tnx_id+'\t'+biotype+'\n', 'UTF-8'))
+            if strand == '-':
+                a.write(bytes(chr+'\t'+stop+'\t'+start+'\t'+strand+'\t'+gene_name+'\t'+gene_id+'\t'+tnx_name+'\t'+tnx_id+'\t'+biotype+'\n', 'UTF-8'))
+            else:
+                a.write(bytes(chr+'\t'+start+'\t'+stop+'\t'+strand+'\t'+gene_name+'\t'+gene_id+'\t'+tnx_name+'\t'+tnx_id+'\t'+biotype+'\n', 'UTF-8'))
+        f.close()
+
+    def get_transcript_db(self):
+        tr_db_path = os.path.join(self.outpath, 'gtf_transcript4vector.db')
+        transcript_db = pd.read_csv(tr_db_path, header=0, sep='\t')
+        transcript_db['chr'] = transcript_db['chr'].astype(str)
+        transcript_db = transcript_db[(transcript_db['chr'].str.len() < 4) | (transcript_db['chr'].str.contains('GL'))]
+        return transcript_db
 
     def chromosome_vactors(self):
         '''
@@ -267,7 +223,9 @@ class Generate_annotate_vectors:
 
     def save_chr_vector(self, chr_vector):
         for chro, vec in chr_vector.items():
-            f = open("/ps/imt/f/Genomes/geneAnotations/chr_vec/"+str(chro),  "wb")
+            if not os.path.exists(os.path.join(self.outpath, 'chr_vector')):
+                os.mkdir(os.path.join(self.outpath, 'chr_vector'))
+            f = open(os.path.join(self.outpath, 'chr_vector', str(chro)),  "wb")
             np.save(f, vec)
             f.close()
 
@@ -275,6 +233,7 @@ class Generate_annotate_vectors:
         '''
         fill chromosome vector with respective region annotation
         '''
+        print('Annotating chromosome vectors...')
         chr_vector = self.chromosome_vactors()
         # we will annotate tss, exon, upstream
         gene_gtf = self.gtf_file
@@ -285,6 +244,7 @@ class Generate_annotate_vectors:
             gtffile = gtffile.sort_values(['chr', 'start'], ascending=True)
             #print(gtffile)
             gtf_chr_group = gtffile.groupby('chr')
+            # Annotating exons
             if feature == 'exon':
                 for chr, df in gtf_chr_group:
                     vector = chr_vector[str(chr)]
@@ -292,7 +252,7 @@ class Generate_annotate_vectors:
                         start = row['start'] - 1  # converting into o based system
                         stop = row['stop']
                         vector[start: stop] = sym
-
+            # Annotating transcript
             if feature == 'transcript':
                 for chr, df in gtf_chr_group:
                     vector = chr_vector[str(chr)]
@@ -310,70 +270,198 @@ class Generate_annotate_vectors:
                             if len(tr_vec) == 1 and tr_vec[0] == 0:
                                 vector[start-self.upstream: start-self.tssdistance_up] = 4
         # now we will annotate intron
-        longest_transcript_group = self.longest_transcript.groupby('chr')
-        for key, df in longest_transcript_group:
-            print(key, list(df['chr'])[0])
+        transcripts = self.get_transcript_db()
+        transcript_group = transcripts.groupby('chr')
+
+        for key, df in transcript_group:
+            #print(key, list(df['chr'])[0])
             vector = chr_vector[str(key)]
             df = df.sort_values(['chr', 'start'], ascending=[True, True])
             for ind, row in df.iterrows():
                 tr_vec = vector[row['start']-1: row['stop']]
                 tr_vec[tr_vec == 0] = 2
+                tr_vec[tr_vec == 4] = 2
                 vector[row['start']-1: row['stop']] = tr_vec
-                #for pos in range(row['start']-1, row['stop']-1, 1):
-                #    if vector[pos] == 0:
-                #        vector[pos] = 2
+            chr_vector[str(key)] = vector
         self.save_chr_vector(chr_vector) # save chr vector in bin files
         #return chr_vector
 
 
 class AnnotatePeaks:
 
-    def __init__(self, gtf_path, path_chr_vector='/ps/imt/f/Genomes/geneAnotations/chr_vec', dataframe=None):
-        self.gtf_path = gtf_path
+    def __init__(self, dataframe, path4annotations='/ps/imt/f/Genomes/geneAnotations'):
         self.dataframe = dataframe
-        self.gtf_file = parse_gtf(self.gtf_path)
-        self.path_chr_vector = path_chr_vector
-        self.chr_vector = None
+        self.path4annotations = path4annotations
 
-    def get_chr_vector(self):
-        chr_vector = {}
-        files = os.listdir(self.path_chr_vector)
-        for chro in files:
-            if os.path.isfile(os.path.join(self.path_chr_vector, chro)):
-                chr_vector[chro] = np.load(os.path.join(self.path_chr_vector, chro))
-        self.chr_vector = chr_vector
+    def call_me(self):
+        '''
+        Annotate dataframe with peaks.
+        '''
+        df = self.annotate_region()
+        return self.annotate_distance(df)
+
+    def get_chr_vector(self, chro):
+        '''
+        Returns chromosome vector for selected chromosome.
+        '''
+        return np.load(os.path.join(self.path4annotations, 'chr_vector', chro))
+
+    def map_annotation(self, indices):
+        '''
+        Maps vector annotation with appropriate genomic region string
+        :param indices:
+        :return:
+        '''
+        if indices == 1:
+            return 'exon'
+        if indices == 2:
+            return 'intron'
+        if indices == 3:
+            return 'tss'
+        if indices == 4:
+            return 'upstream'
+        if indices == 0:
+            return 'intergenic'
 
     def annotate_region(self):
         '''
-        This will annotate region for the peaks (intron, exon)
+        This will annotate peaks with genomic regions (tss, intron, exon, upstream, intergenic)
         '''
-        annotated_df = pd.DataFrame(columns=['chr', 'start', 'stop', 'summit', 'region', 'next_transcript',
-                                             'next_transcript_tss_distance', 'strand'])
-        gtffile = self.gtf_file
-        gtffile = gtffile.sort(['chr', 'start'], ascending=True)
-        gtf_chr_group = gtffile.groupby('chr')['start']
-        peak_df = self.dataframe.sort(['chr'], ascending=True)
+        print('Annotating with genomic regions...')
+        peak_df = self.dataframe
+        peak_df.index = range(0, len(peak_df))
+        peak_df['chr'] = peak_df['chr'].astype(str)
+        peak_df_group = peak_df.groupby('chr')
 
-        # iterating peak data frame
-        for ind, row in peak_df.iterrows():
-            List = gtf_chr_group.get_group(row['chr'])
-            key = row['start'] + row['summit']
-            loc = gtf_binary_search(List, key, min(List.index), max(List.index))
-            if loc != 'KEY OUT OF BOUND':
-                outdf = self.genomic_region(gtffile, loc, key)
+        annotated_df = peak_df[['chr', 'start', 'stop', 'summit']]
+        annotated_df.loc[:, 'genomic_annotation'] = np.array(['NA'] * len(annotated_df))
+        ind_ge_annotation = annotated_df.columns.get_loc('genomic_annotation')
 
-        return
+        for chr, df in peak_df_group:
+            #print('Chr:', chr)
+            try:
+                vector = self.get_chr_vector(chr)
+                for ind, row in df.iterrows():
+                    peak_summit = row['start'] + row['summit']
+                    indices = vector[peak_summit]
+                    #print(ind, ind_ge_annotation)
+                    annotated_df.iloc[ind, ind_ge_annotation] = self.map_annotation(indices)
+            except:
+                print('chromosome not found:', chr)
+                traceback.print_exc()
+                pass
+        return annotated_df
 
-    def genomic_region(self, loc, key):
-        gtffile = self.gtf_file
-        region = ''
-        pos1 = loc[0]
-        pos2 = loc[1]
-        for pos in [pos1, pos2]:
-            if (key < gtffile.iloc[pos]['stop']) & (key > gtffile.iloc[pos]['start']):
-                region = re.split(';| |"', gtffile.iloc[pos]['further_information'])
+    def get_gtf4annotation(self):
+        tr_db_path = os.path.join(self.path4annotations, 'gtf_transcript4annotation.db')
+        transcript_db = pd.read_csv(tr_db_path, header=0, sep='\t')
+        transcript_db['chr'] = transcript_db['chr'].astype(str)
+        transcript_db = transcript_db[(transcript_db['chr'].str.len() < 4) | (transcript_db['chr'].str.contains('GL'))]
+        transcript_db = transcript_db.sort_values(['chr', 'start'], ascending=[True, True])
+        transcript_db.index = range(0, len(transcript_db))
+        return transcript_db
 
-        return region
+    def annotate_distance(self, annotated_df):
+        '''
+        This will annotate a peak with nearest transcript and distance to nearest tss.
+        :return:
+        '''
+        print('Annotating with gene and distance...')
+        import timeit
+        start = timeit.default_timer()
+
+        gtfFile = self.get_gtf4annotation()
+        chr_group = gtfFile.groupby('chr')['start']
+
+        dataframe = annotated_df
+        dataframe = dataframe.sort_values(['chr'], ascending=True)
+        dataframe.loc[:, 'nearestGene'] = np.array(['-'] * len(dataframe))
+        dataframe.loc[:, 'nearestGene_id'] = np.array(['-'] * len(dataframe))
+        dataframe.loc[:, 'dist2tss'] = np.array([0] * len(dataframe))
+        dataframe.loc[:, 'strand'] = np.array(['-'] * len(dataframe))
+        dataframe.loc[:, 'nearestTranscript'] = np.array(['-'] * len(dataframe))
+        dataframe.loc[:, 'nearestTranscript_id'] = np.array(['-'] * len(dataframe))
+        dataframe.loc[:, 'gene_biotype'] = np.array(['-'] * len(dataframe))
+        ind_nearestTss = dataframe.columns.get_loc('nearestGene')
+        ind_nearestTss_id = dataframe.columns.get_loc('nearestGene_id')
+        ind_dist2tss = dataframe.columns.get_loc('dist2tss')
+        ind_strand = dataframe.columns.get_loc('strand')
+        ind_tnx = dataframe.columns.get_loc('nearestTranscript')
+        ind_tnx_id = dataframe.columns.get_loc('nearestTranscript_id')
+        ind_biotype = dataframe.columns.get_loc('gene_biotype')
+
+        for ind, row in dataframe.iterrows():
+            try:
+                List = chr_group.get_group(row['chr'])
+                key = row['start'] + row['summit']
+                #print(List.shape, key, min(List.index), max(List.index))
+                loc = gtf_binary_search(List, int(key), min(List.index), max(List.index))
+
+                if loc != 'KEY NOT FOUND':
+                    nearest_gene = self.next_genes(gtfFile, loc, row)
+                    #print(nearest_gene)
+                    dataframe.iloc[ind, ind_nearestTss] = list(nearest_gene.keys())[0]
+                    dataframe.iloc[ind, ind_dist2tss] = list(nearest_gene.values())[0][0]
+                    dataframe.iloc[ind, ind_strand] = list(nearest_gene.values())[0][1]
+                    dataframe.iloc[ind, ind_tnx] = list(nearest_gene.values())[0][2]
+                    dataframe.iloc[ind, ind_tnx_id] = list(nearest_gene.values())[0][3]
+                    dataframe.iloc[ind, ind_biotype] = list(nearest_gene.values())[0][4]
+                    dataframe.iloc[ind, ind_nearestTss_id] = list(nearest_gene.values())[0][5]
+                else:
+                    print('Key not found:', key)
+            except:
+                print('Problem in chr:', row['chr'])
+                traceback.print_exc()
+                pass
+        stop = timeit.default_timer()
+        print('\nTime elapsed:', stop-start,' sec')
+        return dataframe
+
+    def next_genes(self, gtffile, position, row):
+        '''
+        This method actually search for nearest genes in GTF file.
+        :param gtffile:
+        :param position:
+        :param maxdist: maximum distance from peak in kbs
+        :return:
+        '''
+        nearest_gene = {}
+        plusindex = position[0]
+        minusindex = position[1]
+        dist = float('inf')
+        strand = '-'
+        gene_name = '-'
+        tnx_name = '-'
+        tnx_id = '-'
+        biotype = '-'
+        gene_id = '-'
+        dist_tss = 0
+        # print geneList, upstreamindex, downstreamindex
+        for index in [plusindex, plusindex+1, minusindex, minusindex-1]:
+            if index in gtffile.index:
+                gtf_anno = gtffile.iloc[index]
+                dist2tss = int((row['start'] + row['summit']) - gtf_anno['start'])
+                if abs(dist2tss) < abs(dist):
+                    strand = gtf_anno['strand']
+                    gene_name = gtf_anno['gene_name']
+                    tnx_name = gtf_anno['transcript_name']
+                    tnx_id = gtf_anno['transcript_id']
+                    biotype = gtf_anno['gene_biotype']
+                    gene_id = gtf_anno['gene_id']
+
+                    if strand == '-':
+                        dist_tss = int((row['start'] + row['summit']) - gtf_anno['start']) * -1
+                    else:
+                        dist_tss = int((row['start'] + row['summit']) - gtf_anno['start'])
+
+                    dist = dist2tss
+        if gene_id == '-':
+            print(row['start'], [plusindex, plusindex-1, minusindex, minusindex+1])
+
+        nearest_gene[gene_name] = [dist_tss, strand, tnx_name, tnx_id, biotype, gene_id]
+        return nearest_gene
+
+
 
 
 def gtf_binary_search(List, key, imin, imax):
@@ -385,14 +473,16 @@ def gtf_binary_search(List, key, imin, imax):
     :param imax: Last index
     :return:
     '''
-    if key < List[imin] or key > List[imax]:
-        return 'KEY OUT OF BOUND'
+    if key < List[imin]:
+        return imin, imin
+    if key > List[imax]:
+        return imax, imax
     if imax < imin:
         return 'KEY NOT FOUND'
     elif (imax - imin) == 1 and key > List[imin] and key < List[imax]:
         return imin, imax
     else:
-        imid = imin + ((imax - imin)/2)
+        imid = imin + int((imax - imin)/2)
         if List[imid] > key:
             #print('upper', List[imid], key, imin, imid)
             # key is in upper subset
@@ -405,35 +495,6 @@ def gtf_binary_search(List, key, imin, imax):
             #print('found', List[imid], key)
             # key is in lower subset
             return imid, imid+1
-
-
-def create_longestTranscriptDB(path):
-    '''
-    This will filter longest transcript per gene.
-    :param path: path of transcript_annotation.db from def create_gtf2transcriptDB()
-    :return:
-    '''
-    ## Parsing gtf file and storing gene names with position.
-    gene_gtf = pd.read_csv(path+'/transcript_annotation.db', sep='\t', header=0, index_col=None)
-    gene_gtf['chr'] = gene_gtf['chr'].astype(str)
-    gene_gtf = gene_gtf[(gene_gtf['chr'].str.len() < 4) | (gene_gtf['chr'].str.contains('GL'))]
-    #print(gene_gtf['chr'].value_counts())
-    #gene_gtf = gene_gtf
-    transcript_group = gene_gtf.groupby('gene_name')
-    ## for intron select min(list(start) and max(list(stop)))
-    with open(os.path.join(path, 'longest_transcript_annotation.db'), 'a') as annotationDB:
-        annotationDB.write('chr'+'\t'+'start'+'\t'+'stop'+'\t'+'strand'+'\t'+'gene_name'+'\t'+'gene_id\n')
-        for gene, gtf in transcript_group:
-            gene_name = gene
-            chr = list(gtf['chr'])[0]
-            gene_id = list(gtf['gene_id'])[0]
-            strand = list(gtf['strand'])[0]
-            start = gtf['start'].min()
-            stop = gtf['stop'].max()
-            annotationDB.write(str(chr)+'\t'+str(start)+'\t'+str(stop)+'\t'+str(strand)+'\t'+str(gene_name)+'\t'+str(gene_id)+'\n')
-    annotationDB.close()
-
-
 
 
 

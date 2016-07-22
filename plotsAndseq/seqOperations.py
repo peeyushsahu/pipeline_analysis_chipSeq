@@ -25,10 +25,12 @@ def seq4motif(peak_data, seqLength='small'):
     elif seqLength == 'large':
         extend = 50
     output_dir = []
-    for k,df in peak_data.iteritems():
+    for k, df in peak_data.items():
+        #filename = k.translate(' ')
+        #print('this', filename)
         if len(df) > 0:
-            output_dir.append(k.translate(None, ' '))
-            file = open(basepath+path_to_seq+k.translate(None, ' ')+".txt", "w")
+            output_dir.append(k.translate(' '))
+            file = open(basepath+path_to_seq+k.translate(' ')+".txt", "w")
             count = 1
             gc_percent = []
             CpG_ratio = []
@@ -46,11 +48,11 @@ def seq4motif(peak_data, seqLength='small'):
                         seq = get_sequence(row['chr'], start, stop)
                         if "NNNNNN" in seq or len(seq) == 0:
                             #print row
-                            print "chr", row['chr'], "start", start, "stop", stop
+                            print("chr", row['chr'], "start", start, "stop", stop)
                     else:
                         seq = get_sequence(int(float((row['chr']))), start, stop)
                         if "NNNNNN" in seq or len(seq) == 0 :
-                            print "chr", int(float((row['chr']))), "start", start, "stop", stop
+                            print("chr", int(float((row['chr']))), "start", start, "stop", stop)
                     CpG = CpG_value(seq)
                     CpG_ratio.append(CpG[0])
                     gc_percent.append(CpG[1])
@@ -58,8 +60,8 @@ def seq4motif(peak_data, seqLength='small'):
                     file.write(seq+"\n")
                 count += 1
             file.close()
-            print 'df',len(df)
-            print 'CpG',len(CpG_ratio)
+            print('df', len(df))
+            print('CpG', len(CpG_ratio))
             df['CpG_ratio'] = CpG_ratio
             df['CG_percent'] = gc_percent
             df = df[df['CpG_ratio'] >= 0.6]
@@ -77,7 +79,7 @@ def get_sequence(chr, start, end):
     '''
     import pysam
     genome = pysam.Fastafile(path_to_genome+'genome.fa')
-    sequence = genome.fetch(chr, start, end)
+    sequence = genome.fetch(str(chr), start, end)
     return sequence
 
 def motif_analysis(db, nmotif, output_dir):
@@ -212,7 +214,7 @@ def density_based_motif_comparision(dataframe, columnname):
     :return:
     '''
     df = dataframe
-    print "Density based motif analysis: Sorting by column "+columnname
+    print("Density based motif analysis: Sorting by column " + columnname)
     df = df.sort(columnname, ascending=True)
     size = df.shape[0]
     count = 0
@@ -232,21 +234,21 @@ def density_based_motif_comparision(dataframe, columnname):
                     seq = get_sequence(row['chr'], start, stop)
                     if "NNNNNN" in seq or len(seq) == 0:
                         #print row
-                        print "chr", row['chr'], "Start", start, "end", stop
+                        print("chr", row['chr'], "Start", start, "end", stop)
                 else:
                     seq = get_sequence(int(float((row['chr']))), start, stop)
                     if "NNNNNN" in seq or len(seq) == 0 :
-                        print "chr", int(float((row['chr']))), "Start", start, "end", stop
+                        print("chr", int(float((row['chr']))), "Start", start, "end", stop)
                 file.write(">seq:"+str(count)+":"+row['Next transcript gene name']+"\n")
                 file.write(seq+"\n")
             count += 1
         dfstart = dfstop
         dfstop = dfstart+size/4
         file.close()
-        print "Motif search for:"+columnname+str(i)
+        print("Motif search for:" + columnname + str(i))
         meme_chip(basepath+'density_based_motif/'+columnname.translate(None, ' ')+str(i), basepath+'density_based_motif/'+columnname.translate(None, ' ')+str(i)+".txt",
                   ["JASPAR_CORE_2014_vertebrates.meme", "uniprobe_mouse.meme"], 10)
-        print dfstart, dfstop
+        print(dfstart, dfstop)
 
 
 def generate_file_4_homerMotif(peaksFile):

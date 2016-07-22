@@ -9,7 +9,7 @@ class path():
         basepath = os.path.abspath(os.getcwd())
         #print(basepath)
         self.basepath = os.sep.join(basepath.split(os.sep)[:-2])
-        print self.basepath
+        print(self.basepath)
 
 
 def create_odir():
@@ -20,7 +20,7 @@ def create_odir():
     for i in indir:
         Path = os.path.join(cdpath, odir, i)
         ensure_path(Path)
-    print os.path.join(cdpath, odir)
+    print(os.path.join(cdpath, odir))
     return os.path.join(cdpath, odir)
 
 

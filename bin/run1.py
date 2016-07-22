@@ -33,7 +33,7 @@ for folder in folders:
     path = basepath + '/further_analysis/'+folder
     if not os.path.exists(path):
         os.makedirs(path)
-print 'Output folder created'
+print('Output folder created')
 
 sample_name = [
     #'H3R2ame2_E9 vs IgG_E.9 filtered',
@@ -136,8 +136,8 @@ for name in sample_name:
     GR_analysis.plot_factors('chr')
     cal_genomic_region.stacke_plot_multiple([name], {name:filtered_peak_data}, dirPath)
     cal_genomic_region.peakTSSbinning(name, filtered_peak_data, dirPath)
-print "Number of sample are being analysed: ", peakAnalysis_df.__len__()
-print "Filtering peaks."
+print("Number of sample are being analysed: ", peakAnalysis_df.__len__())
+print("Filtering peaks.")
 file.close()
 
 '''
@@ -365,22 +365,22 @@ seqOperations.motif_analysis_homer(peak_df, path=outpath, samplename='H3R2_PRMT6
 '''
 
 ### Performing motif and CpG analysis on prmt6 sites wrt regions eg. TSS, Exon
-'''
+
 #df1 = read_csv('/ps/imt/e/HL60_Christene/csv/A1-HL60-rabbit-anti-Ski vs A2-HL60-rabbitIgG filtered.csv', sep='\t')
 #df2 = read_csv('/ps/imt/e/HL60_Christene/further_analysis/overlap/A1-HL60-rabbit-anti-Ski vs A2-HL60-rabbitIgG filtered_vs_CW4-HL60-rabbit-anti-Ski vs A2-HL60-rabbitIgG filtered_vs_B4-HL60-anti-Runx vs B5-HL60-IgG_matching_Runx filtered.txt', sep='\t')
 #uniqueDF = cal_genomic_region.non_overlapping_peaks(df1, df2)
 
 sample_dict = {}
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/Compare -ATRA&+ATRA/genereg_+RA_CT-onlyUPvsKO_61%.txt',
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/Compare -ATRA&+ATRA/R2+RA_k27ac_nearestGene_down_up.txt',
     header=0, sep='\t')
-sample_dict['genereg_+RA_CT-onlyUPvsKO_61'] = peak_df
+sample_dict['R2+R2+RA_k27ac_nearestGene_down_up'] = peak_df
 seq = seqOperations.seq4motif(sample_dict, seqLength='large')
 db = ["JASPAR_CORE_2016_vertebrates.meme", "HOCOMOCOv9.meme", "SwissRegulon_human_and_mouse.meme"]
 seqOperations.motif_analysis(db, 10, seq)
-'''
+
 
 ### Annotate peaks with 'n' nearest genes (+,-) strand
-
+'''
 path = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/H3R2ame2_E9,H3R2me2a_B6.2,H3R2me2a_E9_RA,H3R2me2a_B6.2_RA,H3K4me3_E9,H3K4me3_B6.2,H3K4me3_E9_RA,H3K4me3_B6.2_RA,H3K27ac_E9,H3K27ac_B6.2,H3K27ac_E9_RA,H3K27ac_B6_RA/all6519_H3R2me2a_E9_RA vs IgG_E9_RA filtered_unique/norm'
 diffpeaks = read_csv(path+'/tagcountDF_all_norm.txt', header=0, sep='\t')
 diffpeaks = diffpeaks[diffpeaks['cluster'].isin([1, 7])]
@@ -391,7 +391,7 @@ next_gene_annotation = AnnotateNearestGenes(diffpeaks, gtf_path, maxdist=1000, m
 nearGeneDf = next_gene_annotation.next_genes_annotator()
 nearGeneDf.to_csv(basepath + '/further_analysis/H3R2me2a_analysis/Compare -ATRA&+ATRA/nearest_genes_H3R2me2+RA_only_k27ac.txt',
                   sep="\t", ignore_index=True, header=True)
-
+'''
 
 ### calculate overlaps between peaks
 '''
