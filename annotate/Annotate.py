@@ -1,10 +1,12 @@
 __author__ = 'peeyush'
 import pandas as pd
 import alignment.commons as paths
-import re, os
+import re
+import os
+import timeit
 import mygene
 import numpy as np
-import sys, traceback
+import traceback
 Path = paths.path()
 basepath = Path.basepath
 
@@ -33,9 +35,11 @@ def geneid_converter(listofids, input_identifier = None, output_identifier = Non
 
 
 def parse_gtf(path):
+    '''
+    Reads gtf file and parse it for further use with internal handlers.
+    '''
     from pandas import read_csv
     print('Parsing gtf file...')
-    #gtf_file = read_csv('/ps/imt/genome/human/Homo_sapiens_Ensembl_GRCh37/Homo_sapiens/Ensembl/GRCh37/Annotation/Genes/genes.gtf', sep='\t', header=0)
     colnames = ['chr', 'transcript_annotation', 'feature', 'start', 'stop', 'score', 'strand', 'frame', 'further_information']
     gtf_file = read_csv(path, sep='\t')
     gtf_file.columns = colnames
@@ -43,113 +47,37 @@ def parse_gtf(path):
     return gtf_file
 
 
-class AnnotateNearestGenes:
+def gtf_binary_search(List, key, imin, imax):
     '''
-    This is will create an object for next gene annotation for peaks.
+    Binary search function uses recursive method to search the position/index of peak-summit in the GTF database.
+    :param List: DF of sorted GTF file only with 'start'.
+    :param key: Position to be searched in the data
+    :param imin: First index
+    :param imax: Last index
+    :return:
     '''
-    def __init__(self, dataframe, path, maxdist=1000, maxgenes=2):
-        self.dataframe = dataframe
-        self.gtfpath = path
-        self.maxdist = maxdist
-        self.maxgenes = maxgenes
-
-    def next_genes_annotator(self):
-        '''
-        This method will take a datatframe and compute 5 nearest genes from the summit of the peak.
-        :param dataframe:
-        :param path: To GTF file
-        :return:
-        '''
-        import sys
-        import timeit
-        print('Process: Reading GTF file')
-        start = timeit.default_timer()
-        gtfFile = parse_gtf(self.gtfpath)
-        #print(gtfFile.head())
-        gtfFile = gtfFile[gtfFile['feature'] == 'transcript']
-        gtfFile.index = range(0, len(gtfFile))
-        #print(gtfFile.head())
-        gtfFile = gtfFile.sort(['chr', 'start'], ascending=True)
-        chr_group = gtfFile.groupby('chr')['start']
-        dataframe = self.dataframe.sort(['chr'], ascending=True)
-        nearGene_df = pd.DataFrame(columns=['chr', 'start', 'stop', 'Next transcript strand', 'Next transcript gene name',
-                                         'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'gene_name', 'transcript_name', 'distance2tss', 'strand', 'summit'])
-        count = 0
-        print('Process: Annotating peaks with genes')
-        for k, v in dataframe.iterrows():
-            if len(v['chr']) < 4:
-                sys.stdout.write("\rNumber of peaks annotated:%d" % count)
-                sys.stdout.flush()
-                count += 1
-                List = chr_group.get_group(v['chr'])
-                key = v['start'] + v['summit']
-                #print(List.shape, key, min(List.index), max(List.index))
-                loc = gtf_binary_search(List, key, min(List.index), max(List.index))
-                #print(v)
-                #print(loc)
-                if loc != 'KEY OUT OF BOUND':
-                    outdf = self.next_genes(gtfFile, loc, v)
-                    nearGene_df = nearGene_df.append(outdf, ignore_index=True)
-
-        del(gtfFile)
-        stop = timeit.default_timer()
-        print('\nTime elapsed:', stop-start,' sec')
-        return nearGene_df
-
-    def next_genes(self, gtffile, position, row):
-        '''
-        This method actually search for five nearest genes in GTF file.
-        :param gtffile:
-        :param position:
-        :param maxdist: maximum distance from peak in kbs
-        :return:
-        '''
-        import re
-        maxdist = self.maxdist * 1000  # converting kb into basepairs
-        #print(maxdist)
-        geneList = []
-        plusindex = position[0]
-        minusindex = position[1]
-        neargene = pd.DataFrame(columns=['chr', 'start', 'stop', 'Next transcript strand', 'Next transcript gene name', 'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'gene_name', 'transcript_name', 'distance2tss', 'strand', 'summit'])
-
-        while len(geneList) < self.maxgenes:
-            # print geneList, upstreamindex, downstreamindex
-            dist_list = []
-            for index in [plusindex, minusindex]:
-                gtf_anno = re.split(';| |"', gtffile.iloc[index]['further_information'])
-                strand = gtffile.iloc[index]['strand']
-                gene_pos = gtf_anno.index('gene_name')
-                gene_name = gtf_anno[gene_pos+2]
-                tns_pos = gtf_anno.index('transcript_name')
-                tns_name = gtf_anno[tns_pos+2]
-
-                if strand == '+':
-                    dist2tss = int((row['start'] + row['summit']) - gtffile.iloc[index]['start'])
-                else:
-                    dist2tss = int((row['start'] + row['summit']) - gtffile.iloc[index]['stop'])
-                dist_list.append(abs(dist2tss))
-                if (gene_name not in geneList) and (abs(dist2tss) < maxdist):
-                    #print mGene
-                    newrow = {'chr': row['chr'],
-                            'start': int(row['start']),
-                            'stop': int(row['stop']),
-                            'Next transcript strand': row['Next transcript strand'],
-                            'Next transcript gene name': row['Next transcript gene name'],
-                            'GenomicPosition TSS=1250 bp, upstream=5000 bp':row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
-                            'gene_name': gene_name,
-                            'transcript_name': tns_name,
-                            'strand': strand,
-                            'summit': row['summit'],
-                            'distance2tss': int(dist2tss)*-1}
-                    neargene = neargene.append(pd.Series(newrow), ignore_index=True)
-                    geneList.append(gene_name)
-                    if len(geneList) >= self.maxgenes:
-                        break
-            if (dist_list[0] > maxdist) and (dist_list[1] > maxdist):
-                break
-            plusindex += 1
-            minusindex -= 1
-        return neargene
+    if key < List[imin]:
+        return imin, imin+1
+    if key > List[imax]:
+        return imax-1, imax
+    if imax < imin:
+        return 'KEY NOT FOUND'
+    elif (imax - imin) == 1 and key > List[imin] and key < List[imax]:
+        return imin, imax
+    else:
+        imid = imin + int((imax - imin)/2)
+        if List[imid] > key:
+            #print('upper', List[imid], key, imin, imid)
+            # key is in upper subset
+            return gtf_binary_search(List, key, imin, imid)
+        elif List[imid] < key:
+            #print('lower', List[imid], key)
+            # key is in lower subset
+            return gtf_binary_search(List, key, imid, imax)
+        elif List[imid] == key:
+            #print('found', List[imid], key)
+            # key is in lower subset
+            return imid, imid+1
 
 
 class GenerateAnnotationDB:
@@ -287,6 +215,123 @@ class GenerateAnnotationDB:
         #return chr_vector
 
 
+class AnnotateNearestGenes:
+    '''
+    This is will create an object for next gene annotation for peaks.
+    '''
+    def __init__(self, dataframe, path4annotations='/ps/imt/f/Genomes/geneAnotations', maxdist=1000, maxgenes=2):
+        self.dataframe = dataframe
+        self.path4annotations = path4annotations
+        self.maxdist = maxdist
+        self.maxgenes = maxgenes
+
+    def get_gtf4annotation(self):
+        tr_db_path = os.path.join(self.path4annotations, 'gtf_transcript4annotation.db')
+        transcript_db = pd.read_csv(tr_db_path, header=0, sep='\t')
+        transcript_db['chr'] = transcript_db['chr'].astype(str)
+        transcript_db = transcript_db[(transcript_db['chr'].str.len() < 4) | (transcript_db['chr'].str.contains('GL'))]
+        transcript_db = transcript_db.sort_values(['chr', 'start'], ascending=[True, True])
+        transcript_db.index = range(0, len(transcript_db))
+        return transcript_db
+
+    def next_genes_annotator(self):
+        '''
+        This method will take a datatframe and compute 5 nearest genes from the summit of the peak.
+        :param dataframe:
+        :param path: To GTF file
+        :return:
+        '''
+        print('Process: Reading GTF file')
+        start = timeit.default_timer()
+        gtffile = self.get_gtf4annotation()
+        chr_group = gtffile.groupby('chr')['start']
+
+        dataframe = self.dataframe.sort_values(by='chr', ascending=True)
+        nearGene_df = pd.DataFrame()
+
+        print('Process: Annotating peaks with genes')
+        for ind, row in dataframe.iterrows():
+            try:
+                List = chr_group.get_group(row['chr'])
+                key = row['start'] + row['summit']
+                loc = gtf_binary_search(List, int(key), min(List.index), max(List.index))
+
+                if loc != 'KEY OUT OF BOUND':
+                    outdf = self.next_genes(gtffile, loc, row)
+                    nearGene_df = nearGene_df.append(outdf, ignore_index=True)
+                else:
+                    print('Key not found:', key)
+            except:
+                print('Problem in chr:', row['chr'])
+                traceback.print_exc()
+                pass
+
+        stop = timeit.default_timer()
+        print('\nTime elapsed:', stop-start,' sec')
+        return nearGene_df
+
+    def next_genes(self, gtffile, position, row):
+        '''
+        This method actually search for five nearest genes in GTF file.
+        :param gtffile:
+        :param position:
+        :param maxdist: maximum distance from peak in kbs
+        :return:
+        '''
+        maxdist = self.maxdist * 1000  # converting kb into basepairs
+        geneList = []
+        minusindex = min(position)
+        plusindex = max(position)
+        neargene = pd.DataFrame(columns=['chr', 'start', 'stop', 'Next transcript strand', 'Next transcript gene name',
+                                         'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'gene_name', 'transcript_name',
+                                         'distance2tss', 'strand', 'summit'])
+        while len(geneList) < self.maxgenes:
+            # print geneList, upstreamindex, downstreamindex
+            dist_list = []
+            for index in [plusindex, minusindex]:
+                if index in gtffile.index:
+                    gtf_anno = gtffile.iloc[index]
+                    dist2tss = int((row['start'] + row['summit']) - gtf_anno['start'])
+                    dist_list.append(abs(dist2tss))
+                    gene_name = gtf_anno['gene_name']
+
+                    if (gene_name not in geneList) and (abs(dist2tss) < abs(maxdist)):
+                        strand = gtf_anno['strand']
+                        tnx_name = gtf_anno['transcript_name']
+
+                        if strand == '-':
+                            dist_tss = int((row['start'] + row['summit']) - gtf_anno['start']) * -1
+                        else:
+                            dist_tss = int((row['start'] + row['summit']) - gtf_anno['start'])
+
+                        newrow = {'chr': row['chr'],
+                                'start': int(row['start']),
+                                'stop': int(row['stop']),
+                                'Next transcript strand': row['Next transcript strand'],
+                                'Next transcript gene name': row['Next transcript gene name'],
+                                'GenomicPosition TSS=1250 bp, upstream=5000 bp': row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
+                                'gene_name': gene_name,
+                                'transcript_name': tnx_name,
+                                'strand': strand,
+                                'summit': row['summit'],
+                                'distance2tss': dist_tss}
+
+                        neargene = neargene.append(pd.Series(newrow), ignore_index=True)
+                        geneList.append(gene_name)
+                        if len(geneList) >= self.maxgenes:
+                            break
+                plusindex += 1
+                minusindex -= 1
+            try:
+                if (dist_list[0] > maxdist) and (dist_list[1] > maxdist):
+                    break
+            except:
+                print(row, dist_list, position)
+                traceback.print_exc()
+                pass
+        return neargene
+
+
 class AnnotatePeaks:
 
     def __init__(self, dataframe, path4annotations='/ps/imt/f/Genomes/geneAnotations'):
@@ -306,7 +351,8 @@ class AnnotatePeaks:
         '''
         return np.load(os.path.join(self.path4annotations, 'chr_vector', chro))
 
-    def map_annotation(self, indices):
+    @staticmethod
+    def map_annotation(indices):
         '''
         Maps vector annotation with appropriate genomic region string
         :param indices:
@@ -346,6 +392,7 @@ class AnnotatePeaks:
                     indices = vector[peak_summit]
                     #print(ind, ind_ge_annotation)
                     annotated_df.iloc[ind, ind_ge_annotation] = self.map_annotation(indices)
+
             except:
                 print('chromosome not found:', chr)
                 traceback.print_exc()
@@ -417,7 +464,8 @@ class AnnotatePeaks:
         print('\nTime elapsed:', stop-start,' sec')
         return dataframe
 
-    def next_genes(self, gtffile, position, row):
+    @staticmethod
+    def next_genes(gtffile, position, row):
         '''
         This method actually search for nearest genes in GTF file.
         :param gtffile:
@@ -455,46 +503,8 @@ class AnnotatePeaks:
                         dist_tss = int((row['start'] + row['summit']) - gtf_anno['start'])
 
                     dist = dist2tss
-        if gene_id == '-':
-            print(row['start'], [plusindex, plusindex-1, minusindex, minusindex+1])
-
         nearest_gene[gene_name] = [dist_tss, strand, tnx_name, tnx_id, biotype, gene_id]
         return nearest_gene
-
-
-
-
-def gtf_binary_search(List, key, imin, imax):
-    '''
-    Binary search function uses recursive method to search the position/index of peak-summit in the GTF database.
-    :param List: DF of sorted GTF file only with 'start'.
-    :param key: Position to be searched in the data
-    :param imin: First index
-    :param imax: Last index
-    :return:
-    '''
-    if key < List[imin]:
-        return imin, imin
-    if key > List[imax]:
-        return imax, imax
-    if imax < imin:
-        return 'KEY NOT FOUND'
-    elif (imax - imin) == 1 and key > List[imin] and key < List[imax]:
-        return imin, imax
-    else:
-        imid = imin + int((imax - imin)/2)
-        if List[imid] > key:
-            #print('upper', List[imid], key, imin, imid)
-            # key is in upper subset
-            return gtf_binary_search(List, key, imin, imid)
-        elif List[imid] < key:
-            #print('lower', List[imid], key)
-            # key is in lower subset
-            return gtf_binary_search(List, key, imid, imax)
-        elif List[imid] == key:
-            #print('found', List[imid], key)
-            # key is in lower subset
-            return imid, imid+1
 
 
 
