@@ -380,7 +380,7 @@ seqOperations.motif_analysis(db, 10, seq)
 '''
 
 ### Annotate peaks with 'n' nearest genes (+,-) strand
-
+'''
 path = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/H3R2ame2_E9,H3R2me2a_B6.2,H3R2me2a_E9_RA,H3R2me2a_B6.2_RA,H3K4me3_E9,H3K4me3_B6.2,H3K4me3_E9_RA,H3K4me3_B6.2_RA,H3K27ac_E9,H3K27ac_B6.2,H3K27ac_E9_RA,H3K27ac_B6_RA/all6519_H3R2me2a_E9_RA vs IgG_E9_RA filtered_unique/norm'
 diffpeaks = read_csv(path+'/tagcountDF_all_norm.txt', header=0, sep='\t')
 diffpeaks = diffpeaks[diffpeaks['cluster'].isin([1, 7])]
@@ -390,7 +390,7 @@ next_gene_annotation = AnnotateNearestGenes(diffpeaks.iloc[:, :12], maxdist=1000
 nearGeneDf = next_gene_annotation.next_genes_annotator()
 nearGeneDf.to_csv(basepath + '/further_analysis/H3R2me2a_analysis/Compare -ATRA&+ATRA/nearest_genes_test.txt',
                   sep="\t", ignore_index=True, header=True)
-
+'''
 
 ### calculate overlaps between peaks
 '''

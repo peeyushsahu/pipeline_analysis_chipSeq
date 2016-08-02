@@ -200,7 +200,8 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
 
     # print peak_df.head()
     for v in bam_name_list:
-        df, df1 = overlapping_peaks_distribution(v, peak_df, path)
+        bam_path = getBam(v)
+        df, df1 = overlapping_peaks_distribution(v, bam_path, peak_df, path)
         if scale_df:
             df = scale_dataframe(df)  # scaling of dataframe
             print('scaled df')
@@ -286,8 +287,7 @@ def kmeans_clustering(df, nClus, iter, method='sklearn'):
     return df_fin
 
 
-# @profile
-def overlapping_peaks_distribution(bam_name, overlap_df, path):
+def overlapping_peaks_distribution(bam_name, bam_path, overlap_df, path):
     '''
     Returns dataframe for tag count distribution for overlapping peaks within 3000bp (+,-) from summit.
     This function also considers the gene transcrition direction.
@@ -296,28 +296,33 @@ def overlapping_peaks_distribution(bam_name, overlap_df, path):
     :return:
     '''
     import pandas as pd
-    import sys
     import timeit
     startT = timeit.default_timer()
-    bam_path = getBam(bam_name)
     sample_bam = pysam.Samfile(bam_path, "rb")
     total_mapped = sample_bam.mapped
     with open(path+'/bam_readCount.txt', 'a') as f:
         f.write('\n'+bam_name+'\t'+str(total_mapped))
+    peak_distribution_sample_norm = pd.DataFrame()
     peak_distribution_sample = pd.DataFrame()
-    peak_distribution_sample1 = pd.DataFrame()
+
+    # check if genome of alignment (UCSC or ENSEMBL) bam
+    try:
+        sample_bam.count('9', 99181564, 99181974)
+    except ValueError:
+        print('Bam file is UCSC aligned converting coordinates accordingly...')
+        overlap_df['chr'] = 'chr'+overlap_df['chr']
+        pass
+    #print(overlap_df.head())
     overlap_df = overlap_df[['chr', 'start', 'stop', 'Next transcript strand', 'summit']]
     print('Process: Feature extraction from BAM started')
     count = 1
-    for ind in overlap_df.T.to_dict().values():
-        sys.stdout.write("\rFeature extraction for peak:%d" % count)
-        sys.stdout.flush()
-        count += 1
-        chr = str(ind['chr'])
-        if 'chr' in chr:
-            chr = chr[3:]
-        orientation = ind['Next transcript strand']
-        middle = ind['start'] + ind['summit']
+    for ind, row in overlap_df.iterrows():
+        #sys.stdout.write("\rFeature extraction for peak:%d" % count)
+        #sys.stdout.flush()
+        #count += 1
+        chr = str(row['chr'])
+        orientation = row['Next transcript strand']
+        middle = row['start'] + row['summit']
         start = middle - 3000  # Distance on one side of the peaks
         stop = start + 100
         list_sample = []
@@ -334,19 +339,19 @@ def overlapping_peaks_distribution(bam_name, overlap_df, path):
                 stop = start + 100  # divide peaks into length of 50 bp
             if orientation == 1:  # Direction gene transcription
                 # print 'Towards 5 prime'
-                peak_distribution_sample = peak_distribution_sample.append(pd.Series(list_sample), ignore_index=True)
-                peak_distribution_sample1 = peak_distribution_sample1.append(pd.Series(list_sample1), ignore_index=True)
+                peak_distribution_sample_norm = peak_distribution_sample_norm.append(pd.Series(list_sample), ignore_index=True)
+                peak_distribution_sample = peak_distribution_sample.append(pd.Series(list_sample1), ignore_index=True)
             else:
                 # print 'Towards 3 prime'
-                peak_distribution_sample = peak_distribution_sample.append(pd.Series(list_sample[::-1]),
+                peak_distribution_sample_norm = peak_distribution_sample_norm.append(pd.Series(list_sample[::-1]),
                                                                            ignore_index=True)
-                peak_distribution_sample1 = peak_distribution_sample1.append(pd.Series(list_sample1[::-1]),
+                peak_distribution_sample = peak_distribution_sample.append(pd.Series(list_sample1[::-1]),
                                                                            ignore_index=True)
         del list_sample, middle, start, stop
     stop = timeit.default_timer()
     print('\nTime elapsed:' + str((stop - startT) / 60) + 'min')
     sample_bam.close()
-    return peak_distribution_sample, peak_distribution_sample1
+    return peak_distribution_sample_norm, peak_distribution_sample
 
 
 def totaltagCountinPeak(peakscorDF, sampleBam):
