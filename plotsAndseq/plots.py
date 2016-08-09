@@ -156,9 +156,6 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     :param sort_column: If sorted=True; give the column name to be sorted
     :return: A dataframe; Column: additive length of genomic regions for all the bam files, Rows: Number of peaks defined in the peak dataframe
     '''
-    big_df = pd.DataFrame()
-    big_df_raw = pd.DataFrame()
-
     region = region.strip()
     peak_df = peak_df
     if region != 'all':
@@ -199,6 +196,8 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
         path = make_dir(bam_order, region + str(len(peak_df)))
 
     # print peak_df.head()
+    big_df = pd.DataFrame()
+    big_df_raw = pd.DataFrame()
     for v in bam_name_list:
         bam_path = getBam(v)
         df, df1 = overlapping_peaks_distribution(v, bam_path, peak_df, path)
@@ -721,7 +720,7 @@ def plot_clustered_peaks_4_multiple_samples(dict_df, name, path, which):
     plt.close('all')
 
 
-def plot_all_peaks_4_multiple_samples(big_df, name, path, which):
+def plot_all_peaks_4_multiple_samples(big_df, name, path, which=None):
     '''
     Plots result of all peaks in strength.
     :param dict_df:
@@ -764,10 +763,14 @@ def plot_all_peaks_4_multiple_samples(big_df, name, path, which):
     lgd = plt.legend(sname, loc='center left', bbox_to_anchor=(1, 0.5))  # 'Low', 'Medium',
     # plt.show()
     #plt.tight_layout()
-    plt.savefig(os.path.join(path, which, 'overlap_' + name + '_all:' + str(len(big_df)) + '.png'), bbox_extra_artists=(lgd,), bbox_inches='tight')
-    plt.savefig(os.path.join(path, which, 'overlap_' + name + '_all:' + str(len(big_df)) + '.svg'), bbox_extra_artists=(lgd,), bbox_inches='tight')
-    plt.clf()
-    #plt.close()
+    if which:
+        plt.savefig(os.path.join(path, which, 'overlap_' + name + '_all:' + str(len(big_df)) + '.png'), bbox_extra_artists=(lgd,), bbox_inches='tight')
+        plt.savefig(os.path.join(path, which, 'overlap_' + name + '_all:' + str(len(big_df)) + '.svg'), bbox_extra_artists=(lgd,), bbox_inches='tight')
+    else:
+        plt.savefig(os.path.join(path, 'overlap_' + '_allPeaks:' + str(len(big_df)) + '.png'), bbox_extra_artists=(lgd,), bbox_inches='tight')
+        plt.savefig(os.path.join(path, 'overlap_' + '_allPeaks:' + str(len(big_df)) + '.svg'), bbox_extra_artists=(lgd,), bbox_inches='tight')
+    #plt.clf()
+    plt.close()
 
 
 def scale(val, src, dst):
