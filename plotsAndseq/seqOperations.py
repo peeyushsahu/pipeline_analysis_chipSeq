@@ -3,6 +3,7 @@ import pandas as pd
 import subprocess as sp
 import numpy as np
 import os
+from alignment import commons
 
 __author__ = 'peeyush'
 import alignment.commons as paths
@@ -10,38 +11,45 @@ Path = paths.path()
 basepath = Path.basepath
 path_to_seq = "/further_analysis/seq4motif/"
 path_to_genome = "/ps/imt/f/Genomes/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/"
-path_to_program = "/home/sahu/meme/bin/"
+path_to_program = "/home/sahu/meme/bin"
 program = "meme-chip"
-motif_db_base = "/home/sahu/Documents/motif_databases/"
+motif_db_base = "/home/sahu/Documents/motif_databases"
 
-def seq4motif(peak_data, seqLength='small'):
-    '''
-    This function will take dataframe with chr, start and stop position.
-    :param peak_data:
-    :return: Create a file of sequence for the given dataframe
-    '''
-    if seqLength == 'small':
-        extend = 25
-    elif seqLength == 'large':
-        extend = 50
-    output_dir = []
-    for k, df in peak_data.items():
-        #filename = k.translate(' ')
-        #print('this', filename)
-        if len(df) > 0:
-            output_dir.append(k.translate(' '))
-            file = open(basepath+path_to_seq+k.translate(' ')+".txt", "w")
-            count = 1
-            gc_percent = []
-            CpG_ratio = []
-            for v, row in df.iterrows():
+
+class MotifAnalysis:
+    def __init__(self, name, dataframe, background=None, seqlength=50):
+        self.name = name
+        self.dataframe = dataframe
+        self.background = background
+        self.seqlength = seqlength
+        self.path2folder = ''
+
+    def run_analysis(self):
+        self.path2folder = os.path.join(basepath+path_to_seq, self.name)
+        commons.ensure_path(self.path2folder)
+        self.peak2seq(self.name)
+        if self.background is not None:
+            self.peak2seq('background')
+
+        motif_db = ["JASPAR_CORE_2016_vertebrates.meme", "HOCOMOCOv9.meme", "SwissRegulon_human_and_mouse.meme"]
+        self.meme_motif(motif_db)
+
+    def peak2seq(self, name):
+        '''
+        This function will take dataframe with chr, start and stop position.
+        :param peak_data:
+        :return: Create a file of sequence for the given dataframe
+        '''
+        dataframe = self.dataframe
+        if name == 'background':
+            dataframe = self.background
+        if len(dataframe) > 0:
+            file = open(os.path.join(self.path2folder, name+".txt"), "w")
+            for v, row in dataframe.iterrows():
                 summit = int(float(row['summit'])) + int(row['start'])
-                #tss = row['Next Transcript tss distance']
-                start = summit - extend
-                stop = summit + extend
+                start = summit - self.seqlength
+                stop = summit + self.seqlength
                 if 'GL' in str(row['chr']):
-                    CpG_ratio.append(0)
-                    gc_percent.append(0)
                     continue
                 else:
                     if row['chr'] == 'X' or row['chr'] == 'Y' or len(str(row['chr'])) > 5:
@@ -53,21 +61,43 @@ def seq4motif(peak_data, seqLength='small'):
                         seq = get_sequence(int(float((row['chr']))), start, stop)
                         if "NNNNNN" in seq or len(seq) == 0 :
                             print("chr", int(float((row['chr']))), "start", start, "stop", stop)
-                    CpG = CpG_value(seq)
-                    CpG_ratio.append(CpG[0])
-                    gc_percent.append(CpG[1])
-                    file.write(">"+row['Next transcript gene name']+"_seq-"+str(count)+"\n")
+                    file.write(">"+str(row['chr'])+':'+str(row['start'])+':'+str(row['stop'])+':'+row['Next transcript gene name']+"\n")
                     file.write(seq+"\n")
-                count += 1
             file.close()
-            print('df', len(df))
-            print('CpG', len(CpG_ratio))
-            df['CpG_ratio'] = CpG_ratio
-            df['CG_percent'] = gc_percent
-            df = df[df['CpG_ratio'] >= 0.6]
-            df = df[df['CG_percent'] >= 50]
-            df.to_csv(basepath+'/further_analysis/CpG/'+k+'.txt', sep="\t", header=True, ignore_index=True)
-    return output_dir
+        else:
+            print("WARNING: Provided dataframe for motif analysis is empty!!!!")
+
+
+    def meme_motif(self, motif_db):
+        '''
+        This method calls meme_chip
+        :param db:
+        :param nmotif:
+        :param output_dir:
+        :return:
+        '''
+        cmd = []
+        cmd.extend([os.path.join(path_to_program, "meme-chip")])
+        cmd.extend(['-o', os.path.join(self.path2folder, self.name)])
+        if self.background is not None:
+            cmd.extend(['-neg', os.path.join(self.path2folder, 'background.txt')])
+        cmd.extend(['-noecho'])
+        for db in motif_db:
+            cmd.extend(['-db', os.path.join(motif_db_base, db)])
+        #cmd.extend(['-meme-minsites', '10'])
+        cmd.extend(['-meme-nmotifs', '10'])
+        #cmd.extend(['-meme-p', '2'])
+        input_file = os.path.join(self.path2folder, self.name+'.txt')
+        cmd.extend([input_file])
+        print(cmd)
+        print(' '.join(cmd))
+
+        # Run meme with popen
+        proc = sp.Popen(cmd)
+        proc.wait()
+        # perform motif occurrence analysis
+        seq_based_motif_occurrence(os.path.join(self.path2folder, self.name))
+
 
 def get_sequence(chr, start, end):
     '''
@@ -82,34 +112,7 @@ def get_sequence(chr, start, end):
     sequence = genome.fetch(str(chr), start, end)
     return sequence
 
-def motif_analysis(db, nmotif, output_dir):
-    '''
-    This method calls meme_chip
-    :param db:
-    :param nmotif:
-    :param output_dir:
-    :return:
-    '''
-    for seqFile in output_dir:
-        output = basepath+path_to_seq+"motif_results/"+seqFile
-        input_file = basepath+path_to_seq+seqFile+'.txt'
-        meme_chip(output, input_file, db, nmotif)
-        # perform motif occurrence analysis
-        seq_based_motif_occurrence(output)
 
-
-
-def meme_chip(output, input_file, db, nmotif):
-    '''
-    Initialize meme-chip on given seq file.
-    :param output: path to store output
-    :param input_file: path to the seqfile
-    :param db: databases used for motif enrichment
-    :param nmotif: No. of motifs to find minimum
-    :return:
-    '''
-    proc = sp.Popen([path_to_program+program, '-noecho', '-o', output, '-db', motif_db_base+db[0], '-db', motif_db_base+db[1], '-meme-nmotifs', str(nmotif), input_file])
-    proc.wait()
 
 def centrimo(output, input_file, neg_control, db):
     '''
@@ -122,6 +125,7 @@ def centrimo(output, input_file, neg_control, db):
     '''
     proc = sp.Popen([path_to_program+'centrimo', '-score', 5.0, '-ethresh', 10.0, '-neg', neg_control,'-verbosity', 1, '-o', output, '-db', motif_db_base+db[0], '-db', motif_db_base+db[1], input_file])
     proc.wait()
+
 
 def CpG_value(seq):
     '''
@@ -203,52 +207,6 @@ def seq_based_motif_occurrence(path):
                 knownMotif = knownMotif+motif+','
         file.write('\n'+str(k)+'\t'+knownMotif+'\t'+str(len(v))+'\t'+','.join(v))
     file.close()
-
-
-def density_based_motif_comparision(dataframe, columnname):
-    '''
-    This method will take a dataframe and sort it according to columnname and divide into four parts.
-    Sequences for the peaks for every part extracted and saved. 0: low peak strength; 3: high peak strength.
-    :param dataframe:
-    :param columnname:
-    :return:
-    '''
-    df = dataframe
-    print("Density based motif analysis: Sorting by column " + columnname)
-    df = df.sort(columnname, ascending=True)
-    size = df.shape[0]
-    count = 0
-    dfstart = 0
-    dfstop = size/4
-    for i in range(0,4):
-        file = open(basepath+'density_based_motif/'+columnname.translate(None, ' ')+str(i)+".txt", "w")
-        for v, row in df[dfstart:dfstop].iterrows():
-            summit = int(float(row['summit'])) + int(row['start'])
-            #tss = row['Next Transcript tss distance']
-            start = summit - 250
-            stop = summit + 250
-            if 'GL' in str(row['chr']):
-                continue
-            else:
-                if row['chr'] == 'X' or row['chr'] == 'Y' or len(str(row['chr'])) > 5:
-                    seq = get_sequence(row['chr'], start, stop)
-                    if "NNNNNN" in seq or len(seq) == 0:
-                        #print row
-                        print("chr", row['chr'], "Start", start, "end", stop)
-                else:
-                    seq = get_sequence(int(float((row['chr']))), start, stop)
-                    if "NNNNNN" in seq or len(seq) == 0 :
-                        print("chr", int(float((row['chr']))), "Start", start, "end", stop)
-                file.write(">seq:"+str(count)+":"+row['Next transcript gene name']+"\n")
-                file.write(seq+"\n")
-            count += 1
-        dfstart = dfstop
-        dfstop = dfstart+size/4
-        file.close()
-        print("Motif search for:" + columnname + str(i))
-        meme_chip(basepath+'density_based_motif/'+columnname.translate(None, ' ')+str(i), basepath+'density_based_motif/'+columnname.translate(None, ' ')+str(i)+".txt",
-                  ["JASPAR_CORE_2014_vertebrates.meme", "uniprobe_mouse.meme"], 10)
-        print(dfstart, dfstop)
 
 
 def generate_file_4_homerMotif(peaksFile):

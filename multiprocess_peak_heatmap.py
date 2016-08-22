@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     start = timeit.default_timer()
     db_path = '/ps/imt/e/Encode_data_all/ENCODE_bam'
-    out_dir = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/ENCODE_heatmaps_H3R2me2_+RA_K4,me3,1_K27ac,27me3'
+    out_dir = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/ENCODE_heatmaps_H3R2me2_+RA_overlap<100'
     paths.ensure_path(out_dir)
     #/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/H3R2ame2_E9,H3R2me2a_B6.2,H3R2me2a_E9_RA,H3R2me2a_B6.2_RA,H3K4me3_E9,H3K4me3_B6.2,H3K4me3_E9_RA,H3K4me3_B6.2_RA,H3K27ac_E9,H3K27ac_B6.2,H3K27ac_E9_RA,H3K27ac_B6_RA/all6519_H3R2me2a_E9_RA vs IgG_E9_RA filtered_unique/norm/tagcountDF_all_norm.txt
     peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/H3R2me2a_E9_RA vs IgG_E9_RA filtered/H3R2me2a_E9_RA vs IgG_E9_RA filtered.txt', header=0, sep='\t')
@@ -100,16 +100,19 @@ if __name__ == '__main__':
     #print(meta_df_bam['Experiment target'])
 
     # First sample in heatmap
-    sample_order = ['H3R2me2a_E9_RA']
+    sample_order = ['H3R2me2a_E9_RA'] #, 'H3K4me3_E9_RA', 'H3K27ac_E9_RA', 'H3K4me1_E9_RA'
 
     # Include samples from other source
     inhouse_sample = {
         'H3R2me2a_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3R2me2a_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3R2me2a_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        #'H3K4me3_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K4me3_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K4me3_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        #'H3K27ac_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K27ac_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K27ac_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        #'H3K4me1_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K4me1_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K4me1_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
     }
 
     # enter desired cell lines and targets
-    desired_cellline = ['H1-hESC']
-    desired_targets = ['EP300', 'H3K27ac', 'H3K4me1', 'RBPP5', 'H3K4me3', 'H3K27me3']
+    desired_cellline = ['H1-hESC', 'NT2/D1']
+    desired_targets = ['EP300', 'BCL11A', 'ZNF247', 'POU5F1', 'RXRA', 'REST']
 
     #print(meta_df_bam.head())
     meta_df_bam = filter_dataframe(meta_df_bam)

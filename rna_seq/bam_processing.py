@@ -21,7 +21,7 @@ def count_data(bam_files, gtf_file, samtype='bam', order='name', stranded='yes',
     '''
     counts_dict = {}
     for bam_file in bam_files:
-        print bam_file
+        print(bam_file)
         count_dict = htseq.count_reads_in_features(bam_file, gtf_file, samtype, order, stranded, overlap_mode, feature_type, id_attribute, quiet, minaqual, samout)
         name = bam_file.split('/')[-1]
         name = name.split('__')[0]
@@ -106,11 +106,11 @@ def run_cuffDiff(cmd):
     :param cmd:
     :return:
     '''
-    print 'Running cuffdiff for '+cmd
+    print('Running cuffdiff for ' + cmd)
     try:
          proc = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
          stdout, stdrr = proc.communicate()
-         print stdrr
+         print(stdrr)
          proc.wait()
     except:
         raise IOError ('Subprocess Tophat2 exited with error:', proc)

@@ -2,7 +2,7 @@ __author__ = 'peeyush'
 
 import subprocess as sp
 import os, sys
-import commons
+import alignment.commons
 import pysam
 
 
@@ -53,13 +53,13 @@ class samtool():
 def sample_dir(lane):
     a = ['cache', 'peaks', 'alignedLane']
     for i in a:
-        commons.ensure_path(os.path.join(lane.resultdir, i, lane.name))
+        alignment.commons.ensure_path(os.path.join(lane.resultdir, i, lane.name))
 
 
 def bowtie2_aligner(lane, genome):
     # setup our program variables
     sample_dir(lane)
-    print 'Mapping method Bowtie2'
+    print('Mapping method Bowtie2')
     program = 'Bowtie2'
     # make the outfile name from the readfile name, add the extension .map
     thread = '-p 6'
@@ -71,7 +71,7 @@ def bowtie2_aligner(lane, genome):
     lane.temp_files.append(lane.sampath, lane.bampath)
     statfile = os.path.join(lane.resultdir, 'alignedLane', lane.name, lane.name + '_' + genome.name + '_bowtie_stats.txt')
     cmd = ' '.join([program, thread, unaligned, '-x', genome.refgenomename, '-U', readfn, '-S', lane.sampath])
-    print 'Bowtie command:', cmd
+    print('Bowtie command:', cmd)
     bowtie2_run(cmd, statfile)
 
 
@@ -90,7 +90,7 @@ def bowtie2_run(cmd, statfile):
 def tophat2_aligner(lane, genome):
     # setup our program variables
     sample_dir(lane)
-    print 'Mapping method Tophat2'
+    print('Mapping method Tophat2')
     program = '/home/sahu/Documents/aligners/tophat-2.1.0.Linux_x86_64/tophat2'
     # make the outfile name from the readfile name, add the extension .map
     thread = '-p 6'
@@ -101,7 +101,7 @@ def tophat2_aligner(lane, genome):
     lane.bampath = os.path.join(outpath, 'accepted_hits.bam')
     lane.temp_files.append(lane.bampath)
     cmd = ' '.join([program, thread, library, gtfFile, '-o', outpath, genome.refindex, readfn])
-    print 'Tophat2 command:', cmd
+    print('Tophat2 command:', cmd)
     with open(outpath+'/parameter.txt', "a") as myfile:
         myfile.write('\n'+cmd)
         myfile.close()
@@ -113,7 +113,7 @@ def tophat2_run(cmd):
     try:
          proc = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
          stdout, stdrr = proc.communicate()
-         print stdrr
+         print(stdrr)
          proc.wait()
     except:
         raise IOError('Subprocess Tophat2 exited with error:', proc)
@@ -126,7 +126,7 @@ def STAR_indexing():
     try:
          proc = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
          stdout, stdrr = proc.communicate()
-         print stdrr
+         print(stdrr)
          proc.wait()
     except:
         raise IOError ('Subprocess STAR index exited with error:', proc)
@@ -136,7 +136,7 @@ def STAR_indexing():
 def STAR_aligner(lane, genome):
     # setup our program variables
     sample_dir(lane)
-    print 'Mapping method STAR'
+    print('Mapping method STAR')
     program = '/home/sahu/Documents/aligners/STAR-STAR_2.4.2a/bin/Linux_x86_64/STAR'
     # make the outfile name from the readfile name, add the extension .map
     thread = '-runThreadN 6'
@@ -147,7 +147,7 @@ def STAR_aligner(lane, genome):
     lane.bampath = os.path.join(outpath, 'accepted_hits.bam')
     lane.temp_files.append(lane.bampath)
     cmd = ' '.join([program, thread, gtfFile, '-o', outpath, genome.refindex, readfn])
-    print 'Tophat2 command:', cmd
+    print('Tophat2 command:', cmd)
     STAR_run(cmd)
 
 
@@ -156,7 +156,7 @@ def STAR_run(cmd):
     try:
          proc = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
          stdout, stdrr = proc.communicate()
-         print stdrr
+         print(stdrr)
          proc.wait()
     except:
         raise IOError ('Subprocess STAR exited with error:', proc)

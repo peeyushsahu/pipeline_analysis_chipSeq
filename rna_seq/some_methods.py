@@ -26,13 +26,13 @@ def enhancer_rna_analysis(peakDF, rnaBAMpath, outpath=None, samplename=None):
         eRNArow['stop'] = row['stop']
         eRNArow['Next transcript gene name'] = row['Next transcript gene name']
         eRNArow['GenomicPosition TSS=1250 bp, upstream=5000 bp'] = row['GenomicPosition TSS=1250 bp, upstream=5000 bp']
-        for key, bam in rnaBAM.iteritems():
+        for key, bam in rnaBAM.items():
             eRNArow[key] = bam.count(row['chr'], row['start']+500, row['stop']+500)
         eRNAdf[ind] = eRNArow
-    for key, bam in rnaBAM.iteritems():
+    for key, bam in rnaBAM.items():
         bam.close()
     eRNAdfFin = pd.DataFrame(eRNAdf)
     eRNAdfFin = eRNAdfFin.T
     eRNAdfFin.to_csv(os.path.join(outpath, samplename+'.txt'), sep='\t', index=None)
-    print eRNAdfFin.head()
+    print(eRNAdfFin.head())
     return 'Enhancer analysis done!'

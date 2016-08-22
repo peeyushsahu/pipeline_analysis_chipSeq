@@ -221,20 +221,20 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
 
     # Plot peaks based on K-means clustering
     else:
-        try:
-            big_df = kmeans_clustering(big_df, 9, 1000)  # performing k-means clustering
-            big_df_raw = kmeans_clustering(big_df_raw, 9, 1000)  # performing k-means clustering
-            dict_of_df = group_DF(big_df, 'cluster')  # divide df in smaller dfs basis in clustering
-            dict_of_df_raw = group_DF(big_df_raw, 'cluster')
-            print(len(dict_of_df))
-            line_plot_peak_distribution(dict_of_df, bam_order, path, 'norm')  # plotting individual clusters
-            line_plot_peak_distribution(dict_of_df_raw, bam_order, path, 'raw')
-            print('No. of sample to plot:', len(bam_name_list))
-            plot_clustered_peaks_4_multiple_samples(dict_of_df, bam_order, path, 'norm')  # plotting cluster for different bam in overlapping plot
-            plot_clustered_peaks_4_multiple_samples(dict_of_df_raw, bam_order, path, 'raw')
+        #try:
+        big_df = kmeans_clustering(big_df, 9, 1000)  # performing k-means clustering
+        big_df_raw = kmeans_clustering(big_df_raw, 9, 1000)  # performing k-means clustering
+        dict_of_df = group_DF(big_df, 'cluster')  # divide df in smaller dfs basis in clustering
+        dict_of_df_raw = group_DF(big_df_raw, 'cluster')
+        print(len(dict_of_df))
+        line_plot_peak_distribution(dict_of_df, bam_order, path, 'norm')  # plotting individual clusters
+        line_plot_peak_distribution(dict_of_df_raw, bam_order, path, 'raw')
+        print('No. of sample to plot:', len(bam_name_list))
+        plot_clustered_peaks_4_multiple_samples(dict_of_df, bam_order, path, 'norm')  # plotting cluster for different bam in overlapping plot
+        plot_clustered_peaks_4_multiple_samples(dict_of_df_raw, bam_order, path, 'raw')
+        #except:
+            #print('Dataframe can not be clustered, scipy error.')
 
-        except:
-            print('Dataframe can not be clustered, scipy error.')
     ### adding columns to heatmap df
     try:
         colList = ['GenomicPosition TSS=1250 bp, upstream=5000 bp', 'Next Transcript tss distance',
@@ -651,7 +651,7 @@ def line_plot_peak_distribution(dict_of_df, name, path, which):
         #    x_axis.extend(range(-2000,+2000,50))
         # x = np.array(x_axis)
 
-        x = np.array(range(df.shape[1] / 2 * -50, df.shape[1] / 2 * 50, 50))
+        x = np.array(range(int(df.shape[1]/2) * -50, int(df.shape[1]/2) * 50, 50))
         # print len(x)
         s = np.array(df.sum(axis=0))
         # print len(s)

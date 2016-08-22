@@ -7,7 +7,6 @@ from overlap_analysis.differential_binding import modification4nearestgenes
 from plotsAndseq import seqOperations
 import plotsAndseq.plots as plots
 from plotsAndseq.plots import GR_heatmaps_DF_for_peaks
-from plotsAndseq.seqOperations import density_based_motif_comparision
 import pandas as pd
 #import pdb; pdb.set_trace()
 import gc
@@ -297,14 +296,14 @@ plots.grHeatmap4wholeGene(peak_df, bam_list, sample_name)
 '''
 # Perform overlap
 #overlapping_res = cal_genomic_region.OverlappingPeaks(peakAnalysis_df, 'H3R2ame2_E9 vs IgG_E.9 filtered', 'H3K4me3_E9 vs IgG_E.9 filtered')
-listGroups = ['tagcountDF_all_norm']#,'chip_H3K4me1_up','chip_H3K4me3_down','chip_H3K4me3_up','chip_H3K27ac_down','chip_H3K27ac_up']
+listGroups = ['H3K27ac_E9_RA vs IgG_E9_RA filtered']#,'chip_H3K4me1_up','chip_H3K4me3_down','chip_H3K4me3_up','chip_H3K27ac_down','chip_H3K27ac_up']
 
 for sampleName in listGroups:
-    peaks_df_n = read_csv(basepath + '/further_analysis/H3R2me2a_analysis/H3R2ame2_E9,H3R2me2a_B6.2,H3R2me2a_E9_RA,H3R2me2a_B6.2_RA,H3K4me3_E9,H3K4me3_B6.2,H3K4me3_E9_RA,H3K4me3_B6.2_RA,H3K27ac_E9,H3K27ac_B6.2,H3K27ac_E9_RA,H3K27ac_B6_RA/all6519_H3R2me2a_E9_RA vs IgG_E9_RA filtered_unique/norm/'+sampleName+'.txt', sep='\t', header=0)
-    #peaks_df_n = overlapping_res #overlapping_res
+    peaks_df_n = read_csv(basepath + '/csv/'+sampleName+'.csv', sep='\t', header=0)
+    #peaks_df_n = peaks_df_n[:100] #overlapping_res
     #peaks_df_n = peaks_df_n.sort('cluster', ascending=True)
-    print 'Dim of DF', peaks_df_n.shape
-    bam_list = [['H3R2ame2_E9', 'H3R2me2a_E9_RA', 'H3R2me2a_B6.2_RA', 'H3K4me3_E9', 'H3K4me3_E9_RA', 'H3K4me3_B6.2_RA', 'H3K27ac_E9', 'H3K27ac_E9_RA', 'H3K27ac_B6_RA', 'H3K4me1_E9', 'H3K4me1_E9_RA', 'H3K4me1_B6_RA']]
+    print('Dim of DF', peaks_df_n.shape)
+    bam_list = [['H3K27ac_E9_RA', 'H3K4me3_E9_RA', 'H3K4me1_E9_RA']]
     #'H3K4me3_E9', 'H3K4me3_B6.2', 'H3K4me3_E9_RA', 'H3K4me3_B6.2_RA','H3K27ac_E9', 'H3K27ac_B6.2', 'H3K27ac_E9_RA', 'H3K27ac_B6_RA', 'H3K4me1_E9_RA', 'H3K4me1_B6_RA'
     #'Sample_18F3_RA', 'Sample_18F3', 'H3R2ame2_E9','H3R2me2a_B6.2','H3K27ac_E9','H3K27ac_B6.2','H3K4me1_E9','H3K4me1_B6','H3K27me3_E9','H3K27me3_B6',
     #'H3K27me3_E9', 'H3K27me3_B6', 'H3R2me2a_E9_RA', 'H3R2me2a_B6.2_RA', 'H3R2ame2_E9', 'H3R2me2a_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2','H3K27ac_E9','H3K27ac_B6.2','H3K4me1_E9', 'H3K4me1_B6', 'PRMT6_KO_E.9', 'PRMT6_KO_B6.2', 'PRMT6_KO_B5.1'
@@ -365,19 +364,19 @@ seqOperations.motif_analysis_homer(peak_df, path=outpath, samplename='H3R2_PRMT6
 '''
 
 ### Performing motif and CpG analysis on prmt6 sites wrt regions eg. TSS, Exon
-'''
+
 #df1 = read_csv('/ps/imt/e/HL60_Christene/csv/A1-HL60-rabbit-anti-Ski vs A2-HL60-rabbitIgG filtered.csv', sep='\t')
 #df2 = read_csv('/ps/imt/e/HL60_Christene/further_analysis/overlap/A1-HL60-rabbit-anti-Ski vs A2-HL60-rabbitIgG filtered_vs_CW4-HL60-rabbit-anti-Ski vs A2-HL60-rabbitIgG filtered_vs_B4-HL60-anti-Runx vs B5-HL60-IgG_matching_Runx filtered.txt', sep='\t')
 #uniqueDF = cal_genomic_region.non_overlapping_peaks(df1, df2)
 
-sample_dict = {}
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/Compare -ATRA&+ATRA/R2+RA_k27ac_nearestGene_down_up.txt',
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/ENCODE_heatmaps_H3R2me2_+RA_all_12/Heatmap_results_norm_R-Cluster_.txt',
     header=0, sep='\t')
-sample_dict['R2+R2+RA_k27ac_nearestGene_down_up'] = peak_df
-seq = seqOperations.seq4motif(sample_dict, seqLength='large')
-db = ["JASPAR_CORE_2016_vertebrates.meme", "HOCOMOCOv9.meme", "SwissRegulon_human_and_mouse.meme"]
-seqOperations.motif_analysis(db, 10, seq)
-'''
+specific = peak_df[peak_df['cluster'].isin([2,3,4,5,6,7,8,9])]
+background = peak_df[peak_df['cluster'].isin([1])]
+mememotif = seqOperations.MotifAnalysis('H3R2me2a_+RA_promoter_vs_enhancer', specific, background=background, seqlength=100)
+mememotif.run_analysis()
+
+
 
 ### Annotate peaks with 'n' nearest genes (+,-) strand
 '''

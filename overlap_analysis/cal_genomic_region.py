@@ -42,7 +42,7 @@ class PeaksAnalysis():
         '''
         This function will plot a pie chart of occurrence for the unique elements in selected column.
         '''
-        column = self.peaks[columnname].astype(basestring)
+        column = self.peaks[columnname].astype(str)
         factor = column.value_counts(sort=True)
         name = factor.index.tolist()
         y = factor.values.tolist()
