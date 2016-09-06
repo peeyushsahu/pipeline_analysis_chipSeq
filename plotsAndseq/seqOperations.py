@@ -17,22 +17,28 @@ motif_db_base = "/home/sahu/Documents/motif_databases"
 
 
 class MotifAnalysis:
-    def __init__(self, name, dataframe, background=None, seqlength=50):
+    def __init__(self, name, dataframe, background=None, seqlength=50, method='meme'):
         self.name = name
         self.dataframe = dataframe
         self.background = background
         self.seqlength = seqlength
         self.path2folder = ''
+        self.method = method
 
     def run_analysis(self):
-        self.path2folder = os.path.join(basepath+path_to_seq, self.name)
-        commons.ensure_path(self.path2folder)
-        self.peak2seq(self.name)
-        if self.background is not None:
-            self.peak2seq('background')
+        if self.method == 'meme':
+            self.path2folder = os.path.join(basepath+path_to_seq, self.name, 'meme')
+            commons.ensure_path(self.path2folder)
+            self.peak2seq(self.name)
+            if self.background is not None:
+                self.peak2seq('background')
+            motif_db = ["JASPAR_CORE_2016_vertebrates.meme", "HOCOMOCOv9.meme", "SwissRegulon_human_and_mouse.meme"]
+            self.meme_motif(motif_db)
 
-        motif_db = ["JASPAR_CORE_2016_vertebrates.meme", "HOCOMOCOv9.meme", "SwissRegulon_human_and_mouse.meme"]
-        self.meme_motif(motif_db)
+        if self.method == 'homer':
+            self.path2folder = os.path.join(basepath+path_to_seq, self.name, 'homer')
+            commons.ensure_path(self.path2folder)
+            self.motif_analysis_homer()
 
     def peak2seq(self, name):
         '''
@@ -84,12 +90,11 @@ class MotifAnalysis:
         cmd.extend(['-noecho'])
         for db in motif_db:
             cmd.extend(['-db', os.path.join(motif_db_base, db)])
-        #cmd.extend(['-meme-minsites', '10'])
+        cmd.extend(['-meme-minsites', '10'])
         cmd.extend(['-meme-nmotifs', '10'])
         #cmd.extend(['-meme-p', '2'])
         input_file = os.path.join(self.path2folder, self.name+'.txt')
         cmd.extend([input_file])
-        print(cmd)
         print(' '.join(cmd))
 
         # Run meme with popen
@@ -97,6 +102,74 @@ class MotifAnalysis:
         proc.wait()
         # perform motif occurrence analysis
         seq_based_motif_occurrence(os.path.join(self.path2folder, self.name))
+
+    # Funtion for homer motif
+    def motif_analysis_homer(self):
+        '''
+        This function performs HOMER motif enrichment analysis for provided peak position.
+        :param peaksFile:
+        :return:
+        '''
+        import datetime
+        samplename = self.name
+        path = self.path2folder
+        if samplename is None:
+            now = datetime.datetime.now()
+            samplename = now.strftime("homer_%Y_%m_%d_%H:%M")
+
+        if path is None:
+            raise ValueError('Please provide outpath for homer motif analysis!')
+        if not os.path.exists(path):
+            os.makedirs(path)
+        homerDF = self.generate_file_4_homerMotif()
+        outpath = os.path.join(path, samplename)+'.tsv'
+        homerDF.to_csv(outpath, sep='\t', index=None)
+        print('HOMER: searching motifs in peaks...')
+        self.HOMER(outpath)
+        print('Motif searching finished.')
+
+    def generate_file_4_homerMotif(self):
+        '''
+        This function transform peakDF to homer expected DF.
+        :param peaksFile: peaksDF
+        :return: transform homerDF
+        '''
+        peaksFile = self.dataframe
+        homerDF = pd.DataFrame(0, index=np.arange(len(peaksFile)), columns=['peakID', 'chr', 'start', 'stop', 'strand'])
+        count = 0
+        for ind, row in peaksFile.iterrows():
+            if row['Next transcript strand'] == 1:
+                strand = 0
+            else:
+                strand = 1
+            homerDF.iloc[count, 0] = count
+            homerDF.iloc[count, 1] = row['chr']
+            homerDF.iloc[count, 2] = row['start']
+            homerDF.iloc[count, 3] = row['stop']
+            homerDF.iloc[count, 4] = strand
+            count += 1
+        return homerDF
+
+    def HOMER(self, outpath, genomePath=path_to_genome, size=200, cpu=4, motifNo=20, bgMotif=2000, len=10):
+        '''
+        This will run HOMER motif analysis on provided peak list.
+        :param homerDFpath: dataframe for homer analysis
+        :param outpath: out dir path
+        :param genomePath: path to genome.fa for seq extraction
+        :param size: size of seq for motif search
+        :param cpu:
+        :param motifNo: Number of motifs to search
+        :param bgMotif: Number of background motifs
+        :param len: length of motif to search in given sequence
+        :return:
+        '''
+        commandPath = '/home/sahu/Documents/HOMER/bin/'
+        genomePath = os.path.join(genomePath, 'genome.fa')
+        cmd = [commandPath+'findMotifsGenome.pl', outpath, genomePath, self.path2folder, '-size', str(size), '-p', str(cpu), '-S', str(motifNo), '-homer2', '-N', str(bgMotif), '-len', str(len)] #, '-len', str(len)
+        print(' '.join(cmd))
+        print('HOMER:', cmd)
+        proc = sp.Popen(cmd)
+        proc.wait()
 
 
 def get_sequence(chr, start, end):
@@ -111,20 +184,6 @@ def get_sequence(chr, start, end):
     genome = pysam.Fastafile(path_to_genome+'genome.fa')
     sequence = genome.fetch(str(chr), start, end)
     return sequence
-
-
-
-def centrimo(output, input_file, neg_control, db):
-    '''
-    Runs centrimo analysis to obtain differential enrichment of motifs in input_file compared to neg_control
-    :param output: path to store output
-    :param input_file: path to the seqfile
-    :param neg_control: path to the seqfile
-    :param db: databases used for motif enrichment
-    :return:
-    '''
-    proc = sp.Popen([path_to_program+'centrimo', '-score', 5.0, '-ethresh', 10.0, '-neg', neg_control,'-verbosity', 1, '-o', output, '-db', motif_db_base+db[0], '-db', motif_db_base+db[1], input_file])
-    proc.wait()
 
 
 def CpG_value(seq):
@@ -205,74 +264,8 @@ def seq_based_motif_occurrence(path):
                 except:
                     motif = 'na'
                 knownMotif = knownMotif+motif+','
-        file.write('\n'+str(k)+'\t'+knownMotif+'\t'+str(len(v))+'\t'+','.join(v))
+        file.write('\n'+str(k)+'\t'+str(knownMotif)+'\t'+str(len(v))+'\t'+','.join(str(v)))
     file.close()
-
-
-def generate_file_4_homerMotif(peaksFile):
-    '''
-    This function transform peakDF to homer expected DF.
-    :param peaksFile: peaksDF
-    :return: transform homerDF
-    '''
-    homerDF = pd.DataFrame(0,index=np.arange(len(peaksFile)), columns=['peakID', 'chr', 'start', 'stop', 'strand'])
-    count = 0
-    for ind, row in peaksFile.iterrows():
-        if row['Next transcript strand'] == 1:
-            strand = 0
-        else:
-            strand = 1
-        homerDF.iloc[count, 0] = count
-        homerDF.iloc[count, 1] = row['chr']
-        homerDF.iloc[count, 2] = row['start']
-        homerDF.iloc[count, 3] = row['stop']
-        homerDF.iloc[count, 4] = strand
-        count += 1
-    return homerDF
-
-
-def motif_analysis_homer(peaksFile, path=None, samplename=None):
-    '''
-    This function performs HOMER motif enrichment analysis for provided peak position.
-    :param peaksFile:
-    :return:
-    '''
-    import datetime, os
-    if path is None:
-        raise ValueError('Please provide outpath for homer motif analysis!')
-    if not os.path.exists(path):
-        os.makedirs(path)
-    if samplename is None:
-        now = datetime.datetime.now()
-        samplename = now.strftime("homer_%Y_%m_%d_%H:%M")
-    homerDF = generate_file_4_homerMotif(peaksFile)
-    outpath = os.path.join(path,samplename)+'.txt'
-    homerDF.to_csv(outpath, sep='\t', index=None)
-    print('Searcing motifs for sample...')
-    HOMER(outpath, path)
-    print('Motif searching finished.')
-
-
-def HOMER(homerDFpath, outpath, genomePath=path_to_genome, size=200, cpu=4, motifNo=15, bgMotif=20000, len=20):
-    '''
-    This will run HOMER motif analysis on provided peak list.
-    :param homerDFpath: dataframe for homer analysis
-    :param outpath: out dir path
-    :param genomePath: path to genome.fa for seq extraction
-    :param size: size of seq for motif search
-    :param cpu:
-    :param motifNo: Number of motifs to search
-    :param bgMotif: Number of background motifs
-    :param len: length of motif to search in given sequence
-    :return:
-    '''
-    commandPath = '/home/sahu/Documents/HOMER/bin/'
-    genomePath = os.path.join(genomePath, 'genome.fa')
-    cmd = [commandPath+'findMotifsGenome.pl', homerDFpath, genomePath, outpath, '-size', str(size), '-p', str(cpu), '-S', str(motifNo), '-homer2', '-N', str(bgMotif), '-len', str(len)] #, '-len', str(len)
-    cmd = ' '.join(cmd)
-    print('HOMER:',cmd)
-    #proc = sp.Popen(cmd)
-    #proc.wait()
 
 
 

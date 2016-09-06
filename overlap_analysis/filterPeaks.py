@@ -33,7 +33,7 @@ def filterpeaks(peak_data, name, filtering=True):
     else:
         raise ValueError("Filtering Sample name differs from column name.")
     print('Sample lane:'+condition)
-    print ('Control lane:'+control)
+    print('Control lane:'+control)
     #inputcol = colnames[indices3[0]]
     #print inputcol
     exclude_from_filtering = ['H3K36me3', 'H3K27me3', 'H3K4me1']

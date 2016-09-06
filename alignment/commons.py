@@ -29,39 +29,29 @@ def ensure_path(path):
         os.makedirs(path)
 
 
-def create_gtf2transcriptDB(gtf_file_path, path, feature='transcript'):
+def to_bed(peaks):
+    bed = []
+    for ind, row in peaks.iterrows():
+        bed.append(['chr'+str(row['chr']), int(row['start']), int(row['stop'])])
+    return pd.DataFrame(bed)
+
+
+def peakdf_columns():
     '''
-    This Function will create a database which contains transcript names and their start and end position on chromosome.
-    :param gtffile: path to gtf file.
+    Minimum column requirement for analysis
     :return:
     '''
-    ## Preparing gtf file for parsing for gene names
-    import re
-    gtf_file = Annotate.parse_gtf(gtf_file_path)
-    gtf_group = gtf_file.groupby("feature")
-    gene_gtf = gtf_group.get_group(feature)
-    column = ['pid', 'gene_name', 'gene_id', 'gene_biotype', 'transcript_id']
-    #gene_gtf.drop('further_information')
-    with open(os.path.join(path,'transcript_annotation.db'), 'a') as annotationDB:
-        annotationDB.write('chr'+'\t'+'start'+'\t'+'stop'+'\t'+'strand'+'\t'+'gene_name'+'\t'+'pid'+'\t'+'gene_id'+'\t'+'gene_biotype'+'\t'+'transcript_id\n')
-        for ind, row in gene_gtf.iterrows():
-            gene = '-'
-            gene_id = '-'
-            gene_biotype = '-'
-            pid = '-'
-            transcript_id = '-'
-            f_cols = row['further_information'].split(";")
-            for col in f_cols:
-                for name in column:
-                    if name in col:
-                        if name == 'gene_name': gene = col.split('"')[-2]
-                        if name == 'gene_id': gene_id = col.split('"')[-2]
-                        if name == 'pid': pid = col.split('"')[-2]
-                        if name == 'gene_biotype': gene_biotype = col.split('"')[-2]
-                        if name == 'transcript_id': transcript_id = col.split('"')[-2]
-            annotationDB.write(str(row['chr'])+'\t'+str(row['start'])+'\t'+str(row['stop'])+'\t'+row['strand']+'\t'+gene+'\t'+pid+'\t'+gene_id+'\t'+gene_biotype+'\t'+transcript_id+'\n')
-    trdb_path= os.path.join(path,'transcript_annotation.db')
-    create_longestTranscriptDB(trdb_path) # Def for longest transcript
-    #########################################
+    columns_2_select = [
+        'chr',
+        'start',
+        'stop',
+        'GenomicPosition TSS=1250 bp, upstream=5000 bp',
+        'Next Transcript tss distance',
+        'Next transcript gene name',
+        'Next Transcript stable_id',
+        'Next transcript strand',
+        'summit'
+    ]
+    return columns_2_select
 
 

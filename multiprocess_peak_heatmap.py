@@ -5,7 +5,7 @@ import pandas as pd
 from pandas import read_csv
 import timeit
 import alignment.commons as paths
-
+import pysam
 __author__ = 'peeyush'
 
 
@@ -64,6 +64,7 @@ def join_result_dict_into_df(peak_df, df_dict, out_dir, sample_order):
     print(', '.join(sample_order))
     return new_df
 
+
 def filter_dataframe(meta_df_bam):
     # Filtering samples from encode based on user requirements
     print('Size of ENCODE database:', len(meta_df_bam))
@@ -82,11 +83,25 @@ def filter_dataframe(meta_df_bam):
     return meta_df_bam
 
 
+def sort_index_bam(meta_df_bam):
+    '''
+    Check if bam file is sorted and index else do it.
+    :param path:
+    :return:
+    '''
+    for ind, row in meta_df_bam.iterrows():
+        sample_path = os.path.join(db_path, row['File accession']+'.bam')
+        if not os.path.exists(sample_path+'.bai'):
+            print('Sorting & indexing bam:', sample_path)
+            pysam.sort(sample_path, sample_path)
+            pysam.index(sample_path)
+
+
 if __name__ == '__main__':
 
     start = timeit.default_timer()
     db_path = '/ps/imt/e/Encode_data_all/ENCODE_bam'
-    out_dir = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/ENCODE_heatmaps_H3R2me2_+RA_overlap<100'
+    out_dir = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/ENCODE_heatmaps_H3R2me2_+RA-RA'
     paths.ensure_path(out_dir)
     #/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/H3R2ame2_E9,H3R2me2a_B6.2,H3R2me2a_E9_RA,H3R2me2a_B6.2_RA,H3K4me3_E9,H3K4me3_B6.2,H3K4me3_E9_RA,H3K4me3_B6.2_RA,H3K27ac_E9,H3K27ac_B6.2,H3K27ac_E9_RA,H3K27ac_B6_RA/all6519_H3R2me2a_E9_RA vs IgG_E9_RA filtered_unique/norm/tagcountDF_all_norm.txt
     peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/H3R2me2a_E9_RA vs IgG_E9_RA filtered/H3R2me2a_E9_RA vs IgG_E9_RA filtered.txt', header=0, sep='\t')
@@ -100,23 +115,36 @@ if __name__ == '__main__':
     #print(meta_df_bam['Experiment target'])
 
     # First sample in heatmap
-    sample_order = ['H3R2me2a_E9_RA'] #, 'H3K4me3_E9_RA', 'H3K27ac_E9_RA', 'H3K4me1_E9_RA'
+    sample_order = ['H3R2me2a_E9_RA', 'H3K4me3_E9_RA', 'H3K27ac_E9_RA', 'H3K4me1_E9_RA', 'YY1_WT_RA',
+                    'H3R2me2a_E9', 'H3K4me3_E9', 'H3K27ac_E9', 'H3K4me1_E9', 'YY1_WT']
 
     # Include samples from other source
     inhouse_sample = {
         'H3R2me2a_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3R2me2a_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3R2me2a_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
-        #'H3K4me3_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K4me3_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K4me3_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
-        #'H3K27ac_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K27ac_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K27ac_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
-        #'H3K4me1_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K4me1_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K4me1_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        'H3K4me3_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K4me3_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K4me3_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        'H3K27ac_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K27ac_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K27ac_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        'H3K4me1_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K4me1_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K4me1_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        'YY1_WT_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/YY1_seq3_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_YY1_seq3_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        'H3R2me2a_E9': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3R2ame2_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3R2ame2_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        'H3K4me3_E9': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K4me3_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K4me3_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        'H3K27ac_E9': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K27ac_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K27ac_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        'H3K4me1_E9': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K4me1_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K4me1_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        'YY1_WT': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/YY1_seq3__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_YY1_seq3__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
     }
 
+    if len(sample_order) != len(inhouse_sample):
+        raise ValueError('Length of inhouse_sample and sample sample in sample_order does not match...')
+
     # enter desired cell lines and targets
-    desired_cellline = ['H1-hESC', 'NT2/D1']
-    desired_targets = ['EP300', 'BCL11A', 'ZNF247', 'POU5F1', 'RXRA', 'REST']
+    desired_cellline = ['NT2/D1'] #'H1-hESC',
+    desired_targets = ['H3K4me3', 'H3K27ac', 'H3K4me1', 'YY1', 'SUZ12']
 
     #print(meta_df_bam.head())
     meta_df_bam = filter_dataframe(meta_df_bam)
     print('ENCODE files after filtering:', len(meta_df_bam))
+
+    # Sort and index bam if not already
+    sort_index_bam(meta_df_bam)
 
     # writing information for analysed encode sample
     meta_df_bam_group = meta_df_bam.groupby(['Biosample term name', 'Experiment target'])
@@ -140,7 +168,7 @@ if __name__ == '__main__':
     result = multiprocessing.Queue()
 
     # Start consumer
-    new_consumer = int(multiprocessing.cpu_count()/2)
+    new_consumer = int(multiprocessing.cpu_count()-2)
     print('Creating %d consumers' %new_consumer)
 
     consumers = [Consumer(task, result) for i in range(new_consumer)]

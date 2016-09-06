@@ -4,7 +4,7 @@ __author__ = 'peeyush'
 import subprocess as sp
 import os
 import timeit
-import commons
+import alignment.commons
 import pysam
 import random
 
@@ -22,9 +22,9 @@ class Lane():
 
 
     def join_multiple_fq(self):
-        self.resultdir = commons.create_odir()
+        self.resultdir = alignment.commons.create_odir()
         fqdir = os.path.join(self.resultdir, 'cache', self.name)
-        commons.ensure_path(fqdir)
+        alignment.commons.ensure_path(fqdir)
         path = self.path
         outname = 'temp_' + self.name + '.fastq.gz'
         self.fqoutpath = os.path.join(fqdir, outname)
@@ -34,15 +34,14 @@ class Lane():
             if i.endswith("fastq.gz"):
                 newfilename = os.path.join(newfilename+" "+path,i)
         newfilename = newfilename+" > "+self.fqoutpath
-        print newfilename
+        print(newfilename)
         parameter = open(fqdir+'/parameter.txt', 'w')
         parameter.write(newfilename)
         parameter.close()
         proc = sp.Popen([newfilename], shell=True)
         proc.wait()
         #os.remove(self.fqoutpath)
-        print outname
-
+        print(outname)
 
     def do_alignment(self, genome, method):
         self.genome = genome
@@ -58,12 +57,11 @@ class Lane():
             self.bam_sort()
         return self
 
-
     def sam2bam(self):
         #samtools view -Sb alignment_rep_prmt6+.sam > alignment_rep_PRMT6+.bam
         samtool = aligner.samtool()
         samtools = samtool.samtools
-        print samtools, 'view -Sb', self.sampath, '>', self.bampath
+        print(samtools, 'view -Sb', self.sampath, '>', self.bampath)
         cmd = ' '.join([samtools, 'view -Sb', self.sampath, '>', self.bampath])
         try:
             proc = sp.Popen(cmd, shell=True)
@@ -71,16 +69,14 @@ class Lane():
         except:
             raise IOError("Problem with samtools sam 2 bam.")
 
-
     def bam_sort(self):
         self.sortbampath = os.path.join(self.resultdir, 'alignedLane', self.name, self.name + '_' + self.genome.name)
-        print self.sortbampath
+        print(self.sortbampath)
         try:
             pysam.sort(self.bampath, self.sortbampath)
             self.bampath = self.sortbampath+'.bam'
         except:
             raise IOError("Problem in bam sorting.")
-
 
     def bam_index(self):
         try:
@@ -108,7 +104,7 @@ class AlignedLaneDedup():
         To remove PCR duplicates from bam files.
         """
         deduppath = os.path.join(self.resultdir, 'alignedLane', self.name + '_dedup', self.name + '_dedup')
-        commons.ensure_path(deduppath)
+        alignment.commons.ensure_path(deduppath)
         self.deduppath = os.path.join(deduppath + '_' + self.genome.name)
         bamfile = pysam.Samfile(self.bampath, "rb")
         genome = self.genome
@@ -126,7 +122,7 @@ class AlignedLaneDedup():
                         repeat_count = read.opt('XC')
                     except KeyError: #no XC
                         repeat_count = 1
-                    for ii in xrange(0,repeat_count):
+                    for ii in range(0,repeat_count):
                         forward_reads.add(read)
                 else:
                     dup_dict['+'+str(len(forward_reads))] = dup_dict.get('+'+str(len(forward_reads)), 0) + 1
@@ -148,7 +144,7 @@ class AlignedLaneDedup():
                         repeat_count = read.opt('XC')
                     except KeyError: #no XC
                         repeat_count = 1
-                    for ii in xrange(0, repeat_count):
+                    for ii in range(0, repeat_count):
                         reverse_reads.add(read)
                 else:
                     dup_dict['-'+str(len(reverse_reads))] = dup_dict.get('-'+str(len(reverse_reads)), 0) + 1
@@ -189,7 +185,7 @@ class AlignedLaneDedup():
         To remove PCR duplicates from bam files.
         """
         deduppath = os.path.join(self.resultdir, 'alignedLane', self.name + '_dedup', self.name + '_dedup')
-        commons.ensure_path(deduppath)
+        alignment.commons.ensure_path(deduppath)
         self.deduppath = os.path.join(deduppath + '_' + self.genome.name)
         bamfile = pysam.Samfile(self.bampath, "rb")
         genome = self.genome
@@ -209,7 +205,7 @@ class AlignedLaneDedup():
                         repeat_count = read.opt('XC')
                     except KeyError: #no XC
                         repeat_count = 1
-                    for ii in xrange(0,repeat_count):
+                    for ii in range(0,repeat_count):
                         forward_reads.add(read)
                 else:
                     dup_dict['+'+str(len(forward_reads))] = dup_dict.get('+'+str(len(forward_reads)), 0) + 1
@@ -232,7 +228,7 @@ class AlignedLaneDedup():
                         repeat_count = read.opt('XC')
                     except KeyError: #no XC
                         repeat_count = 1
-                    for ii in xrange(0, repeat_count):
+                    for ii in range(0, repeat_count):
                         reverse_reads.add(read)
                 else:
                     dup_dict['-'+str(len(reverse_reads))] = dup_dict.get('-'+str(len(reverse_reads)), 0) + 1

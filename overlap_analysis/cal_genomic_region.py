@@ -92,7 +92,7 @@ def sumzip(*items):
     return [sum(values) for values in zip(*items)]
 
 
-def stacke_plot_multiple(names_list, filtered_peaks, path):
+def stacke_plot_multiple(names_list, filtered_peaks, path, overlap=False):
     '''
     Creating Genomic Region stacked plot for multiple samples
     :param names_list:
@@ -163,7 +163,10 @@ def stacke_plot_multiple(names_list, filtered_peaks, path):
 
     #plt.xlabel('Samples')
     plt.ylabel('% genomic distribution')
-    plt.title('Overlap peaks '+str(total_peaks))
+    if overlap:
+        plt.title('Overlap peaks: '+str(len(filtered_peaks.get('overlap'))))
+    else:
+        plt.title('Peaks: '+str(total_peaks))
     plt.xticks(ind+width/2., samples, rotation=45)
     plt.ylim(0,100)
     plt.yticks(np.arange(0, 100, 100/5))
@@ -174,7 +177,7 @@ def stacke_plot_multiple(names_list, filtered_peaks, path):
     plt.close()
 
 
-def peakTSSbinning(names, filtered_peaks, path):
+def peakTSSbinning(names, filtered_peaks, path, overlap=False):
     '''
     This plots a histogram for peak to TSS distance
     :param names:
@@ -185,10 +188,13 @@ def peakTSSbinning(names, filtered_peaks, path):
     import collections
     import matplotlib.pyplot as plt
     binSize = 100
-    keys = range(-5000, 5000, binSize)
+    keys = list(range(-5000, 5000, binSize))
     #bins = collections.OrderedDict.fromkeys(keys)
     bins = dict(zip(keys, [0]*len(keys)))
-    for k, v in filtered_peaks.iterrows():
+    peaks = filtered_peaks
+    if overlap:
+        peaks = filtered_peaks.get(names)
+    for k, v in peaks.iterrows():
         pos = v['Next Transcript tss distance']
         if (pos < 4900) and (pos > 0):
             key = int(math.ceil(pos / 100.0)) * 100
@@ -196,19 +202,14 @@ def peakTSSbinning(names, filtered_peaks, path):
         if (pos > -5000) and (pos < 0):
             key = int(math.ceil(pos / 100.0)) * 100
             bins[key] += 1
-        '''
-        if pos < -5000:
-            bins[-5000] += 1
-        if pos > 4900:
-            bins[4900] += 1
-        '''
     #print(bins)
     keys.remove(0); keys.append(5000)
     bins = collections.OrderedDict(sorted(bins.items(), key=lambda t:t[0]))
     ## plotting barplot
     plt.subplots(figsize=(20, 6))
     plt.bar(range(len(bins)), bins.values(), align='center', color='#8A2BE2')
-    plt.xticks(range(len(bins)), keys, rotation='vertical')
+    #plt.xlim()
+    plt.xticks(range(0, len(bins)), keys, rotation='vertical')
     plt.xlabel('TSS')
     plt.ylabel('Peak density')
     plt.title('Peak densities relative to TSS')
@@ -245,7 +246,7 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
     """
     import timeit
     print('Check point: Overlapping analysis')
-    for k, v in dict_peaksdf.iteritems():
+    for k, v in dict_peaksdf.items():
         if k == name:
             df1 = v
             #int name
@@ -254,8 +255,8 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
             #print 'size of df2: ', len(df2)
             #print name1
     print('\n', name, 'vs', name1)
-    df1 = df1.peaks.sort(['chr'], ascending=True)
-    df2 = df2.peaks.sort(['chr'], ascending=True)
+    df1 = df1.peaks.sort_values(by='chr', ascending=True)
+    df2 = df2.peaks.sort_values(by='chr', ascending=True)
     ### Method test PeakOverlaps
     start1 = timeit.default_timer()
     try:
@@ -272,9 +273,9 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
     u_df1, u_df2 = get_unique_peaks(df1, df2, name, name1, ddf, dirPath)
     ddf.to_csv(os.path.join(dirPath, name+'_vs_'+name1+'.txt'), sep="\t", encoding='utf-8')
     venn4overlap(len(df1), len(df2), ddf, dirPath, [name,name1])
-    overlap_dict = {'overlap': ddf, name:u_df1, name1:u_df2}
-    stacke_plot_multiple(list(overlap_dict.keys()), overlap_dict, dirPath)
-    peakTSSbinning(overlap_dict.keys()[0], ddf, dirPath)
+    overlap_dict = {'overlap': ddf, name: u_df1, name1: u_df2}
+    stacke_plot_multiple(list(overlap_dict.keys()), overlap_dict, dirPath, overlap=True)
+    peakTSSbinning('overlap', overlap_dict, dirPath, overlap=True)
     return ddf
 
 
@@ -360,8 +361,8 @@ def PeakOverlaps(df1, df2):
                           #
                           #
                         overlaps = {'Next transcript strand':row['Next transcript strand'],'Sample1_row':count, 'Sample2_row':count1, 'chr':row['chr'], 'start':row['start'], 'stop':row['stop'], 'GenomicPosition TSS=1250 bp, upstream=5000 bp':row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
-                        'Next transcript gene name':row['Next transcript gene name'], 'Next Transcript tss distance':row['Next Transcript tss distance'], 'start1':row1['start'], 'stop1':row1['stop'],
-                        'Next transcript gene name1':row1['Next transcript gene name'], 'summit':row['summit'], 'summit1':row1['summit'], 'length':row1['length']}
+                        'Next transcript gene name':row['Next transcript gene name'], 'Next Transcript stable_id':row['Next Transcript stable_id'], 'Next Transcript tss distance':row['Next Transcript tss distance'], 'start1':row1['start'], 'stop1':row1['stop'],
+                        'Next transcript gene name1':row1['Next transcript gene name'], 'Next Transcript stable_id1':row1['Next Transcript stable_id'], 'summit':row['summit'], 'summit1':row1['summit'], 'length':row1['length']}
                         overlap_list.append(overlaps)
                         num_overlap += 1
                         #break
