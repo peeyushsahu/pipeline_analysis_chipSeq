@@ -177,7 +177,6 @@ if __name__ == '__main__':
         con.start()
 
     # Enqueue ENCODE jobs
-    num_of_job = 4
     for sample, df in meta_df_bam_group:
         df = df[df['Size'] == max(df['Size'])]
         for ind, row in df.iterrows():

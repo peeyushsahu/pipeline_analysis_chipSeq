@@ -71,13 +71,10 @@ def permutation_test4peakdensity(peak_df, name, comparisions, sname=None, n=None
         print('reading count data from old file')
         diffbindDF = pd.read_csv(os.path.join(outpath,'count_data.txt'), sep='\t', header=0)
     except:
-        highest = True
+        highest = False
         diffbind = differential_binding.Overlaps(name, filtered_peak)
         diffbindDF = diffbind.diffBinding('loaded_sample', highest=highest)
-        if highest:
-            diffbindDF.to_csv(os.path.join(outpath, 'count_data.txt'), sep='\t', header=True, index=None)
-        else:
-            diffbindDF.to_csv(os.path.join(outpath, 'count_data.txt'), sep='\t', header=True, index=None)
+        diffbindDF.to_csv(os.path.join(outpath, 'count_data.txt'), sep='\t', header=True, index=None)
     #print(diffbindDF.head())
 
     def plot_permuation(iterDF, mediandiff, pval, outpath, niter):
@@ -101,7 +98,7 @@ def permutation_test4peakdensity(peak_df, name, comparisions, sname=None, n=None
         #return plt
 
     def test_significance_of_difference(iterDF, mediandiff, testtype, trial):
-        import scipy.stats as stats
+        count = 0
         if mediandiff > 0:  # testtype == 'greater':
             count = len(iterDF[iterDF['median_diff'] >= mediandiff])
         if mediandiff < 0:  # testtype == 'smaller':
@@ -112,7 +109,7 @@ def permutation_test4peakdensity(peak_df, name, comparisions, sname=None, n=None
         print(pval)
         return pval
 
-    for mediandiff, samples in comparisions.iteritems():
+    for mediandiff, samples in comparisions.items():
         iterDF = pd.DataFrame(0, columns=[samples[0]+'_mean', samples[1]+'_mean', samples[0]+'_median', samples[1]+'_median', 'mean_diff', 'median_diff'], index=range(niter))
         print(samples)
         for i in range(niter):

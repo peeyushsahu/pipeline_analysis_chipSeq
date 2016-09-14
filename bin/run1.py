@@ -35,8 +35,9 @@ for folder in folders:
 print('Output folder created')
 
 sample_name = [
-    'H3R2ame2_E9 vs IgG_E.9 filtered',
-    'H3R2me2a_E9_RA vs IgG_E9_RA filtered'
+    #'H3R2ame2_E9 vs IgG_E.9 filtered',
+    #'H3R2me2a_E9_RA vs IgG_E9_RA filtered',
+    #'H3K4me3_E9 vs IgG_E.9 filtered'
 ]
 
 '''
@@ -157,18 +158,18 @@ cal_genomic_region.stacke_plot_multiple(['PRMT6_peaks_improved']
 '''
 
 ### calculate overlaps between peaks
-
+'''
 overlapping_samples = {}
 
 sample_name1 = ['H3R2ame2_E9 vs IgG_E.9 filtered']#, 'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered']
-sample_name2 = ['H3R2me2a_E9_RA vs IgG_E9_RA filtered']#, 'Sample_18F3_RA vs IgG_RA_seq6 filtered']
+sample_name2 = ['H3K4me3_E9 vs IgG_E.9 filtered']#, 'Sample_18F3_RA vs IgG_RA_seq6 filtered']
 
 if len(sample_name1) != len(sample_name2):
     raise ValueError("Unequal sample list for comparison")
 else:
     for i in range(0, len(sample_name1)):
         overlapping_res = cal_genomic_region.OverlappingPeaks(peakAnalysis_df, sample_name1[i], sample_name2[i])
-
+'''
 
 ## Calculate overlap for external samples
 '''
@@ -331,28 +332,29 @@ peaks_df_n = cal_genomic_region.get_combined_peaks(df1,df2)
 peaks_df_n.to_csv(basepath+'/further_analysis/combined/combined_H3R2me2a_E9+B6_RA.txt', sep='\t', header=True)
 '''
 
-
-### Gene-wide chip profile for broad histone marks
+### Meta-gene analysis (Gene-wide chip profile for broad histone marks and rna-seq)
 '''
-bam_list = ['Sample_pol2', 'Sample_pol2_RA'] #'Sample_pol2', 'Sample_pol2_RA', 'H3K36me3_E9', 'H3K36me3_B6.2', 'H3K36me3_E9_RA', 'H3K36me3_B6.2_RA'
-sample_name = 'H3R2me2+RA_Enhancer_peaks'
+bam_list = ['Sample_pol2_RA', 'H3K36me3_E9_RA', 'H3K36me3_B6.2_RA'] #'H3K27ac_E9', 'H3K27ac_B6', 'H3K27ac_E9_RA', 'H3K27ac_B6_RA', 'Sample_pol2', 'Sample_pol2_RA', 'H3K36me3_E9', 'H3K36me3_B6.2', 'H3K36me3_E9_RA', 'H3K36me3_B6.2_RA'
+
+sample_name = 'H3R2me2+RA_enhancer_peaks_cluster1,7_test'
 peak_df = read_csv(basepath + '/further_analysis/H3R2me2a_analysis/H3R2ame2_E9,H3R2me2a_B6.2,H3R2me2a_E9_RA,H3R2me2a_B6.2_RA,H3K4me3_E9,H3K4me3_B6.2,H3K4me3_E9_RA,H3K4me3_B6.2_RA,H3K27ac_E9,H3K27ac_B6.2,H3K27ac_E9_RA,H3K27ac_B6_RA/all6519_H3R2me2a_E9_RA vs IgG_E9_RA filtered_unique/norm/tagcountDF_all_norm.txt', sep='\t', header=0)
-peak_df = peak_df[peak_df['cluster'].isin([1, 7])]
-plots.grHeatmap4wholeGene(peak_df, bam_list, sample_name)
+peak_df = peak_df[peak_df['cluster'].isin([1,7])]
+metagene = plots.MetaGeneAnalysis(peak_df, sample_name, bam_list, external_sample_norm_factor={'H3K36me3_B6.2_RA': 1.24})
+metagene.grHeatmap4wholeGene()
 '''
 
 ### Comapre ChIP-Seq profile from altered sample (external)
 '''
 # Perform overlap
 #overlapping_res = cal_genomic_region.OverlappingPeaks(peakAnalysis_df, 'H3R2ame2_E9 vs IgG_E.9 filtered', 'H3K4me3_E9 vs IgG_E.9 filtered')
-listGroups = ['H3K27ac_E9_RA vs IgG_E9_RA filtered']#,'chip_H3K4me1_up','chip_H3K4me3_down','chip_H3K4me3_up','chip_H3K27ac_down','chip_H3K27ac_up']
+listGroups = ['H3R2ame2_E9 vs IgG_E.9 filtered_vs_H3K4me3_E9 vs IgG_E.9 filtered']#,'chip_H3K4me1_up','chip_H3K4me3_down','chip_H3K4me3_up','chip_H3K27ac_down','chip_H3K27ac_up']
 
 for sampleName in listGroups:
-    peaks_df_n = read_csv(basepath + '/csv/'+sampleName+'.csv', sep='\t', header=0)
+    peaks_df_n = read_csv(basepath + '/further_analysis/H3R2me2a_analysis/H3R2ame2_E9 vs IgG_E.9 filtered_vs_H3K4me3_E9 vs IgG_E.9 filtered/'+sampleName+'.txt', sep='\t', header=0)
     #peaks_df_n = peaks_df_n[:100] #overlapping_res
     #peaks_df_n = peaks_df_n.sort('cluster', ascending=True)
     print('Dim of DF', peaks_df_n.shape)
-    bam_list = [['H3K27ac_E9_RA', 'H3K4me3_E9_RA', 'H3K4me1_E9_RA']]
+    bam_list = [['H3R2ame2_E9', 'H3R2me2a_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2']]
     #'H3K4me3_E9', 'H3K4me3_B6.2', 'H3K4me3_E9_RA', 'H3K4me3_B6.2_RA','H3K27ac_E9', 'H3K27ac_B6.2', 'H3K27ac_E9_RA', 'H3K27ac_B6_RA', 'H3K4me1_E9_RA', 'H3K4me1_B6_RA'
     #'Sample_18F3_RA', 'Sample_18F3', 'H3R2ame2_E9','H3R2me2a_B6.2','H3K27ac_E9','H3K27ac_B6.2','H3K4me1_E9','H3K4me1_B6','H3K27me3_E9','H3K27me3_B6',
     #'H3K27me3_E9', 'H3K27me3_B6', 'H3R2me2a_E9_RA', 'H3R2me2a_B6.2_RA', 'H3R2ame2_E9', 'H3R2me2a_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2','H3K27ac_E9','H3K27ac_B6.2','H3K4me1_E9', 'H3K4me1_B6', 'PRMT6_KO_E.9', 'PRMT6_KO_B6.2', 'PRMT6_KO_B5.1'
@@ -380,16 +382,13 @@ gc.collect()
 
 ### permutation test for difference in median/mean
 '''
-name = ['H3K4me3_E9','H3K4me3_B6.2','H3K27ac_E9','H3K27ac_B6.2']
-comparisions = {-1.67:['H3K27ac_E9_norm_millon', 'H3K27ac_E9_RA_norm_millon'],
-                1.29:['H3K27ac_E9_RA_norm_millon', 'H3K27ac_B6_RA_norm_millon']}
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/H3K27ac+RA_E9_all_peaks.txt', sep='\t', header=0)
+name = ['H3K36me3_E9_RA', 'H3K36me3_B6.2_RA']
+comparisions = {0: ['H3K36me3_E9_RA_norm_millon', 'H3K36me3_B6.2_RA_norm_millon']}
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/filtered/H3K36me3_E9_RA vs IgG_E9_RA filtered/H3K36me3_E9_RA vs IgG_E9_RA filtered.txt', sep='\t', header=0)
 print(peak_df.head())
 outdir = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis'
-permutation.permutation_test4peakdensity(peak_df, name, comparisions, n=3800, niter=10000, outdir=outdir, sname='H3R2me2a_H3K27ac_enhancer')
+permutation.permutation_test4peakdensity(peak_df, name, comparisions, n=10000, niter=10000, outdir=outdir, sname='H3K36me3_E9_B6_normfactor')
 '''
-
-
 
 ### Density based motif analysis
 '''

@@ -2,9 +2,14 @@ __author__ = 'peeyush'
 
 import gc, os
 import pysam
-from overlap_analysis.differential_binding import getBam, group_DF
+from overlap_analysis import differential_binding
 import pandas as pd
 from  alignment import commons
+import math
+import datetime
+import dateutil.relativedelta
+import dateutil
+import multiprocessing
 
 Path = commons.path()
 basepath = Path.basepath
@@ -200,7 +205,7 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     big_df = pd.DataFrame()
     big_df_raw = pd.DataFrame()
     for v in bam_name_list:
-        bam_path = getBam(v)
+        bam_path = differential_binding.getBam(v)
         df, df1 = overlapping_peaks_distribution(v, bam_path, peak_df, path)
         if scale_df:
             df = scale_dataframe(df)  # scaling of dataframe
@@ -225,8 +230,8 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
         #try:
         big_df = kmeans_clustering(big_df, 9, 1000)  # performing k-means clustering
         big_df_raw = kmeans_clustering(big_df_raw, 9, 1000)  # performing k-means clustering
-        dict_of_df = group_DF(big_df, 'cluster')  # divide df in smaller dfs basis in clustering
-        dict_of_df_raw = group_DF(big_df_raw, 'cluster')
+        dict_of_df = differential_binding.group_DF(big_df, 'cluster')  # divide df in smaller dfs basis in clustering
+        dict_of_df_raw = differential_binding.group_DF(big_df_raw, 'cluster')
         print(len(dict_of_df))
         line_plot_peak_distribution(dict_of_df, bam_order, path, 'norm')  # plotting individual clusters
         line_plot_peak_distribution(dict_of_df_raw, bam_order, path, 'raw')
@@ -360,7 +365,7 @@ def totaltagCountinPeak(peakscorDF, sampleBam):
     :param sampleBam:
     :return:
     '''
-    bam_path = getBam(sampleBam[0])
+    bam_path = differential_binding.getBam(sampleBam[0])
     sample_bam = pysam.Samfile(bam_path, "rb")
     countList = []
     #print(peakscorDF.head())
@@ -376,104 +381,248 @@ def totaltagCountinPeak(peakscorDF, sampleBam):
     return peakscorDF
 
 
-def grHeatmap4wholeGene(peaksDF, bam_name, name, background_genes='None'):
-    '''
-    This function is useful for plotting whole gene profile of histone marks or RNAseq. e.g. H3K36me3, PolII
-    :param peaksDF:
-    :param bamfilename:
-    :param samplename:
-    :return:
-    '''
-    import pysam, math
-    import pandas as pd
-    ## creating dir
-    bam_order = ','.join(bam_name)
-    path = make_dir(name+'_broad', bam_order)
-    file = open(os.path.join(path,'lib_size.txt'), 'w')
+class MetaGeneAnalysis:
+    """
+    Meta gene analysis extract nearest transcript from peak and for this transcript extract tags on the length of whole
+    transcript after normalizing length to 100. This can run on Chip-seq as well RNA-seq with replicates.
+    """
+    def __init__(self, peakdf, analysis_name, bam_name, external_sample_norm_factor={}):
+        self.peaksDF = peakdf
+        self.name = analysis_name
+        self.bam_name = bam_name
+        self.external_sample_norm_factor = external_sample_norm_factor
 
-    # dataframe processing
-    peaksDF['chr'] = peaksDF['chr'].astype('str')
-    peaksDF = peaksDF[peaksDF['chr'].str.len() < 3]
-    peaksDF.index = range(0, len(peaksDF))
+    def grHeatmap4wholeGene(self):
+        """
+        This is a comparative Metagene analysis for plotting whole gene profile for histone marks or RNAseq
+        e.g. H3K36me3, PolII for one or more sample.
+        :param peaksDF:
+        :param bamfilename:
+        :param samplename:
+        :return:
+        """
+        ## creating dir
+        bam_order = self.get_bam_order()
+        path = make_dir(self.name+'_broad', ','.join(bam_order))
+        file = open(os.path.join(path, 'lib_size.txt'), 'w')
 
+        # dataframe processing
+        peaksDF = self.peaksDF
+        peaksDF['chr'] = peaksDF['chr'].astype('str')
+        peaksDF = peaksDF[peaksDF['chr'].str.len() < 3]
+        peaksDF.index = range(0, len(peaksDF))
+        self.peaksDF = peaksDF
+        print('Genomic regions analysed:', len(peaksDF))
 
-    if background_genes == 'auto':
-        longestTranscriptDB = '/ps/imt/f/Genomes/geneAnotations/longest_transcript_annotation.db'
-        transcriptDB = pd.read_csv(longestTranscriptDB, header=0, sep='\t')
-        print(transcriptDB.head())
-        ## randomly select n == len(peaks) tss from whole genome
+        #if background_genes == 'auto':
+        transcriptDB_path = '/ps/imt/f/Genomes/geneAnotations/gtf_transcript4vector.db'
+        transcriptDB = pd.read_csv(transcriptDB_path, header=0, sep='\t')
+        transcriptDB.index = transcriptDB['transcript_id']
+        transcriptDB['chr'] = transcriptDB['chr'].astype(str)
 
-    peak_distribution_df = pd.DataFrame()
-    peak_distribution_df_norm = pd.DataFrame()
-    for bam in bam_name:
-        bam_path = getBam(bam)
+        tnsDf = self.get_transcript_from_peaks(transcriptDB)
+        bam_paths = self.get_bampaths_4_sample()
+
+        peak_distribution_df = pd.DataFrame()
+        peak_distribution_df_norm = pd.DataFrame()
+        ######################################################
+        # Enqueue ENCODE jobs
+        for bam in self.bam_name:
+            if type(bam) is str:
+                print(bam)
+                distribution_df, distribution_df_norm = self.get_metagene_tag_count(bam, bam_paths[bam], tnsDf, file)
+            else:
+                print(bam[0])
+                distribution_df = pd.DataFrame()
+                distribution_df_norm = pd.DataFrame()
+                for bm in bam[1]:
+                    df, df_norm = self.get_metagene_tag_count(bm, bam_paths[bm], tnsDf, file)
+                    # print(df.head())
+                    distribution_df = distribution_df.add(df, fill_value=0)
+                    distribution_df_norm = distribution_df_norm.add(df_norm, fill_value=0)
+                distribution_df = distribution_df.div(len(bam[1]))
+                distribution_df_norm = distribution_df_norm.div(len(bam[1]))
+
+            peak_distribution_df = pd.concat([peak_distribution_df, distribution_df], axis=1)
+            peak_distribution_df_norm = pd.concat([peak_distribution_df_norm, distribution_df_norm], axis=1)
+            # print(distribution_df.head())
+        peak_distribution_df.column = range(0, peak_distribution_df.shape[1])
+        peak_distribution_df_norm.column = range(0, peak_distribution_df_norm.shape[1])
+        file.close()
+
+        metagene_res = {'raw': peak_distribution_df, 'norm': peak_distribution_df_norm}
+        # Plot peaks based on K-means clustering
+        for which, sample in metagene_res.items():
+            peak_distribution_df = kmeans_clustering(sample, 9, 1000)
+            print('Clustered' + which + 'dataset...')
+            dict_of_df = differential_binding.group_DF(sample, 'cluster')  # divide df in smaller dfs basis in clustering
+            print('Dataset grouping...')
+            line_plot_peak_distribution(dict_of_df, ','.join(bam_order), path, which)  # plotting individual clusters
+            print('plotting line plots')
+            plot_all_peaks_4_multiple_samples_genewide(sample, ','.join(bam_order), path, which)
+            broad_clustered_peaks_4_samples(dict_of_df, ','.join(bam_order), path, which)
+            sample.insert(0, 'Next transcript gene name', peaksDF['Next transcript gene name'])
+            sample.to_csv(os.path.join(path, which, 'tagcountDF_all_' + which + '.tsv'), sep="\t", encoding='utf-8', index=None)
+        gc.collect()
+        return peak_distribution_df, peak_distribution_df_norm
+
+    def join_results_into_df(self, resultdict, bam_order):
+        """
+        Joins dataframe from multiprocessing result into desored order
+        """
+        peak_distribution_df = pd.DataFrame()
+        peak_distribution_df_norm = pd.DataFrame()
+        for name in bam_order:
+            df_list = resultdict.get(name)
+            peak_distribution_df = pd.concat([peak_distribution_df, df_list[0]], axis=1)
+            peak_distribution_df_norm = pd.concat([peak_distribution_df_norm, df_list[1]], axis=1)
+
+        peak_distribution_df.columns = range(0, peak_distribution_df.shape[1])
+        peak_distribution_df_norm.columns = range(0, peak_distribution_df_norm.shape[1])
+        return peak_distribution_df, peak_distribution_df_norm
+
+    def get_transcript_from_peaks(self, transcriptDB):
+        '''
+        Get nearest transcript position from peaks.
+        :return:
+        '''
+        ts_df = pd.DataFrame()
+        for ind, row in self.peaksDF.iterrows():  # reading peaksdf
+            transcript_id = row['Next Transcript stable_id']
+            db_row = transcriptDB.loc[transcript_id]
+            ts_df = ts_df.append(db_row, ignore_index=True)
+        print('tnx found from peaks:', len(ts_df))
+        return ts_df
+
+    def get_bam_order(self):
+        '''
+        Join bam file names
+        '''
+        bam_order = []
+        for name in self.bam_name:
+            if type(name) is str:
+                bam_order.append(name)
+            else:
+                bam_order.append(name[0])
+        return bam_order
+
+    def get_bampaths_4_sample(self):
+        '''
+        This will extract tag count matrix from bam files for all samples.
+        :param bamnames:
+        :param rna_bam:
+        :return:
+        '''
+        bam_paths = {}
+        # Check if all the bam file exist
+        for bam in self.bam_name:
+            if type(bam) is str:
+                try:
+                    bam_path = differential_binding.getBam(bam)
+                    bam_paths[bam] = bam_path
+                    print(bam_path)
+                except ValueError:
+                    raise ('Error: Bam file not found in the default locations:', bam)
+            else:
+                for ba in bam[1]:
+                    try:
+                        bam_path = differential_binding.getBam(ba)
+                        bam_paths[ba] = bam_path
+                        print(bam_path)
+                    except ValueError:
+                        raise ('Error: Bam file not found in the default locations:', ba)
+        return bam_paths
+
+    def get_metagene_tag_count(self, bam, bam_path, transDF, file):
+        '''
+        Extract tags from bam files
+        :return:
+        '''
+        index_bam = compare_bam_bai_creationtime(bam_path)
+        if index_bam:
+            try:
+                print('Reindexing bam as bai is older', bam_path)
+                pysam.index(bam_path)
+            except:
+                raise RuntimeError("Error in Bam indexing", bam_path)
         sample_bam = pysam.Samfile(bam_path, "rb")
         total_mapped = sample_bam.mapped
         file.write(bam+'\t'+str(total_mapped)+'\n')
         distribution_df = pd.DataFrame()
         distribution_df_norm = pd.DataFrame()
-
-        for ind, row in peaksDF.iterrows(): # reading peaksdf
-            strand = int(row['Next transcript strand'])
+        #print(transDF.head())
+        for ind, row in transDF.iterrows():  # reading peaksdf
+            strand = row['strand']
             list_sample = []
             list_sample_norm = []
-            chr = row['chr']
+            Chr = str(row['chr'])
+            start = row['start']
+            stop = row['stop']
+            interval = math.ceil((stop-start)/100.0)
+
+            # 500bp upstream in 10 bins
+            hstart = start - (interval*10)
+            hstop = hstart + interval
+            if start > 0:
+                for i in range(0, 10):  # Please set based on distance on one side = s*distance/50
+                    seqcount = sample_bam.count(Chr, hstart, hstop)
+                    list_sample.append(seqcount)    # count real
+                    list_sample_norm.append((seqcount*(5.*10**6)/total_mapped))    # Normalized count per million
+                    hstart = hstop
+                    hstop = hstart + interval  # divide peaks into length of 50 bp
+
+            # gene body tag retrieval
+            start = start
+            stop = start + interval
+            if start > 0:
+                for i in range(0, 100):  # Please set based on distance on one side = s*distance/50
+                    seqcount = sample_bam.count(Chr, start, stop)
+                    list_sample.append(seqcount)    # count real
+                    list_sample_norm.append((seqcount*(5.*10**6)/total_mapped))    # Normalized count per million
+                    start = stop
+                    stop = start + interval  # divide peaks into length of 50 bp
+
+            # 500bp downstream in 10 bins
+            tstart = stop
+            tstop = tstart + interval
+            if start > 0:
+                for i in range(0, 10):  # Please set based on distance on one side = s*distance/50
+                    seqcount = sample_bam.count(Chr, tstart, tstop)
+                    list_sample.append(seqcount)    # count real
+                    list_sample_norm.append((seqcount*(5.*10**6)/total_mapped))    # Normalized count per million
+                    tstart = tstop
+                    tstop = tstart + interval  # divide peaks into length of 50 bp
+
+            # additional normalization based on permutation test
+            if bam in self.external_sample_norm_factor.keys():
+                list_sample_norm = [x*self.external_sample_norm_factor.get(bam) for x in list_sample_norm]
 
             if (strand == 1) or (strand == '+'):
-                tss = row['start'] + row['Next Transcript tss distance'] - 500
-                start = tss
-                stop = tss + 50
-                # total_tags = int(bam_peak1.mapped) will get total no of mapped reads
-                if start > 0:
-                    for i in range(0, 120):  # Please set based on distance on one side = s*distance/50
-                        seqcount = sample_bam.count(chr, start, stop)
-                        list_sample.append(seqcount)    # count real
-                        list_sample_norm.append((seqcount*(5.*10**6)/total_mapped))    # Normalized count per million
-                        start = stop
-                        stop = start + 50  # divide peaks into length of 50 bp
-                    distribution_df = distribution_df.append(pd.Series(list_sample), ignore_index=True)
-                    distribution_df_norm = distribution_df_norm.append(pd.Series(list_sample_norm), ignore_index=True)
+                distribution_df = distribution_df.append(pd.Series(list_sample), ignore_index=True)
+                distribution_df_norm = distribution_df_norm.append(pd.Series(list_sample_norm), ignore_index=True)
 
             elif (strand == -1) or (strand == '-'):
-                tss = row['start'] + row['Next Transcript tss distance'] - 5500
-                start = tss
-                stop = tss + 50
-                # total_tags = int(bam_peak1.mapped) will get total no of mapped reads
-                if start > 0:
-                    for i in range(0, 120):  # Please set based on distance on one side = s*distance/50
-                        seqcount = sample_bam.count(chr, start, stop)
-                        list_sample.append(seqcount)    # count real
-                        list_sample_norm.append((seqcount*(5.*10**6)/total_mapped))    # Normalized count per million
-                        start = stop
-                        stop = start + 50  # divide peaks into length of 50 bp
-                        # print 'Towards 3 prime'
-                    distribution_df = distribution_df.append(pd.Series(list_sample[::-1]), ignore_index=True)
-                    distribution_df_norm = distribution_df_norm.append(pd.Series(list_sample_norm[::-1]), ignore_index=True)
+                distribution_df = distribution_df.append(pd.Series(list_sample[::-1]), ignore_index=True)
+                distribution_df_norm = distribution_df_norm.append(pd.Series(list_sample_norm[::-1]), ignore_index=True)
+
             else:
                 print('Problem with gene strand information:', row['chr'], '-', row['start'])
-        sample_bam.close()
+        sample_bam.close()  # closing bam file
+        return distribution_df, distribution_df_norm
 
-        peak_distribution_df = pd.concat([peak_distribution_df, distribution_df], axis=1)
-        peak_distribution_df_norm = pd.concat([peak_distribution_df_norm, distribution_df_norm], axis=1)
-        peak_distribution_df.columns = range(0, peak_distribution_df.shape[1])
-        peak_distribution_df_norm.columns = range(0, peak_distribution_df_norm.shape[1])
-    file.close()
-    # Plot peaks based on K-means clustering
 
-    for which, sample in {'raw':peak_distribution_df, 'norm':peak_distribution_df_norm}.items():
-        peak_distribution_df = kmeans_clustering(sample, 9, 1000)
-        print('Clustered' + which + 'dataset...')
-        dict_of_df = group_DF(sample, 'cluster')  # divide df in smaller dfs basis in clustering
-        print('Dataset grouping...')
-        line_plot_peak_distribution(dict_of_df, bam_order, path, which)  # plotting individual clusters
-        print('plotting line plots')
-        plot_all_peaks_4_multiple_samples_genewide(sample, bam_order, path, which)
-        broad_clustered_peaks_4_samples(dict_of_df, bam_order, path, which)
-        sample.insert(0, 'Next transcript gene name', peaksDF['Next transcript gene name'])
-        sample.to_csv(os.path.join(path, which, 'tagcountDF_all_' + which + '.tsv'), sep="\t", encoding='utf-8', index=None)
-    gc.collect()
-    return peak_distribution_df, peak_distribution_df_norm
-
+def compare_bam_bai_creationtime(bam_path):
+    '''
+    Index bam file if bai is older than bam.
+    '''
+    bmtime = datetime.datetime.fromtimestamp(os.path.getmtime(bam_path))
+    bmitime = datetime.datetime.fromtimestamp(os.path.getmtime(bam_path+'.bai'))
+    difference = dateutil.relativedelta.relativedelta(bmitime, bmtime)
+    print(difference)
+    if (difference.months <= 0) and (difference.days < 0):
+        return True
+    else:
+        return False
 
 def broad_clustered_peaks_4_samples(dict_df, name, path, which):
     '''
@@ -499,7 +648,7 @@ def broad_clustered_peaks_4_samples(dict_df, name, path, which):
             start = stop
             stop += 120
 
-        x = np.array(range(-500, 5500, 50))
+        x = np.array(range(-10,110))
         plt.gca().set_color_cycle(clist[:len(sname)])
         Max = 0
         for sample in sname:
@@ -508,19 +657,19 @@ def broad_clustered_peaks_4_samples(dict_df, name, path, which):
             df = sample_dict.get(sample)
             s = np.array(df.sum(axis=0)) / float(len(df))
             s = np.subtract(s, min(s)/2)
-            xnew = np.linspace(x.min(), x.max(), 300)
+            xnew = np.linspace(x.min(), x.max(), 500)
             smooth = spline(x, s, xnew)
             if max(smooth) > Max: Max = max(smooth)
             plt.plot(xnew, smooth, linewidth=3)
         plt.ylim(0, Max + Max/8)
         plt.xlabel('Binding profile cluster' + str(k))
-        plt.ylabel('Avg. norm. tag density per peaks')
+        plt.ylabel('Norm. tag count')
         plt.title('Genomic distribution of peaks with datapoints: ' + str(size[0]))
         lgd = plt.legend(sname, loc='center left', bbox_to_anchor=(1, 0.5))  # 'Low', 'Medium',
         # plt.show()
         #plt.tight_layout()
         plt.savefig(os.path.join(path, which, 'overlap_' + name + '_cluster:' + str(k) + '.png'), bbox_extra_artists=(lgd,), bbox_inches='tight')
-        plt.savefig(os.path.join(path, which, 'overlap_' + name + '_cluster:' + str(k) + '.svg'), bbox_extra_artists=(lgd,), bbox_inches='tight')
+        #plt.savefig(os.path.join(path, which, 'overlap_' + name + '_cluster:' + str(k) + '.svg'), bbox_extra_artists=(lgd,), bbox_inches='tight')
         plt.clf()
     plt.close('all')
 
@@ -548,7 +697,7 @@ def plot_all_peaks_4_multiple_samples_genewide(big_df, name, path, which):
         start = stop
         stop += 120
 
-    x = np.array(range(-500, 5500, 50))
+    x = np.array(range(-10, 110))
     plt.gca().set_color_cycle(clist[:len(sname)])
     Max = 0
     for sample in sname:
@@ -557,13 +706,13 @@ def plot_all_peaks_4_multiple_samples_genewide(big_df, name, path, which):
         df = sample_dict.get(sample)
         s = np.array(df.sum(axis=0)) / float(len(df))
         s = np.subtract(s, min(s)/2)
-        xnew = np.linspace(x.min(), x.max(), 200)
+        xnew = np.linspace(x.min(), x.max(), 500)
         smooth = spline(x, s, xnew)
         if max(smooth) > Max: Max = max(smooth)
         plt.plot(xnew, smooth, linewidth=3)
     plt.ylim(0, Max + Max/8)
     plt.xlabel('Binding profile cluster' + str(len(big_df)))
-    plt.ylabel('Avg. norm. tag density per peaks')
+    plt.ylabel('Norm. tag count')
     plt.title('Genomic distribution of peaks with datapoints: ' + str(size[0]))
     lgd = plt.legend(sname, loc='center left', bbox_to_anchor=(1, 0.5))  # 'Low', 'Medium',
     # plt.show()
@@ -708,7 +857,7 @@ def plot_clustered_peaks_4_multiple_samples(dict_df, name, path, which):
             # print x
             df = sample_dict.get(sample)
             s = np.array(df.sum(axis=0)) / float(len(df))
-            s = np.subtract(s, min(s))
+            s = np.subtract(s, min(s)/2)
             xnew = np.linspace(x.min(), x.max(), 300)
             smooth = spline(x, s, xnew)
             if max(smooth) > Max: Max = max(smooth)
@@ -757,7 +906,7 @@ def plot_all_peaks_4_multiple_samples(big_df, name, path, which=None):
         # print x
         df = sample_dict.get(sample)
         s = np.array(df.sum(axis=0)) / float(len(df))
-        s = np.subtract(s, min(s))
+        s = np.subtract(s, min(s)/2)
         xnew = np.linspace(x.min(), x.max(), 300)
         smooth = spline(x, s, xnew)
         if max(smooth) > Max: Max = max(smooth)

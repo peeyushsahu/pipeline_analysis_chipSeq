@@ -46,7 +46,7 @@ class Overlaps():
 
         else:
             column = ['chr', 'start', 'stop', 'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'Next transcript gene name',
-                  'Next transcript strand', 'Next Transcript tss distance', 'summit']
+                  'Next transcript strand', 'Next Transcript tss distance']
             df = pd.DataFrame(columns=column, index=range(len(dataframe)))
         print(df.dtypes)
 
@@ -165,41 +165,62 @@ def random_sampleing_df(dataframe, nsample):
     return new_dataframe
 
 
-def getBam(name):
+def getBam(name, path=None):
     '''
     This function takes the sample name and return the path of its associated bam file.
     :param name:
     :return:
     '''
     from os import listdir
-    path = basepath +'/results/AlignedLane/'
-    bam_list = listdir(basepath + '/results/AlignedLane')
+    bam_path = [
+        'results/AlignedLane',
+        'further_analysis/results/alignedLane']
+    if path is not None:
+        bam_path.append(path)
     Dir = None
     file = None
-    #print name
-    for i in bam_list:
-        if name in i and 'dedup' in i:
-            if 'RA' in name and 'RA' in i:
-                Dir = path+i
-                #print Dir
-                for j in listdir(Dir):
-                    if j.endswith('.bam'):
-                        file = j
-                        print('\nBam file selected: '+j)
-            if 'RA' not in name and 'RA' not in i:
-                Dir = path+i
-                #print Dir
-                for j in listdir(Dir):
-                    if j.endswith('.bam'):
-                        file = j
-                        print('\nBam file selected: '+j)
-
+    for Path in bam_path:
+        path = os.path.join(basepath, Path)
+        bam_list = listdir(path)
+        for i in bam_list:
+            if name in i and 'dedup' in i:
+                if 'RA' in name and 'RA' in i:
+                    Dir = os.path.join(path, i)
+                    #print Dir
+                    for j in listdir(Dir):
+                        if j.endswith('.bam'):
+                            file = j
+                            print('\nBam file selected: '+j)
+                if 'RA' not in name and 'RA' not in i:
+                    Dir = os.path.join(path, i)
+                    #print Dir
+                    for j in listdir(Dir):
+                        if j.endswith('.bam'):
+                            file = j
+                            print('\nBam file selected: '+j)
+        if file is None:
+            for i in bam_list:
+                if name in i:
+                    if 'RA' in name and 'RA' in i:
+                        print('Warning: Bam found but bam file is not deduped', i)
+                        Dir = os.path.join(path, i)
+                        #print Dir
+                        for j in listdir(Dir):
+                            if j.endswith('.bam'):
+                                file = j
+                                print('\nBam file selected: '+j)
+                    if 'RA' not in name and 'RA' not in i:
+                        print('Warning: Bam found but bam file is not deduped', i)
+                        Dir = os.path.join(path, i)
+                        #print Dir
+                        for j in listdir(Dir):
+                            if j.endswith('.bam'):
+                                file = j
+                                print('\nBam file selected: '+j)
     if file is None:
         raise KeyError('Bam file cannot be found for '+name)
     else:
         return os.path.join(Dir, file)
-
-
 
 
 def group_DF(dataframe, factor):
