@@ -177,7 +177,7 @@ def stacke_plot_multiple(names_list, filtered_peaks, path, overlap=False):
     plt.close()
 
 
-def peakTSSbinning(names, filtered_peaks, path, overlap=False):
+def peakTSSbinning(names, filtered_peaks, path):
     '''
     This plots a histogram for peak to TSS distance
     :param names:
@@ -185,36 +185,16 @@ def peakTSSbinning(names, filtered_peaks, path, overlap=False):
     :param path:
     :return:
     '''
-    import collections
+    #import collections
     import matplotlib.pyplot as plt
-    binSize = 100
-    keys = list(range(-5000, 5000, binSize))
-    #bins = collections.OrderedDict.fromkeys(keys)
-    bins = dict(zip(keys, [0]*len(keys)))
-    peaks = filtered_peaks
-    if overlap:
-        peaks = filtered_peaks.get(names)
-    for k, v in peaks.iterrows():
-        pos = v['Next Transcript tss distance']
-        if (pos < 4900) and (pos > 0):
-            key = int(math.ceil(pos / 100.0)) * 100
-            bins[key] += 1
-        if (pos > -5000) and (pos < 0):
-            key = int(math.ceil(pos / 100.0)) * 100
-            bins[key] += 1
-    #print(bins)
-    keys.remove(0); keys.append(5000)
-    bins = collections.OrderedDict(sorted(bins.items(), key=lambda t:t[0]))
-    ## plotting barplot
-    plt.subplots(figsize=(20, 6))
-    plt.bar(range(len(bins)), bins.values(), align='center', color='#8A2BE2')
-    #plt.xlim()
-    plt.xticks(range(0, len(bins)), keys, rotation='vertical')
+    import seaborn as sns
+    ## sns plot
+    dist = filtered_peaks[(filtered_peaks['Next Transcript tss distance'] < 10000) & (filtered_peaks['Next Transcript tss distance'] > -10000)]
+    sns.distplot(dist['Next Transcript tss distance'], kde=False)
     plt.xlabel('TSS')
     plt.ylabel('Peak density')
-    plt.title('Peak densities relative to TSS')
-    plt.savefig(os.path.join(path, 'Peak_densities' + names + '.png'), bbox_inches='tight')
-    #plt.clf()
+    plt.title('Peak densities relative to TSS:'+str(len(dist)))
+    plt.savefig(os.path.join(path, 'Peak_densities_seaborn' + names + '.png'), bbox_inches='tight')
     plt.close()
 
 

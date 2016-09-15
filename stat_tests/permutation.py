@@ -90,7 +90,7 @@ def permutation_test4peakdensity(peak_df, name, comparisions, sname=None, n=None
         else: xlow = low-(low/8.)
         plt.xlim(xlow, high+(abs(high)/8.))
         plt.ylabel('Freq. of difference')
-        plt.xlabel('log2 difference')
+        plt.xlabel('log2 difference b/w median')
         plt.title('p-val of difference:'+str(pval)+' ;trial:'+str(niter))
         plt.savefig(os.path.join(outpath, '_'.join(samples)+'.png'))
         plt.clf()

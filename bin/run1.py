@@ -37,7 +37,9 @@ print('Output folder created')
 sample_name = [
     #'H3R2ame2_E9 vs IgG_E.9 filtered',
     #'H3R2me2a_E9_RA vs IgG_E9_RA filtered',
-    #'H3K4me3_E9 vs IgG_E.9 filtered'
+    #'H3K4me3_E9 vs IgG_E.9 filtered',
+    #'H3K4me1_E9_RA vs IgG_E9_RA filtered',
+    'H3K27me3_E9_RA vs IgG_E9_RA filtered'
 ]
 
 '''
