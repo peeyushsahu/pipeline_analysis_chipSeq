@@ -171,13 +171,14 @@ def stacke_plot_multiple(names_list, filtered_peaks, path, overlap=False):
     plt.ylim(0,100)
     plt.yticks(np.arange(0, 100, 100/5))
     plt.legend((p1[0], p2[0], p3[0], p4[0], p5[0]), ('Intron', 'Exon', 'TSS(+-1500bp)', 'Upstream(-1500 to -5000bp)', 'Intergenic(> 5000bp)') ,loc='center left', bbox_to_anchor=(1.0, 0.5))
+    plt.savefig(os.path.join(path, 'multi_stacked' + ','.join(samples) + '.svg'), bbox_inches='tight')
     plt.savefig(os.path.join(path, 'multi_stacked' + ','.join(samples) + '.png'), bbox_inches='tight')
     plt.tight_layout()
     #plt.clf()
     plt.close()
 
 
-def peakTSSbinning(names, filtered_peaks, path):
+def peakTSSbinning(names, filtered_peaks, path, overlap=False):
     '''
     This plots a histogram for peak to TSS distance
     :param names:
@@ -189,7 +190,10 @@ def peakTSSbinning(names, filtered_peaks, path):
     import matplotlib.pyplot as plt
     import seaborn as sns
     ## sns plot
-    dist = filtered_peaks[(filtered_peaks['Next Transcript tss distance'] < 10000) & (filtered_peaks['Next Transcript tss distance'] > -10000)]
+    print(names)
+    if overlap:
+        filtered_peaks = filtered_peaks.get('overlap')
+    dist = filtered_peaks[(filtered_peaks['Next Transcript tss distance'] <= 10000) & (filtered_peaks['Next Transcript tss distance'] >= -10000)]
     sns.distplot(dist['Next Transcript tss distance'], kde=False)
     plt.xlabel('TSS')
     plt.ylabel('Peak density')

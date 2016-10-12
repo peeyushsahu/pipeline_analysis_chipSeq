@@ -35,11 +35,13 @@ for folder in folders:
 print('Output folder created')
 
 sample_name = [
-    #'H3R2ame2_E9 vs IgG_E.9 filtered',
+    'H3R2ame2_E9 vs IgG_E.9 filtered',
+    #'Sample_18F3 vs Sample_8C9 filtered',
     #'H3R2me2a_E9_RA vs IgG_E9_RA filtered',
     #'H3K4me3_E9 vs IgG_E.9 filtered',
     #'H3K4me1_E9_RA vs IgG_E9_RA filtered',
-    'H3K27me3_E9_RA vs IgG_E9_RA filtered'
+    #'H3K27me3_E9_RA vs IgG_E9_RA filtered',
+    'YY1_seq3 vs IgG_seq4 filtered',
 ]
 
 '''
@@ -164,7 +166,7 @@ cal_genomic_region.stacke_plot_multiple(['PRMT6_peaks_improved']
 overlapping_samples = {}
 
 sample_name1 = ['H3R2ame2_E9 vs IgG_E.9 filtered']#, 'PRMT6_2_RA_seq6 vs IgG_RA_seq6 filtered']
-sample_name2 = ['H3K4me3_E9 vs IgG_E.9 filtered']#, 'Sample_18F3_RA vs IgG_RA_seq6 filtered']
+sample_name2 = ['YY1_seq3 vs IgG_seq4 filtered']#, 'Sample_18F3_RA vs IgG_RA_seq6 filtered']
 
 if len(sample_name1) != len(sample_name2):
     raise ValueError("Unequal sample list for comparison")
@@ -214,7 +216,8 @@ sample = ['H3R2ame2_E9', 'H3R2me2a_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2']
 peak_df_name = 'H3R2ame2_E9 vs IgG_E.9 filtered'
 filtered_peak = {peak_df_name: peakAnalysis_df[peak_df_name].peaks}
 diffbind = differential_binding.Overlaps(sample, filtered_peak)
-diffbind.diffBinding(peak_df_name, outpath=basepath + '/further_analysis/PRMT6_KO_analysis/H3R2me2/H3R2me2a_2700/H3R2me2a_2700_E9_B6_wid_K4_diff.txt')
+diffbind.diffBinding(peak_df_name, outpath=basepath + '/further_analysis/H3R2me2a_analysis/H3R2me2a_H3K4me3_-RA_ct_vs_KO.txt',
+                     use_second_start=False, from_sample=3, twoK=False, highest=False)
 '''
 ### Diff.binding for nearest genes
 '''
@@ -234,95 +237,40 @@ modification4nearestgenes(peak_df, 'prmt6_nearest5genes', sample)
 #overlapping_res = cal_genomic_region.OverlappingPeaks(peakAnalysis_df, 'H3K4me3_E9 vs IgG_E.9 filtered', 'H3R2ame2_E9 vs IgG_E.9 filtered')
 
 #'H3R2ame2_E9', 'H3K36me3_E9', 'H3K36me3_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2', 'H3K27ac_E9','H3K27ac_B6.2','PRMT6_E9_commer', 'PRMT6_B6_commer','PRMT6_KO_E.9', 'PRMT6_KO_B6.2','H3K4me1_E9','H3K4me1_B6','H3K27me3_E9','H3K27me3_B6'
-path = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/filtered/H3K27ac_E9_RA vs IgG_E9_RA filtered'
-multiple_df = ['H3K27ac_E9_RA vs IgG_E9_RA filtered']
+path = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlap/H3R2ame2_E9 vs IgG_E.9 filtered_vs_H3K4me3_E9 vs IgG_E.9 filtered'
+multiple_df = ['H3R2ame2_E9 vs IgG_E.9 filtered_vs_H3K4me3_E9 vs IgG_E.9 filtered']
 
 for df in multiple_df:
     peak_df = read_csv(os.path.join(path, df+'.txt'), header=0, sep='\t')
     # peak_df = peak_df[(peak_df['log2FC'] <= -1) & (peak_df['pvalue'] <= 0.05)]
     print(peak_df.shape)
     #peak_df = peak_df[:10]
-    sample = ['H3K27ac_E9', 'H3K27ac_E9_RA', 'H3K27ac_B6_RA']
+    sample = ['H3R2ame2_E9', 'H3R2me2a_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2']
     # 'H3R2ame2_E9', 'H3R2me2a_E9_RA', 'H3R2me2a_B6.2_RA', 'H3K4me3_E9', 'H3K4me3_E9_RA', 'H3K4me3_B6.2_RA', 'H3K27ac_E9', 'H3K27ac_E9_RA', 'H3K27ac_B6_RA', 'H3K4me1_E9', 'H3K4me1_E9_RA', 'H3K4me1_B6_RA'
+
     # random sampling of df
     # peak_df = differential_binding.random_sampleing_df(peak_df, 1459)
 
     peak_df = peak_df.rename(columns={'Next Gene name':'Next transcript gene name'})
-    print peak_df.shape
+    print(peak_df.shape)
     # peak_df = peak_df.drop_duplicates(['Next transcript gene name'])
     # print peak_df.shape
     filtered_peak = {'loaded_sample': peak_df}
     diffbind = differential_binding.Overlaps(sample, filtered_peak)
     outpath = basepath + '/further_analysis/H3R2me2a_analysis'
-    diffbind.diffBinding('loaded_sample', outpath=outpath+'/H3K27ac+RA_E9_all_peaks.txt', genewide=False, use_second_start=False, from_sample=3, twoK=False, highest=False) #, genewide=True
-'''
-
-### Transposone analysis
-'''
-trans = retroT_analysis.Transposones()
-trans.read_repeat_pos('/ps/imt/e/RepBase20.05.fasta/rtro_human/transposone_db.csv')
-trans.get_transposition_position(['SVA_D'])
-region = ['all'] #'all', 'tss', 'exon', 'intron', 'intergenic', 'upstream'
-bam_list = [['PRMT6_2_seq6', 'H3K4me3_seq2', 'Sample_K27ac', 'Sample_K4me1', 'Sample_K9me3']]
-for bams in bam_list:
-    for i in region:
-        GR_heatmaps_DF_for_peaks(bams, trans.repeat_pos_db.get('SVA_D'), region=i,
-                                 sort=False, sort_column='H3K4me3_RA_seq2')
-'''
-### Calculate overlap of Diff peaks with transposon
-'''
-diff_peaks = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/PRMT6_2_seq6,Sample_pol-2,Sample_K36me3,H3K4me3_seq2,Sample_K27me1,Sample_K27ac,Sample_K4me1,Sample_K9me3,Sample_K27me3,Sample_18F3/all27744'
-                      '/PRMT6_2_seq6,Sample_pol-2,Sample_K36me3,H3K4me3_seq2,Sample_K27me1,Sample_K27ac,Sample_K4me1,Sample_K9me3,Sample_K27me3,Sample_18F3all.csv',
-    header=0, sep=',')
-diff_peaks = diff_peaks[(diff_peaks['cluster'] == 3) | (diff_peaks['cluster'] == 4) | (diff_peaks['cluster'] == 6) | (diff_peaks['cluster'] == 7)]
-
-TE_df = read_csv('/ps/imt/e/RepBase20.05.fasta/rtro_human/transposone_db.csv',
-    header=0, sep=',')
-TE_df = TE_df[TE_df['class/family'] == 'Simple_repeat' | TE_df['class/family'] == 'Satellite/telo' | TE_df['class/family'] == 'Low_complexity']
-
-#peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/Sample_K27ac,Sample_K4me1,H3K4me3_seq2/all22096/clustered_df_0,2,3.csv',
-#                   header=0, sep=',')
-
-### If DF is from R change column names ('' ','.')
-if '.' in diff_peaks.columns[6]:
-    from string import maketrans
-    cols = diff_peaks.columns
-    new_cols = []
-    for col in cols:
-        new_cols.append(col.translate(maketrans('.',' ')))
-    diff_peaks.columns = new_cols
-
-
-TE_df['chr'] = map(lambda x: x[3:], TE_df['chr'])
-filtered_peak_data['TE_db'] = TE_df
-filtered_peak_data['Total_PRMT6_TSS_3,4,6,7'] = diff_peaks
-
-peakAnalysis_df = {}
-for k, v in filtered_peak_data.iteritems():
-    name = k
-    df = v
-    GR_analysis = cal_genomic_region.PeaksAnalysis(df, name)
-    peakAnalysis_df[name] = GR_analysis
-
-sample_name2 = ['TE_db']
-sample_name1 = ['Total_PRMT6_TSS_3,4,6,7']
-
-if len(sample_name1) != len(sample_name2):
-    raise ValueError("Unequal sample list for comparison")
-else:
-    for i in range(0, len(sample_name1)):
-        overlapping_res = cal_genomic_region.OverlappingPeaks(peakAnalysis_df, sample_name1[i], sample_name2[i])
+    diffbind.diffBinding('loaded_sample', outpath=outpath+'/H3R2me2a_H3K4me3_-RA_ct_vs_KO_second_start_highest.txt',
+                         genewide=False, use_second_start=True, from_sample=2, twoK=False, highest=True)
 '''
 
 ### Compares multiple ChIP-Seq profile using peaks (heatmap) from on sample
 '''
 region = ['all'] #'all', 'tss', 'exon', 'intron', 'intergenic', 'upstream'
-bam_list = [['H3R2ame2_E9', 'H3R2me2a_B6.2', 'H3K4me3_E9', 'H3K4me3_B6.2']]
+bam_list = [['H3R2ame2_E9', 'H3K4me3_E9', 'YY1_seq3']]
 for bams in bam_list:
     for i in region:
         df = peakAnalysis_df['H3R2ame2_E9 vs IgG_E.9 filtered'].peaks
-        GR_heatmaps_DF_for_peaks(bams, df, region=i,
-                                 sort=False, sort_column='H3R2ame2_E9', scale_df=False, normalized=True, strength_divide=False)
+        GR_heatmaps_DF_for_peaks(bams, df, region=i, sample_name=None,
+                                 sort=False, sort_column='H3R2ame2_E9', scale_df=False, strength_divide=False)
 '''
 
 ### Combine peaks of two df
@@ -336,12 +284,12 @@ peaks_df_n.to_csv(basepath+'/further_analysis/combined/combined_H3R2me2a_E9+B6_R
 
 ### Meta-gene analysis (Gene-wide chip profile for broad histone marks and rna-seq)
 '''
-bam_list = ['Sample_pol2_RA', 'H3K36me3_E9_RA', 'H3K36me3_B6.2_RA'] #'H3K27ac_E9', 'H3K27ac_B6', 'H3K27ac_E9_RA', 'H3K27ac_B6_RA', 'Sample_pol2', 'Sample_pol2_RA', 'H3K36me3_E9', 'H3K36me3_B6.2', 'H3K36me3_E9_RA', 'H3K36me3_B6.2_RA'
+bam_list = ['H3K36me3_E9_RA', 'H3K36me3_B6.2_RA', 'H3K27me3_E9_RA', 'H3K27me3_B6_RA'] #'H3K27ac_E9', 'H3K27ac_B6', 'H3K27ac_E9_RA', 'H3K27ac_B6_RA', 'Sample_pol2', 'Sample_pol2_RA', 'H3K36me3_E9', 'H3K36me3_B6.2', 'H3K36me3_E9_RA', 'H3K36me3_B6.2_RA'
 
-sample_name = 'H3R2me2+RA_enhancer_peaks_cluster1,7_test'
+sample_name = 'H3R2me2+RA_enhancer_peaks_cluster1,7_test_k27me3'
 peak_df = read_csv(basepath + '/further_analysis/H3R2me2a_analysis/H3R2ame2_E9,H3R2me2a_B6.2,H3R2me2a_E9_RA,H3R2me2a_B6.2_RA,H3K4me3_E9,H3K4me3_B6.2,H3K4me3_E9_RA,H3K4me3_B6.2_RA,H3K27ac_E9,H3K27ac_B6.2,H3K27ac_E9_RA,H3K27ac_B6_RA/all6519_H3R2me2a_E9_RA vs IgG_E9_RA filtered_unique/norm/tagcountDF_all_norm.txt', sep='\t', header=0)
 peak_df = peak_df[peak_df['cluster'].isin([1,7])]
-metagene = plots.MetaGeneAnalysis(peak_df, sample_name, bam_list, external_sample_norm_factor={'H3K36me3_B6.2_RA': 1.24})
+metagene = plots.MetaGeneAnalysis(peak_df, sample_name, bam_list) #, external_sample_norm_factor={'H3K36me3_B6.2_RA': 1.24}
 metagene.grHeatmap4wholeGene()
 '''
 
@@ -412,12 +360,12 @@ seqOperations.motif_analysis(db, 10, seq)
 #df2 = read_csv('/ps/imt/e/HL60_Christene/further_analysis/overlap/A1-HL60-rabbit-anti-Ski vs A2-HL60-rabbitIgG filtered_vs_CW4-HL60-rabbit-anti-Ski vs A2-HL60-rabbitIgG filtered_vs_B4-HL60-anti-Runx vs B5-HL60-IgG_matching_Runx filtered.txt', sep='\t')
 #uniqueDF = cal_genomic_region.non_overlapping_peaks(df1, df2)
 
-peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/ENCODE_heatmaps_H3R2me2_+RA_all_12/Heatmap_results_norm_R-Cluster_.txt',
+peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/H3R2ame2_E9,H3K4me3_E9/all2300/norm/tagcountDF_all_norm_ReClusterwid 1_.txt',
     header=0, sep='\t')
-specific = peak_df[peak_df['cluster'].isin([2,3,4,5,6,7,8,9])]
-background = peak_df[peak_df['cluster'].isin([2,3,4,5,6,7,8,9])]
-motif_analysis = seqOperations.MotifAnalysis('H3R2me2a_+RA_promoter', specific, background=None,
-                                             seqlength=200, method='homer')
+specific = peak_df[peak_df['cluster'].isin([13])]
+#background = peak_df[peak_df['cluster'].isin([2,3,4,5,6,7,8,9])]
+motif_analysis = seqOperations.MotifAnalysis('H3R2me2a_-RA_-K4me3', specific, background=None,
+                                             seqlength=200, method='meme')
 motif_analysis.run_analysis()
 '''
 
@@ -452,4 +400,61 @@ bamRNA = {'NT2D1_E9_1':path+'NT2D1_E9_1/NT2D1_E9_1_GRCh37.bam',
           'NT2D1_B6_2':path+'NT2D1_B6_2/NT2D1_B6_2_GRCh37.bam',
           'NT2D1_B6_3':path+'NT2D1_B6_3/NT2D1_B6_3_GRCh37.bam'}
 print(enhancer_rna_analysis(peakdf, bamRNA, outpath=basepath + '/further_analysis/PRMT6_KO_analysis/peak_selecetion_B6/PRMT6_new+old_peaks', samplename='eRNA_PRMT6_n+o_enhancer_bound'))
+'''
+
+### Transposone analysis
+'''
+trans = retroT_analysis.Transposones()
+trans.read_repeat_pos('/ps/imt/e/RepBase20.05.fasta/rtro_human/transposone_db.csv')
+trans.get_transposition_position(['SVA_D'])
+region = ['all'] #'all', 'tss', 'exon', 'intron', 'intergenic', 'upstream'
+bam_list = [['PRMT6_2_seq6', 'H3K4me3_seq2', 'Sample_K27ac', 'Sample_K4me1', 'Sample_K9me3']]
+for bams in bam_list:
+    for i in region:
+        GR_heatmaps_DF_for_peaks(bams, trans.repeat_pos_db.get('SVA_D'), region=i,
+                                 sort=False, sort_column='H3K4me3_RA_seq2')
+'''
+### Calculate overlap of Diff peaks with transposon
+'''
+diff_peaks = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/PRMT6_2_seq6,Sample_pol-2,Sample_K36me3,H3K4me3_seq2,Sample_K27me1,Sample_K27ac,Sample_K4me1,Sample_K9me3,Sample_K27me3,Sample_18F3/all27744'
+                      '/PRMT6_2_seq6,Sample_pol-2,Sample_K36me3,H3K4me3_seq2,Sample_K27me1,Sample_K27ac,Sample_K4me1,Sample_K9me3,Sample_K27me3,Sample_18F3all.csv',
+    header=0, sep=',')
+diff_peaks = diff_peaks[(diff_peaks['cluster'] == 3) | (diff_peaks['cluster'] == 4) | (diff_peaks['cluster'] == 6) | (diff_peaks['cluster'] == 7)]
+
+TE_df = read_csv('/ps/imt/e/RepBase20.05.fasta/rtro_human/transposone_db.csv',
+    header=0, sep=',')
+TE_df = TE_df[TE_df['class/family'] == 'Simple_repeat' | TE_df['class/family'] == 'Satellite/telo' | TE_df['class/family'] == 'Low_complexity']
+
+#peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/overlapping_plots/Sample_K27ac,Sample_K4me1,H3K4me3_seq2/all22096/clustered_df_0,2,3.csv',
+#                   header=0, sep=',')
+
+### If DF is from R change column names ('' ','.')
+if '.' in diff_peaks.columns[6]:
+    from string import maketrans
+    cols = diff_peaks.columns
+    new_cols = []
+    for col in cols:
+        new_cols.append(col.translate(maketrans('.',' ')))
+    diff_peaks.columns = new_cols
+
+
+TE_df['chr'] = map(lambda x: x[3:], TE_df['chr'])
+filtered_peak_data['TE_db'] = TE_df
+filtered_peak_data['Total_PRMT6_TSS_3,4,6,7'] = diff_peaks
+
+peakAnalysis_df = {}
+for k, v in filtered_peak_data.iteritems():
+    name = k
+    df = v
+    GR_analysis = cal_genomic_region.PeaksAnalysis(df, name)
+    peakAnalysis_df[name] = GR_analysis
+
+sample_name2 = ['TE_db']
+sample_name1 = ['Total_PRMT6_TSS_3,4,6,7']
+
+if len(sample_name1) != len(sample_name2):
+    raise ValueError("Unequal sample list for comparison")
+else:
+    for i in range(0, len(sample_name1)):
+        overlapping_res = cal_genomic_region.OverlappingPeaks(peakAnalysis_df, sample_name1[i], sample_name2[i])
 '''
