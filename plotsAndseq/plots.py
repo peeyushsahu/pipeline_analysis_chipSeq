@@ -9,6 +9,7 @@ import math
 import datetime
 import dateutil.relativedelta
 import dateutil
+import sys
 import multiprocessing
 
 Path = commons.path()
@@ -151,7 +152,7 @@ def make_dir(bam_order, region='All'):
 
 # @profile
 def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, sort_column=None, scale_df=True,
-                             sample_name=None, strength_divide=False):
+                             sample_name=None, strength_divide=False, normFact={}):
     '''
     Suggestion: Please do not use more then 3 samples at a time.
     This function will take a list of bam files path and create a heatmap of genomic region for the provided peak dataset.
@@ -205,8 +206,12 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     big_df = pd.DataFrame()
     big_df_raw = pd.DataFrame()
     for v in bam_name_list:
+        print('Heeee:'+v)
         bam_path = differential_binding.getBam(v)
         df, df1 = overlapping_peaks_distribution(v, bam_path, peak_df, path)
+        if v in normFact.keys():
+            print('Multiply with external norm fact.', v, normFact.get(v))
+            df1 = df1.multiply(normFact.get(v))
         if scale_df:
             df = scale_dataframe(df)  # scaling of dataframe
             print('scaled df')
@@ -264,7 +269,7 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     gc.collect()
 
 
-def overlapping_peaks_distribution(bam_name, bam_path, overlap_df, path):
+def overlapping_peaks_distribution(bam_name, bam_path, overlap_df, path, dist4middle=3000, steps=60, bpdist=100):
     '''
     Returns dataframe for tag count distribution for overlapping peaks within 3000bp (+,-) from summit.
     This function also considers the gene transcrition direction.
@@ -297,20 +302,20 @@ def overlapping_peaks_distribution(bam_name, bam_path, overlap_df, path):
         chr = str(row['chr'])
         orientation = row['Next transcript strand']
         middle = row['start'] + row['summit']
-        start = middle - 3000  # Distance on one side of the peaks
-        stop = start + 100
+        start = middle - dist4middle  # Distance on one side of the peaks
+        stop = start + bpdist
         list_sample = []
         list_sample1 = []
         # total_tags = int(bam_peak1.mapped) will get total no of mapped reads
         if start > 0:
-            for i in range(0, 60):  # Please set based on distance on one side = s*distance/50
+            for i in range(0, steps):  # Please set based on distance on one side = s*distance/50
                 seqcount = sample_bam.count(chr, start, stop)
                 # Normalized tag count per 5 million
                 list_sample.append((float(seqcount)/total_mapped)*(5*10**6))
                 # raw tag count
                 list_sample1.append(seqcount)
                 start = stop
-                stop = start + 100  # divide peaks into length of 50 bp
+                stop = start + bpdist  # divide peaks into length of 50 bp
             if orientation == 1:  # Direction gene transcription
                 # print 'Towards 5 prime'
                 peak_distribution_sample_norm = peak_distribution_sample_norm.append(pd.Series(list_sample),
@@ -325,7 +330,7 @@ def overlapping_peaks_distribution(bam_name, bam_path, overlap_df, path):
                                                                            ignore_index=True)
         del list_sample, middle, start, stop
     stop = timeit.default_timer()
-    print('\nTime elapsed:' + str((stop - startT) / 60) + 'min')
+    print('\nTime elapsed:' + str((stop - startT) / steps) + 'min')
     sample_bam.close()
     return peak_distribution_sample_norm, peak_distribution_sample
 
@@ -935,6 +940,83 @@ class DividePeaksInStrength:
         plt.savefig(os.path.join(self.path, self.plot_name + '.png'))
         #plt.savefig(path + name + '.svg')
         plt.clf()
+
+
+class HeatMapWrtTss:
+
+    def __init__(self, peakdf, name, sampleid, outpath, distance=10000):
+        self.peaks = peakdf
+        self.name = name
+        self.sample_id = sampleid
+        self.outpath = outpath
+        self.distance = distance
+
+    def filter_peaks(self):
+        peakdf = self.peaks
+        print(peakdf.shape)
+        peakdf = peakdf[(peakdf['Next Transcript tss distance'] < self.distance) & (peakdf['Next Transcript tss distance'] > -self.distance)]
+        peakdf.index = range(len(peakdf))
+        print(peakdf.shape)
+        return peakdf
+
+    def create_heatmap(self):
+        column = ['chr', 'start', 'stop', 'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'Next transcript gene name',
+                  'Next transcript strand', 'Next Transcript tss distance', 'summit', 'Next Transcript stable_id']
+        peakdf = self.filter_peaks()
+        peakdf.loc[:, 'chr'] = peakdf.loc[:, 'chr'].astype(str)
+        bam_id = self.sample_id
+        bam_name = self.name
+        bam_path = differential_binding.getBam(bam_id, path='/ps/imt/e/Encode_data_all/ENCODE_HL60')
+        sample_bam = pysam.Samfile(bam_path, "rb")
+        total_mapped = sample_bam.mapped
+        print(bam_name+'\t'+str(total_mapped)+'\n')
+        distribution_df_norm = pd.DataFrame()
+        #print(peakdf.head())
+
+        # check if genome of alignment (UCSC or ENSEMBL) bam
+        try:
+            sample_bam.count('9', 99181564, 99181974)
+        except ValueError:
+            print('Bam file is UCSC aligned converting coordinates accordingly...')
+            peakdf.loc[: 'chr'] = 'chr' + peakdf.loc[: 'chr']
+            pass
+
+        for ind, row in peakdf.iterrows():  # reading peaksd
+            sys.stdout.write("\r%d%%" % ind)
+            sys.stdout.flush()
+            strand = row['Next transcript strand']
+            Chr = str(row['chr'])
+            start_pos = row['start']
+            next_tss_distance = row['Next Transcript tss distance']
+            interval = 100
+            list_sample_norm = []
+
+            start = (start_pos + next_tss_distance) - self.distance
+            stop = start + interval
+
+            if start > 0:
+                for i in range(0, int((2*self.distance)/100)):  # Please set based on distance on one side = s*distance/50
+                    seqcount = sample_bam.count(Chr, start, stop)
+                    list_sample_norm.append((seqcount*(5.*10**6)/total_mapped))    # Normalized count per million
+                    start = stop
+                    stop = start + interval  # divide peaks into length of 50 bp
+
+                distribution_df_norm = distribution_df_norm.append(pd.Series(list_sample_norm), ignore_index=True)
+
+            #if (strand == 1) or (strand == '+'):
+            #    distribution_df_norm = distribution_df_norm.append(pd.Series(list_sample_norm), ignore_index=True)
+
+            #elif (strand == -1) or (strand == '-'):
+            #    distribution_df_norm = distribution_df_norm.append(pd.Series(list_sample_norm[::-1]), ignore_index=True)
+
+            else:
+                print('Problem with gene strand information:', row['chr'], '-', row['start'])
+        sample_bam.close()  # closing bam file
+        print(distribution_df_norm.head())
+
+        distribution_df_norm = pd.concat([peakdf[column], distribution_df_norm], axis=1)
+        distribution_df_norm.to_csv(os.path.join(self.outpath, 'HmapWRTTss_'+bam_name+'_norm.tsv'), header=True, index=True, sep='\t')
+        return distribution_df_norm
 
 
 def scale_dataframe(df):

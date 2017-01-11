@@ -104,7 +104,7 @@ if __name__ == '__main__':
     out_dir = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/ENCODE_heatmaps_H3R2me2_+RA-RA'
     paths.ensure_path(out_dir)
     #/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/H3R2ame2_E9,H3R2me2a_B6.2,H3R2me2a_E9_RA,H3R2me2a_B6.2_RA,H3K4me3_E9,H3K4me3_B6.2,H3K4me3_E9_RA,H3K4me3_B6.2_RA,H3K27ac_E9,H3K27ac_B6.2,H3K27ac_E9_RA,H3K27ac_B6_RA/all6519_H3R2me2a_E9_RA vs IgG_E9_RA filtered_unique/norm/tagcountDF_all_norm.txt
-    peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/H3R2me2a_analysis/H3R2me2a_E9_RA vs IgG_E9_RA filtered/H3R2me2a_E9_RA vs IgG_E9_RA filtered.txt', header=0, sep='\t')
+    peak_df = read_csv('/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/further_analysis/filtered/H3R2ame2_E9 vs IgG_E.9 filtered/H3R2ame2_E9 vs IgG_E.9 filtered.txt', header=0, sep='\t')
     peak_df['chr'] = peak_df['chr'].astype('str')
     peak_df = peak_df[peak_df['chr'].str.len() < 4]
     #peak_df = peak_df[peak_df['cluster'].isin([0,2,3,4,5,6,8])]
@@ -115,20 +115,20 @@ if __name__ == '__main__':
     #print(meta_df_bam['Experiment target'])
 
     # First sample in heatmap
-    sample_order = ['H3R2me2a_E9_RA', 'H3K4me3_E9_RA', 'H3K27ac_E9_RA', 'H3K4me1_E9_RA', 'YY1_WT_RA',
-                    'H3R2me2a_E9', 'H3K4me3_E9', 'H3K27ac_E9', 'H3K4me1_E9', 'YY1_WT']
+    sample_order = ['H3R2me2a_E9', 'H3K4me3_E9', 'YY1_WT']
+    # 'H3R2me2a_E9_RA', 'H3K4me3_E9_RA', 'H3K27ac_E9_RA', 'H3K4me1_E9_RA', 'YY1_WT_RA', 'H3K27ac_E9', 'H3K4me1_E9',
 
     # Include samples from other source
     inhouse_sample = {
-        'H3R2me2a_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3R2me2a_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3R2me2a_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
-        'H3K4me3_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K4me3_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K4me3_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
-        'H3K27ac_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K27ac_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K27ac_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
-        'H3K4me1_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K4me1_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K4me1_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
-        'YY1_WT_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/YY1_seq3_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_YY1_seq3_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        #'H3R2me2a_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3R2me2a_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3R2me2a_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        #'H3K4me3_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K4me3_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K4me3_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        #'H3K27ac_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K27ac_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K27ac_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        #'H3K4me1_E9_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K4me1_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K4me1_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        #'YY1_WT_RA': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/YY1_seq3_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_YY1_seq3_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
         'H3R2me2a_E9': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3R2ame2_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3R2ame2_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
         'H3K4me3_E9': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K4me3_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K4me3_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
-        'H3K27ac_E9': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K27ac_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K27ac_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
-        'H3K4me1_E9': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K4me1_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K4me1_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        #'H3K27ac_E9': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K27ac_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K27ac_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+        #'H3K4me1_E9': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3K4me1_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K4me1_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
         'YY1_WT': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/YY1_seq3__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_YY1_seq3__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
     }
 
@@ -136,8 +136,8 @@ if __name__ == '__main__':
         raise ValueError('Length of inhouse_sample and sample sample in sample_order does not match...')
 
     # enter desired cell lines and targets
-    desired_cellline = ['NT2/D1'] #'H1-hESC',
-    desired_targets = ['H3K4me3', 'H3K27ac', 'H3K4me1', 'YY1', 'SUZ12']
+    desired_cellline = [] #'H1-hESC',
+    desired_targets = ['ZNF143']
 
     #print(meta_df_bam.head())
     meta_df_bam = filter_dataframe(meta_df_bam)

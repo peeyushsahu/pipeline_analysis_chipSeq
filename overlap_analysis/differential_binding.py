@@ -16,7 +16,8 @@ class Overlaps():
         self.samples_names = overlappinglist
         self.filter_peaks = filter_peaks
 
-    def diffBinding(self, basepeakfile, outpath=None, genewide=False, use_second_start=False, from_sample=None, highest=False, twoK=False):
+    def diffBinding(self, basepeakfile, outpath=None, genewide=False, use_second_start=False, from_sample=None,
+                    highest=False, twoK=False, normFact={}):
         '''
         This function will extract tag counts from provided peaks.
         This dataframe can be used with DESeq for differential binding calculation.
@@ -46,7 +47,7 @@ class Overlaps():
 
         else:
             column = ['chr', 'start', 'stop', 'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'Next transcript gene name',
-                  'Next transcript strand', 'Next Transcript tss distance']
+                  'Next transcript strand', 'Next Transcript tss distance', 'summit', 'Next Transcript stable_id']
             df = pd.DataFrame(columns=column, index=range(len(dataframe)))
         print(df.dtypes)
 
@@ -74,11 +75,14 @@ class Overlaps():
                         df.loc[k,'stop'] = stop
                         df.loc[k,'length'] = int(stop-start)
                         df.loc[k,'Next transcript strand'] = strand
-                        df.loc[k,sample] = tags
+                        df.loc[k, sample] = tags
                         df.loc[k,sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
                         df.loc[k,sample+'_length_norm'] = ((float(tags)/total_reads)*10**6)/((float(stop)-start)/100)
                         df.loc[k,'Next transcript gene name'] = gene_name
                         k += 1
+                if sample in normFact.keys():
+                    print('Multiply with external norm fact.', sample, normFact.get(sample))
+                    df[sample] = df[sample].multiply(normFact.get(sample))
 
             else:
                 for k, v in dataframe.iterrows():
@@ -134,6 +138,9 @@ class Overlaps():
                     if tags == 0: tags = 1
                     df.loc[k, sample] = tags
                     df.loc[k, sample+'_norm_millon'] = (float(tags)/total_reads)*10**6
+            if sample in normFact.keys():
+                print('Multiply with external norm fact.', sample, normFact.get(sample))
+                df[sample] = df[sample].multiply(normFact.get(sample))
             whichsample += 1
             sample_bam.close()
         ## This will calculate the logFC
@@ -172,6 +179,7 @@ def getBam(name, path=None):
     :return:
     '''
     from os import listdir
+    import re
     bam_path = [
         'results/AlignedLane',
         'further_analysis/results/alignedLane']
@@ -184,20 +192,24 @@ def getBam(name, path=None):
         bam_list = listdir(path)
         for i in bam_list:
             if name in i and 'dedup' in i:
-                if 'RA' in name and 'RA' in i:
-                    Dir = os.path.join(path, i)
-                    #print Dir
-                    for j in listdir(Dir):
-                        if j.endswith('.bam'):
-                            file = j
-                            print('\nBam file selected: '+j)
-                if 'RA' not in name and 'RA' not in i:
-                    Dir = os.path.join(path, i)
-                    #print Dir
-                    for j in listdir(Dir):
-                        if j.endswith('.bam'):
-                            file = j
-                            print('\nBam file selected: '+j)
+                filename = re.split('unique_|__aligned', i)
+                #print(i)
+                #print(filename)
+                if name in filename:
+                    if 'RA' in name and 'RA' in i:
+                        Dir = os.path.join(path, i)
+                        #print Dir
+                        for j in listdir(Dir):
+                            if j.endswith('.bam'):
+                                file = j
+                                print('\nBam file selected: '+j)
+                    if 'RA' not in name and 'RA' not in i:
+                        Dir = os.path.join(path, i)
+                        #print Dir
+                        for j in listdir(Dir):
+                            if j.endswith('.bam'):
+                                file = j
+                                print('\nBam file selected: '+j)
         if file is None:
             for i in bam_list:
                 if name in i:

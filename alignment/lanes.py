@@ -43,6 +43,15 @@ class Lane():
         #os.remove(self.fqoutpath)
         print(outname)
 
+    def all_fq_commasep(self):
+        path = self.path
+        newfilename = []
+        for i in os.listdir(path):
+            if i.endswith("fastq.gz"):
+                newfilename.append(os.path.join(path,i))
+        all_file = ','.join(newfilename)
+        return all_file
+
     def do_alignment(self, genome, method):
         self.genome = genome
         if method == "Bowtie2":

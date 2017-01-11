@@ -48,7 +48,7 @@ def significance_of_chipseq_overlap(overlap, peak_df1, peak_df2, iteration=10):
     return overlap_list, pval
 
 
-def permutation_test4peakdensity(peak_df, name, comparisions, sname=None, n=None, niter=100, outdir=None, testtype='greater'):
+def permutation_test4peakdensity(peak_df, name, comparisions, sname=None, n=None, niter=100, outdir=None):
     import matplotlib.pyplot as plt
     import seaborn as sns
     import numpy as np
@@ -90,18 +90,19 @@ def permutation_test4peakdensity(peak_df, name, comparisions, sname=None, n=None
         else: xlow = low-(low/8.)
         plt.xlim(xlow, high+(abs(high)/8.))
         plt.ylabel('Freq. of difference')
-        plt.xlabel('log2 difference b/w median')
+        plt.xlabel('median diff. is '+str(iterDF['median_diff'].median()))
         plt.title('p-val of difference:'+str(pval)+' ;trial:'+str(niter))
         plt.savefig(os.path.join(outpath, '_'.join(samples)+'.png'))
         plt.clf()
         plt.close()
         #return plt
 
-    def test_significance_of_difference(iterDF, mediandiff, testtype, trial):
+    def test_significance_of_difference(iterDF, mediandiff, trial):
         count = 0
-        if mediandiff > 0:  # testtype == 'greater':
+        if mediandiff > iterDF['median_diff'].median():  # testtype == 'greater':
             count = len(iterDF[iterDF['median_diff'] >= mediandiff])
-        if mediandiff < 0:  # testtype == 'smaller':
+
+        if mediandiff < iterDF['median_diff'].median():  # testtype == 'smaller':
             count = len(iterDF[iterDF['median_diff'] <= mediandiff])
         print(count, mediandiff, trial)
         pval = (count+1.)/trial
@@ -118,8 +119,8 @@ def permutation_test4peakdensity(peak_df, name, comparisions, sname=None, n=None
             iterDF.iloc[i, 1] = peakdf[samples[1]].mean()
             iterDF.iloc[i, 2] = peakdf[samples[0]].median()
             iterDF.iloc[i, 3] = peakdf[samples[1]].median()
-            iterDF.iloc[i, 4] = np.log2(peakdf[samples[0]].mean()) - np.log2(peakdf[samples[1]].mean())
-            iterDF.iloc[i, 5] = np.log2(peakdf[samples[0]].median()) - np.log2(peakdf[samples[1]].median())
+            iterDF.iloc[i, 4] = peakdf[samples[0]].mean() / peakdf[samples[1]].mean()
+            iterDF.iloc[i, 5] = peakdf[samples[0]].median() / peakdf[samples[1]].median()
         iterDF.to_csv(os.path.join(outpath, '_'.join(samples)+'.txt'), sep='\t', header=True, index=None)
-        pval = test_significance_of_difference(iterDF, mediandiff, testtype, niter)
+        pval = test_significance_of_difference(iterDF, mediandiff, niter)
         plot_permuation(iterDF, mediandiff, pval, outpath, niter)

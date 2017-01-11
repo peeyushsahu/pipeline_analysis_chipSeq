@@ -57,6 +57,7 @@ def filterpeaks(peak_data, name, filtering=True):
     paths.ensure_path(dirPATH)
     samPath = os.path.join(dirPATH, name+'.txt')
     final.to_csv(samPath, sep="\t", header=True)
+    final.index = range(len(final))
     return final, dirPATH
 
 

@@ -186,7 +186,7 @@ def get_sequence(chr, start, end):
     return sequence
 
 
-def CpG_value(seq):
+def CpG_enrichemnt(peaks, seq_length=100):
     '''
     This function will calculate CpG enrichment for the sequence.
     # CG% should be more than 50%
@@ -195,8 +195,19 @@ def CpG_value(seq):
     :param seq:
     :return:
     '''
-    seq = seq.upper()
-    return float(seq.count('CG')) / ((seq.count('C') * seq.count('G'))+1) * len(seq), float(100)/len(seq) * (seq.count('C') + seq.count('G'))
+    peaks_df = peaks
+    peaks_df['CpG_enrichment'] = 0
+    peaks_df['CpG_percent'] = 0
+    enrichment_col = peaks_df.columns.get_loc("CpG_enrichment")
+    percent_col = peaks_df.columns.get_loc("CpG_percent")
+    for ind, row in peaks_df.iterrows():
+        seq = get_sequence(row['chr'], row['start']-seq_length, row['stop']+seq_length)
+        seq = seq.upper()
+        CG_enrichment = float(seq.count('CG')) / ((seq.count('C') * seq.count('G'))+1) * len(seq)
+        CG_percent = float(100)/len(seq) * (seq.count('C') + seq.count('G'))
+        peaks_df.iloc[ind, enrichment_col] = CG_enrichment
+        peaks_df.iloc[ind, percent_col] = CG_percent
+    return peaks_df
 
 
 def seq_based_motif_occurrence(path):

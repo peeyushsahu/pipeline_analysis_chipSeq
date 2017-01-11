@@ -1,14 +1,12 @@
 __author__ = 'peeyush'
 
-import matplotlib
-matplotlib.use('Agg')
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import sys, os
 import pandas as pd
 import math
 import numpy as np
-import annotate.Annotate as Annotate
-import overlap_analysis.differential_binding
 from alignment import commons
 import alignment.commons as paths
 Path = paths.path()
@@ -99,6 +97,7 @@ def stacke_plot_multiple(names_list, filtered_peaks, path, overlap=False):
     :param filtered_peaks:
     :return:
     '''
+    mpl.rcParams.update(mpl.rcParamsDefault)
     tss = [7]
     intergenic = [46]
     intron = [42]
@@ -164,13 +163,13 @@ def stacke_plot_multiple(names_list, filtered_peaks, path, overlap=False):
     #plt.xlabel('Samples')
     plt.ylabel('% genomic distribution')
     if overlap:
-        plt.title('Overlap peaks: '+str(len(filtered_peaks.get('overlap'))))
+        plt.title('Overlap peaks: '+str(len(set(filtered_peaks.get('overlap')['Sample1_row']))))
     else:
         plt.title('Peaks: '+str(total_peaks))
     plt.xticks(ind+width/2., samples, rotation=45)
     plt.ylim(0,100)
-    plt.yticks(np.arange(0, 100, 100/5))
-    plt.legend((p1[0], p2[0], p3[0], p4[0], p5[0]), ('Intron', 'Exon', 'TSS(+-1500bp)', 'Upstream(-1500 to -5000bp)', 'Intergenic(> 5000bp)') ,loc='center left', bbox_to_anchor=(1.0, 0.5))
+    plt.yticks([0, 20, 40, 60, 80, 100])
+    plt.legend((p5[0], p4[0], p3[0], p2[0], p1[0]), ('Intergenic(> 5kb)', 'Upstream(-1.5 to -5kb)', 'TSS(+-1.5kb)', 'Exon', 'Intron'),loc='center left', bbox_to_anchor=(1.0, 0.5))
     plt.savefig(os.path.join(path, 'multi_stacked' + ','.join(samples) + '.svg'), bbox_inches='tight')
     plt.savefig(os.path.join(path, 'multi_stacked' + ','.join(samples) + '.png'), bbox_inches='tight')
     plt.tight_layout()
@@ -186,10 +185,30 @@ def peakTSSbinning(names, filtered_peaks, path, overlap=False):
     :param path:
     :return:
     '''
-    #import collections
-    import matplotlib.pyplot as plt
     import seaborn as sns
-    ## sns plot
+    sns.set(style="ticks", context="talk")
+    print(names)
+    if overlap:
+        filtered_peaks = filtered_peaks.get('overlap')
+    dist = filtered_peaks[(filtered_peaks['Next Transcript tss distance'] <= 10000) & (filtered_peaks['Next Transcript tss distance'] >= -10000)]
+    sns.distplot(dist['Next Transcript tss distance'], kde=False)
+    plt.xlabel('TSS')
+    plt.ylabel('Peak density')
+    plt.title('Peak densities relative to TSS:'+str(len(dist)))
+    plt.savefig(os.path.join(path, 'Peak_densities_seaborn' + names + '.png'), bbox_inches='tight')
+    plt.close()
+
+
+def peak_length_binning(names, filtered_peaks, path, overlap=False):
+    '''
+    This plots a histogram for peak to TSS distance
+    :param names:
+    :param filtered_peaks:
+    :param path:
+    :return:
+    '''
+    import seaborn as sns
+    sns.set(style="ticks", context="talk")
     print(names)
     if overlap:
         filtered_peaks = filtered_peaks.get('overlap')
@@ -204,7 +223,6 @@ def peakTSSbinning(names, filtered_peaks, path, overlap=False):
 
 def venn4overlap(df1, df2, overlap, dirPath, name):
     from matplotlib import pyplot as plt
-    import numpy as np
     from matplotlib_venn import venn2, venn2_circles
     name1 = name[0].split(' ')[0]
     name2 = name[1].split(' ')[0]
@@ -256,10 +274,10 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
     commons.ensure_path(dirPath)
     u_df1, u_df2 = get_unique_peaks(df1, df2, name, name1, ddf, dirPath)
     ddf.to_csv(os.path.join(dirPath, name+'_vs_'+name1+'.txt'), sep="\t", encoding='utf-8')
-    venn4overlap(len(df1), len(df2), ddf, dirPath, [name,name1])
     overlap_dict = {'overlap': ddf, name: u_df1, name1: u_df2}
     stacke_plot_multiple(list(overlap_dict.keys()), overlap_dict, dirPath, overlap=True)
     peakTSSbinning('overlap', overlap_dict, dirPath, overlap=True)
+    venn4overlap(len(df1), len(df2), ddf, dirPath, [name, name1])
     return ddf
 
 
