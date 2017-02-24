@@ -46,9 +46,13 @@ class Overlaps():
             df = pd.DataFrame(columns=column, index=range(len(dataframe)))
 
         else:
-            column = ['chr', 'start', 'stop', 'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'Next transcript gene name',
-                  'Next transcript strand', 'Next Transcript tss distance', 'summit', 'Next Transcript stable_id']
-            df = pd.DataFrame(columns=column, index=range(len(dataframe)))
+            if 'summit' not in dataframe.columns:
+                column = ['chr', 'start', 'stop', 'Next transcript gene name', 'Next transcript strand']
+                df = pd.DataFrame(columns=column, index=range(len(dataframe)))
+            else:
+                column = ['chr', 'start', 'stop', 'GenomicPosition TSS=1250 bp, upstream=5000 bp', 'Next transcript gene name',
+                      'Next transcript strand', 'Next Transcript tss distance', 'summit', 'Next Transcript stable_id']
+                df = pd.DataFrame(columns=column, index=range(len(dataframe)))
         print(df.dtypes)
 
         whichsample = 0
@@ -103,17 +107,17 @@ class Overlaps():
                         if whichsample >= from_sample:
                             #print('I am here')
                             summit = v['start1']+v['summit1']
-                            start = summit - 50
-                            stop = summit + 50
+                            start = summit - 100
+                            stop = summit + 100
                         else:
                             summit = v['start']+v['summit']
-                            start = summit - 50
-                            stop = summit + 50
+                            start = summit - 100
+                            stop = summit + 100
                     elif highest and not use_second_start:
                         # Take only 100 bp from peak summit
                         summit = v['start']+v['summit']
-                        start = summit - 50
-                        stop = summit + 50
+                        start = summit - 100
+                        stop = summit + 100
                     elif twoK:
                         # Take 2000 bp from peak summit
                         if whichsample >= from_sample:

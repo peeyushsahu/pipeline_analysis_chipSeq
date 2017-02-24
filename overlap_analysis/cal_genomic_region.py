@@ -129,17 +129,17 @@ def stacke_plot_multiple(names_list, filtered_peaks, path, overlap=False):
 
     N = len(names_list)+1
     ind = np.arange(N)    # the x locations for the groups
-    width = 0.25       # the width of the bars: can also be len(x) sequence
+    width = 0.40       # the width of the bars: can also be len(x) sequence
 
-    fig, ax = plt.subplots(figsize=(6, 6))
-    p1 = plt.bar(ind, intergenic,   width, color='yellowgreen')
+    fig, ax = plt.subplots(figsize=(4, 6))
+    p1 = plt.bar(ind, intergenic,   width, color='lightcoral')
     p2 = plt.bar(ind, upstream, width, color='gold',
                  bottom=intergenic)
-    p3 = plt.bar(ind, tss, width, color='lightskyblue',
+    p3 = plt.bar(ind, tss, width, color='skyblue',
                  bottom=sumzip(intergenic, upstream))
-    p4 = plt.bar(ind, exon, width, color='lightcoral',
+    p4 = plt.bar(ind, exon, width, color='orchid',
                  bottom=sumzip(intergenic, upstream, tss))
-    p5 = plt.bar(ind, intron, width, color='cyan',
+    p5 = plt.bar(ind, intron, width, color='yellowgreen',
                  bottom=sumzip(intergenic, upstream, tss, exon))
 
     def autolabel(rects, gr_list):
@@ -273,9 +273,9 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
     dirPath = os.path.join(basepath, 'further_analysis', 'overlap', name+'_vs_'+name1)
     commons.ensure_path(dirPath)
     u_df1, u_df2 = get_unique_peaks(df1, df2, name, name1, ddf, dirPath)
-    ddf.to_csv(os.path.join(dirPath, name+'_vs_'+name1+'.txt'), sep="\t", encoding='utf-8')
-    overlap_dict = {'overlap': ddf, name: u_df1, name1: u_df2}
-    stacke_plot_multiple(list(overlap_dict.keys()), overlap_dict, dirPath, overlap=True)
+    ddf.to_csv(os.path.join(dirPath, name+'_vs_'+name1+'.tsv'), sep="\t", encoding='utf-8')
+    overlap_dict = {name: u_df1, 'overlap': ddf, name1: u_df2}
+    stacke_plot_multiple([name, 'overlap', name1], overlap_dict, dirPath, overlap=True)
     peakTSSbinning('overlap', overlap_dict, dirPath, overlap=True)
     venn4overlap(len(df1), len(df2), ddf, dirPath, [name, name1])
     return ddf
@@ -294,7 +294,6 @@ def PeakOverlaps_concise(df1, df2):
     df2['chr'] = df2['chr'].astype(str)
     df1_g = df1.groupby('chr')
     df2_g = df2.groupby('chr')
-    num_overlap = 0
     overlap_list = []
     ind = 0
     j = 0
@@ -311,20 +310,17 @@ def PeakOverlaps_concise(df1, df2):
                 sys.stdout.flush()
                 for count1, row1 in df2_g.get_group(i[0]).iterrows():
                     if max(row['start'], row1['start']) < min(row['stop'], row1['stop']):
-                          #
-                          #
-                          # it is an overlap 2
-                          #
-                          #
-                        overlaps = {'Next transcript strand':row['Next transcript strand'],'Sample1_row':count, 'Sample2_row':count1, 'chr':row['chr'], 'start':row['start'], 'stop':row['stop'], 'GenomicPosition TSS=1250 bp, upstream=5000 bp':row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
-                        'Next transcript gene name':row['Next transcript gene name'], 'start1':row1['start'], 'stop1':row1['stop'], 'overlap':2, 'summit':row['summit'], 'summit1':row1['summit'],
-                        'Repeat_name':row1['repeat'], 'repeat_family':row1['class/family']}
-                        #overlaps = {'Next transcript strand':row['Next transcript strand'],'Sample1_row':count, 'Sample2_row':count1, 'chr':row['chr'], 'start':row['start'], 'stop':row['stop'], 'GenomicPosition TSS=1250 bp, upstream=5000 bp':row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
-                        #'Next transcript gene name':row['Next transcript gene name'], 'start1':row1['start'], 'stop1':row1['stop'],
-                        #'Next transcript gene name1':row1['Next transcript gene name'], 'overlap':1, 'summit':row['summit'], 'summit1':row1['summit']}
+
+                        overlaps = {'Next transcript strand': row['Next transcript strand'],
+                                    'Sample1_row': count,
+                                    'Sample2_row': count1,
+                                    'chr': row['chr'],
+                                    'start': row['start'],
+                                    'stop': row['stop'],
+                                    'start1': row1['start'],
+                                    'stop1': row1['stop'],
+                                    'Next transcript gene name': row['Next transcript gene name']}
                         overlap_list.append(overlaps)
-                        num_overlap += 1
-                        break
     return overlap_list
 
 def PeakOverlaps(df1, df2):
@@ -362,9 +358,22 @@ def PeakOverlaps(df1, df2):
                           # it is an overlap 2
                           #
                           #
-                        overlaps = {'Next transcript strand':row['Next transcript strand'],'Sample1_row':count, 'Sample2_row':count1, 'chr':row['chr'], 'start':row['start'], 'stop':row['stop'], 'GenomicPosition TSS=1250 bp, upstream=5000 bp':row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
-                        'Next transcript gene name':row['Next transcript gene name'], 'Next Transcript stable_id':row['Next Transcript stable_id'], 'Next Transcript tss distance':row['Next Transcript tss distance'], 'start1':row1['start'], 'stop1':row1['stop'],
-                        'Next transcript gene name1':row1['Next transcript gene name'], 'Next Transcript stable_id1':row1['Next Transcript stable_id'], 'summit':row['summit'], 'summit1':row1['summit'], 'length':row1['length']}
+                        overlaps = {'Next transcript strand':row['Next transcript strand'],
+                                    'Sample1_row':count,
+                                    'Sample2_row':count1,
+                                    'chr':row['chr'],
+                                    'start':row['start'],
+                                    'stop':row['stop'],
+                                    'GenomicPosition TSS=1250 bp, upstream=5000 bp':row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
+                                    'Next transcript gene name':row['Next transcript gene name'],
+                                    'Next Transcript stable_id':row['Next Transcript stable_id'],
+                                    'Next Transcript tss distance':row['Next Transcript tss distance'],
+                                    'start1':row1['start'], 'stop1':row1['stop'],
+                                    'Next transcript gene name1':row1['Next transcript gene name'],
+                                    'Next Transcript stable_id1':row1['Next Transcript stable_id'],
+                                    'summit':row['summit'],
+                                    'summit1':row1['summit'],
+                                    'length':row1['length']}
                         overlap_list.append(overlaps)
                         num_overlap += 1
                         #break
@@ -384,14 +393,14 @@ def get_unique_peaks(dataframe1, dataframe2, name, name1, overlapdf, dirpath):
     df2_overlap = set(list(overlapdf['Sample2_row']))
     uni_df1 = dataframe1[~dataframe1.index.isin(df1_overlap)]
     uni_df2 = dataframe2[~dataframe2.index.isin(df2_overlap)]
-    uni_df1.to_csv(os.path.join(dirpath, name + '_unique.txt'), sep='\t', index=None, header=True)
-    uni_df2.to_csv(os.path.join(dirpath, name1 + '_unique.txt'), sep='\t', index=None, header=True)
+    uni_df1.to_csv(os.path.join(dirpath, name + '_unique.tsv'), sep='\t', index=None, header=True)
+    uni_df2.to_csv(os.path.join(dirpath, name1 + '_unique.tsv'), sep='\t', index=None, header=True)
     file = open(os.path.join(dirpath, 'stats.txt'), 'w')
     file.write('Peaks in dataframe1:'+str(len(dataframe1)))
     file.write('\nPeaks in dataframe2:'+str(len(dataframe2)))
     file.write('\nPeaks in overlap:'+str(len(overlapdf)))
-    file.write('\nUnique peaks from dataframe1:'+str(len(df1_overlap)))
-    file.write('\nUnique peaks from dataframe2:'+str(len(df2_overlap)))
+    file.write('\nUnique peaks from dataframe1:'+str(len(uni_df1)))
+    file.write('\nUnique peaks from dataframe2:'+str(len(uni_df2)))
     return uni_df1, uni_df2
 
 
