@@ -273,7 +273,7 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
     dirPath = os.path.join(basepath, 'further_analysis', 'overlap', name+'_vs_'+name1)
     commons.ensure_path(dirPath)
     u_df1, u_df2 = get_unique_peaks(df1, df2, name, name1, ddf, dirPath)
-    ddf.to_csv(os.path.join(dirPath, name+'_vs_'+name1+'.tsv'), sep="\t", encoding='utf-8')
+    ddf.to_csv(os.path.join(dirPath, name+'_vs_'+name1+'.tsv'), sep="\t", encoding='utf-8', index=False)
     overlap_dict = {name: u_df1, 'overlap': ddf, name1: u_df2}
     stacke_plot_multiple([name, 'overlap', name1], overlap_dict, dirPath, overlap=True)
     peakTSSbinning('overlap', overlap_dict, dirPath, overlap=True)
@@ -312,8 +312,6 @@ def PeakOverlaps_concise(df1, df2):
                     if max(row['start'], row1['start']) < min(row['stop'], row1['stop']):
 
                         overlaps = {'Next transcript strand': row['Next transcript strand'],
-                                    'Sample1_row': count,
-                                    'Sample2_row': count1,
                                     'chr': row['chr'],
                                     'start': row['start'],
                                     'stop': row['stop'],
@@ -359,8 +357,6 @@ def PeakOverlaps(df1, df2):
                           #
                           #
                         overlaps = {'Next transcript strand':row['Next transcript strand'],
-                                    'Sample1_row':count,
-                                    'Sample2_row':count1,
                                     'chr':row['chr'],
                                     'start':row['start'],
                                     'stop':row['stop'],

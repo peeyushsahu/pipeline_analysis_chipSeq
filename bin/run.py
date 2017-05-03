@@ -27,7 +27,7 @@ alignedLane = {}
 bamPaths = []
 for lanes in raw_lanes:
     lanes.join_multiple_fq()
-    lanes.do_alignment(genome, 'Tophat2')
+    lanes.do_alignment(genome, 'Bowtie2')
     bamPaths.append(lanes.bampath)
 
 # generating count for features from bam files

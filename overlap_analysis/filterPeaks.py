@@ -13,31 +13,33 @@ def filterpeaks(peak_data, name, filtering=True):
     df = peak_data
     sample = name.split(' ')
     colnames = df.columns.values.tolist()
-    indices1 = [i for i, s in enumerate(colnames) if sample[0] in s]
-    indices2 = [i for i, s in enumerate(colnames) if sample[2] in s]
-    #indices3 = [i for i, s in enumerate(colnames) if "Input" in s]
-    for i in indices1:
-        if "RA" not in colnames[i] and "norm" not in colnames[i]:
-            condition = colnames[i]
-            break
-        elif "RA" in colnames[i] and "norm" not in colnames[i]:
-            condition = colnames[i]
-            break
-    for i in indices2:
-        if "RA" not in colnames[i] and "norm" not in colnames[i]:
-            control = colnames[i]
-            break
-        elif "RA" in colnames[i] and "norm" not in colnames[i]:
-            control = colnames[i]
-            break
-    else:
-        raise ValueError("Filtering Sample name differs from column name.")
-    print('Sample lane:'+condition)
-    print('Control lane:'+control)
-    #inputcol = colnames[indices3[0]]
-    #print inputcol
-    exclude_from_filtering = ['H3K36me3', 'H3K27me3', 'H3K4me1']
     if filtering:
+        print(colnames)
+        indices1 = [i for i, s in enumerate(colnames) if sample[0] in s]
+        indices2 = [i for i, s in enumerate(colnames) if sample[2] in s]
+        #indices3 = [i for i, s in enumerate(colnames) if "Input" in s]
+        for i in indices1:
+            if "RA" not in colnames[i] and "norm" not in colnames[i]:
+                condition = colnames[i]
+                break
+            elif "RA" in colnames[i] and "norm" not in colnames[i]:
+                condition = colnames[i]
+                break
+        for i in indices2:
+            if "RA" not in colnames[i] and "norm" not in colnames[i]:
+                control = colnames[i]
+                break
+            elif "RA" in colnames[i] and "norm" not in colnames[i]:
+                control = colnames[i]
+                break
+        else:
+            raise ValueError("Filtering Sample name differs from column name.")
+        print('Sample lane:'+condition)
+        print('Control lane:'+control)
+        #inputcol = colnames[indices3[0]]
+        #print inputcol
+        exclude_from_filtering = ['H3K36me3', 'H3K27me3', 'H3K4me1']
+
         ## condition for simple filtering of preaks
         if any(s in condition for s in exclude_from_filtering):
             df1 = df[df[condition] >= 2*df[control]]
@@ -51,14 +53,14 @@ def filterpeaks(peak_data, name, filtering=True):
         final = df
         print(final.shape)
     with open(basepath + '/further_analysis/filtered/filteredPeaksCount.txt', 'a') as file:
-        file.write(name.split(' ')[0]+'\t'+name.split(' ')[2]+'\t'+str(len(df))+'\t'+str(len(final))+'\n')
+        file.write(name+'\t'+str(len(df))+'\t'+str(len(final))+'\n')
     #filtered_peak_data[name] = final
-    dirPATH = basepath + '/further_analysis/filtered/'+name
-    paths.ensure_path(dirPATH)
-    samPath = os.path.join(dirPATH, name+'.txt')
+    dir_path = basepath + '/further_analysis/filtered/'+name
+    paths.ensure_path(dir_path)
+    samPath = os.path.join(dir_path, name+'.txt')
     final.to_csv(samPath, sep="\t", header=True)
     final.index = range(len(final))
-    return final, dirPATH
+    return final, dir_path
 
 
 def peaks_in_allsamples(peaksdirpath=None):

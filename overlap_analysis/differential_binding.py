@@ -17,7 +17,7 @@ class Overlaps():
         self.filter_peaks = filter_peaks
 
     def diffBinding(self, basepeakfile, outpath=None, genewide=False, use_second_start=False, from_sample=None,
-                    highest=False, twoK=False, normFact={}):
+                    highest=False, highest_dist=100, twoK=False, normFact={}):
         '''
         This function will extract tag counts from provided peaks.
         This dataframe can be used with DESeq for differential binding calculation.
@@ -107,23 +107,23 @@ class Overlaps():
                         if whichsample >= from_sample:
                             #print('I am here')
                             summit = v['start1']+v['summit1']
-                            start = summit - 100
-                            stop = summit + 100
+                            start = summit - highest_dist
+                            stop = summit + highest_dist
                         else:
                             summit = v['start']+v['summit']
-                            start = summit - 100
-                            stop = summit + 100
+                            start = summit - highest_dist
+                            stop = summit + highest_dist
                     elif highest and not use_second_start:
                         # Take only 100 bp from peak summit
                         summit = v['start']+v['summit']
-                        start = summit - 100
-                        stop = summit + 100
+                        start = summit - highest_dist
+                        stop = summit + highest_dist
                     elif twoK:
                         # Take 2000 bp from peak summit
                         if whichsample >= from_sample:
                             summit = v['start']+v['summit']
-                            start = summit - 1000
-                            stop = summit + 1000
+                            start = summit - 2000
+                            stop = summit + 2000
                         else:
                             #summit = +v['summit']
                             start = v['start']
