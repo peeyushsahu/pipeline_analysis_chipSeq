@@ -47,7 +47,7 @@ class mouse_mm9():
 
 class samtool():
     def __init__(self):
-        self.samtools = '/home/peeyush/Documents/samtools-1.2/samtools'
+        self.samtools = '/home/sahu/Documents/aligners/samtools-1.2/samtools'
 
 
 def sample_dir(lane):
@@ -60,7 +60,7 @@ def bowtie2_aligner(lane, genome):
     # setup our program variables
     sample_dir(lane)
     print('Mapping method Bowtie2')
-    program = 'Bowtie2'
+    program = '/home/sahu/Documents/aligners/bowtie2-2.2.6/bowtie2'
     # make the outfile name from the readfile name, add the extension .map
     thread = '-p 6'
     unaligned = '--un ' + os.path.join(lane.resultdir, 'cache', lane.name, lane.name+'_un_aligned.fastq')
@@ -68,9 +68,10 @@ def bowtie2_aligner(lane, genome):
     outpath = os.path.join(lane.resultdir, 'cache', lane.name)
     lane.sampath = os.path.join(outpath, lane.name + '_' + genome.name + '.sam')
     lane.bampath = os.path.join(outpath, 'accepted_hits.bam')
-    lane.temp_files.append(lane.sampath, lane.bampath)
+    lane.temp_files.append(lane.sampath)
+    lane.temp_files.append(lane.bampath)
     statfile = os.path.join(lane.resultdir, 'alignedLane', lane.name, lane.name + '_' + genome.name + '_bowtie_stats.txt')
-    cmd = ' '.join([program, thread, unaligned, '-x', genome.refgenomename, '-U', readfn, '-S', lane.sampath])
+    cmd = ' '.join([program, thread, unaligned, '-x', genome.refindex, '-U', readfn, '-S', lane.sampath])
     print('Bowtie command:', cmd)
     bowtie2_run(cmd, statfile)
 
@@ -79,12 +80,13 @@ def bowtie2_run(cmd, statfile):
     try:
          proc = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
          stdout, stdrr = proc.communicate()
+         print(stdrr)
          with open(statfile, 'wb') as op:
-             op.write(stdrr+"\n") ##Writing bowtie stats
+             op.write(stdrr) ##Writing bowtie stats
          op.close()
          proc.wait()
     except:
-        raise IOError ('Subprocess Bowtie2 exited with error:', proc)
+        raise IOError('Subprocess Bowtie2 exited with error:', proc)
 
 
 def tophat2_aligner(lane, genome):

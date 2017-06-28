@@ -1,5 +1,5 @@
 __author__ = 'sahu'
-import HTSeq.scripts.count as htseq
+#import HTSeq.scripts.count as htseq
 import pandas as pd
 import subprocess as sp
 import alignment.commons as paths

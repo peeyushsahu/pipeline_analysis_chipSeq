@@ -58,12 +58,15 @@ class Lane():
             aligner.bowtie2_aligner(self, genome)
             self.sam2bam()
             self.bam_sort()
+            self.bam_index()
         if method == "Tophat2":
             aligner.tophat2_aligner(self, genome)
             self.bam_sort()
+            self.bam_index()
         if method == "STAR":
             aligner.tophat2_aligner(self, genome)
             self.bam_sort()
+            self.bam_index()
         return self
 
     def sam2bam(self):
@@ -79,11 +82,11 @@ class Lane():
             raise IOError("Problem with samtools sam 2 bam.")
 
     def bam_sort(self):
-        self.sortbampath = os.path.join(self.resultdir, 'alignedLane', self.name, self.name + '_' + self.genome.name)
+        self.sortbampath = os.path.join(self.resultdir, 'alignedLane', self.name, self.name + '_' + self.genome.name+'.bam')
         print(self.sortbampath)
         try:
-            pysam.sort(self.bampath, self.sortbampath)
-            self.bampath = self.sortbampath+'.bam'
+            pysam.sort(self.bampath, '-o', self.sortbampath)
+            self.bampath = self.sortbampath
         except:
             raise IOError("Problem in bam sorting.")
 
@@ -276,50 +279,3 @@ class AlignedLaneDedup():
 
     def callPeaks(self, peakscaller, sample, controlsample, name, outdir, broad_cutoff, broadpeaks=False):
         return
-
-
-def bamtotdf():
-    '''
-    Convert BAM to TDF, TDF can be visualized on IGV browser.
-    It is the distribution of bam file so very light.
-    :return:
-    '''
-    import subprocess as sp
-    import os, re
-    outpath = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/bamTotdf'
-    igvtools = '/home/sahu/Documents/IGVTools/igvtools'
-    bam_folder = '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane'
-    bam_list = os.listdir(bam_folder)
-    bampath_dict = {}
-    for i in bam_list:
-        if 'dedup' in i:
-                Dir = os.path.join(bam_folder, i)
-                #print Dir
-                for j in os.listdir(Dir):
-                    if j.endswith('.bam'):
-                        filename = re.split('unique_|__aligned', i)
-                        bam_path = os.path.join(Dir, j)
-                        bampath_dict[filename[0]] = bam_path
-                        #print(filename, Dir)
-                        #print('\nBam file selected: '+j)
-    ## Running igvtools
-    for name, bampath in bampath_dict.items():
-        print(name)
-        tdf_name = os.path.join(outpath, name+'_dedup_w10.tdf')
-        cmd = [igvtools, 'count', '-w', '10', bampath, tdf_name, 'hg19']
-        proc = sp.Popen(cmd, stderr=sp.PIPE, stdout=sp.PIPE)
-        proc.wait()
-    return bampath_dict
-
-
-
-
-
-
-
-
-
-
-
-
-
