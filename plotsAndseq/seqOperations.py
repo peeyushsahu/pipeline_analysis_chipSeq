@@ -10,7 +10,7 @@ import alignment.commons as paths
 Path = paths.path()
 basepath = Path.basepath
 path_to_seq = "/further_analysis/seq4motif/"
-path_to_genome = "/ps/imt/f/Genomes/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/"
+path_to_genome = "/ps/imt/f/reference_genomes/homo_sapiens/GRCh37/Sequence/WholeGenomeFasta/"
 path_to_program = "/home/sahu/meme/bin"
 program = "meme-chip"
 motif_db_base = "/home/sahu/Documents/motif_databases"
@@ -26,6 +26,7 @@ class MotifAnalysis:
         self.method = method
 
     def run_analysis(self):
+        print(self.name)
         if self.method == 'meme':
             self.path2folder = os.path.join(basepath+path_to_seq, self.name, 'meme')
             commons.ensure_path(self.path2folder)
@@ -84,7 +85,7 @@ class MotifAnalysis:
         '''
         cmd = []
         cmd.extend([os.path.join(path_to_program, "meme-chip")])
-        cmd.extend(['-o', os.path.join(self.path2folder, self.name)])
+        cmd.extend(['-o', os.path.join(self.path2folder, self.name + '_' + str(self.seqlength))])
         if self.background is not None:
             cmd.extend(['-neg', os.path.join(self.path2folder, 'background.txt')])
         cmd.extend(['-noecho'])
