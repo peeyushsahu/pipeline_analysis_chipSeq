@@ -206,7 +206,7 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     big_df = pd.DataFrame()
     big_df_raw = pd.DataFrame()
     for v in bam_name_list:
-        print('Heeee:'+v)
+        print('Sample:'+v)
         bam_path = differential_binding.getBam(v)
         df, df1 = overlapping_peaks_distribution(v, bam_path, peak_df, path)
         if v in normFact.keys():
@@ -412,7 +412,7 @@ def plot_clustered_peaks_4_multiple_samples(dict_df, name, path, which):
     #print 'shape', dict_df[0].shape
     sname = name.split(',')
     cdict, clist = color()
-    plt.figure(figsize=[11,9])
+    plt.figure(figsize=[8, 6])
     for k, v in dict_df:
         sample_dict = {}
         start = 1
@@ -462,7 +462,7 @@ def plot_all_peaks_4_multiple_samples(big_df, name, path, which=None):
     #print 'shape', dict_df[0].shape
     sname = name.split(',')
     cdict, clist = color()
-    plt.figure(figsize=[11,9])
+    plt.figure(figsize=[8, 6])
     sample_dict = {}
     start = 0
     stop = 60
@@ -547,7 +547,7 @@ class MetaGeneAnalysis:
         """
         ## creating dir
         bam_order = self.get_bam_order()
-        path = make_dir(self.name+'_broad', ','.join(bam_order))
+        path = make_dir(','.join(bam_order), self.name+'_broad_'+str(len(self.peaksDF)))
         file = open(os.path.join(path, 'lib_size.txt'), 'w')
 
         # dataframe processing
@@ -559,7 +559,7 @@ class MetaGeneAnalysis:
         print('Genomic regions analysed:', len(peaksDF))
 
         #if background_genes == 'auto':
-        transcriptDB_path = '/ps/imt/f/Genomes/geneAnotations/gtf_transcript4vector.db'
+        transcriptDB_path = '/ps/imt/f/reference_genomes/geneAnotations/gtf_transcript4vector.db'
         transcriptDB = pd.read_csv(transcriptDB_path, header=0, sep='\t')
         transcriptDB.index = transcriptDB['transcript_id']
         transcriptDB['chr'] = transcriptDB['chr'].astype(str)
@@ -571,11 +571,12 @@ class MetaGeneAnalysis:
         peak_distribution_df_norm = pd.DataFrame()
         ######################################################
         for bam in self.bam_name:
-            if type(bam) is str:
-                print(bam)
-                distribution_df, distribution_df_norm = self.get_metagene_tag_count(bam, bam_paths[bam], tnsDf, file)
+            #if type(bam) is str:
+            print('Extracting features for:', bam)
+            distribution_df, distribution_df_norm = self.get_metagene_tag_count(bam, bam_paths[bam], tnsDf, file)
+            '''
             else:
-                print(bam[0])
+                print('Extracting features for:', bam[0])
                 distribution_df = pd.DataFrame()
                 distribution_df_norm = pd.DataFrame()
                 for bm in bam[1]:
@@ -585,7 +586,8 @@ class MetaGeneAnalysis:
                     distribution_df_norm = distribution_df_norm.add(df_norm, fill_value=0)
                 distribution_df = distribution_df.div(len(bam[1]))
                 distribution_df_norm = distribution_df_norm.div(len(bam[1]))
-
+            '''
+            # Joining DF feature for bams
             peak_distribution_df = pd.concat([peak_distribution_df, distribution_df], axis=1)
             peak_distribution_df_norm = pd.concat([peak_distribution_df_norm, distribution_df_norm], axis=1)
             # print(distribution_df.head())
@@ -596,7 +598,7 @@ class MetaGeneAnalysis:
         metagene_res = {'raw': peak_distribution_df, 'norm': peak_distribution_df_norm}
         # Plot peaks based on K-means clustering
         for which, sample in metagene_res.items():
-            peak_distribution_df = kmeans_clustering(sample, 9, 1000)
+            sample = kmeans_clustering(sample, 9, 1000)
             print('Clustered' + which + 'dataset...')
             dict_of_df = differential_binding.group_DF(sample, 'cluster')  # divide df in smaller dfs based on clusters
             print('Dataset grouping...')
@@ -604,7 +606,9 @@ class MetaGeneAnalysis:
             print('plotting line plots')
             plot_all_peaks_4_multiple_samples_genewide(sample, ','.join(bam_order), path, which)
             broad_clustered_peaks_4_samples(dict_of_df, ','.join(bam_order), path, which)
-            sample.insert(0, 'Next transcript gene name', peaksDF['Next transcript gene name'])
+
+            sample = pd.concat([tnsDf, sample], axis=1)
+            #sample.insert(0, 'Next transcript gene name', peaksDF['Next transcript gene name'])
             sample.to_csv(os.path.join(path, which, 'tagcountDF_all_' + which + '.tsv'),
                           sep="\t", encoding='utf-8', index=None)
         gc.collect()
@@ -625,16 +629,35 @@ class MetaGeneAnalysis:
         peak_distribution_df_norm.columns = range(0, peak_distribution_df_norm.shape[1])
         return peak_distribution_df, peak_distribution_df_norm
 
+    @staticmethod
+    def get_columns():
+        return ['chr',
+                'start',
+                'stop',
+                'GenomicPosition TSS=1250 bp, upstream=5000 bp',
+                'Next Transcript tss distance',
+                'Next transcript gene name',
+                'Next Transcript stable_id',
+                'Next transcript strand',
+                'summit']
+
     def get_transcript_from_peaks(self, transcriptDB):
         '''
         Get nearest transcript position from peaks.
         :return:
         '''
-        ts_df = pd.DataFrame()
+        ts_df = self.peaksDF.loc[:, self.get_columns()]
+        ts_df = ts_df.reindex_axis(ts_df.columns.tolist()+['tstart', 'tstop', 'tlength'], axis='columns')
         for ind, row in self.peaksDF.iterrows():  # reading peaksdf
             transcript_id = row['Next Transcript stable_id']
             db_row = transcriptDB.loc[transcript_id]
-            ts_df = ts_df.append(db_row, ignore_index=True)
+            if row['chr'] == db_row['chr']:
+                #ts_df = ts_df.append(db_row, ignore_index=True)
+                ts_df.loc[ind, 'tstart'] = db_row['start']
+                ts_df.loc[ind, 'tstop'] = db_row['stop']
+                ts_df.loc[ind, 'tlength'] = db_row['stop'] - db_row['start']
+            else:
+                ValueError('Chr name does not match for transcript and peak')
         print('tnx found from peaks:', len(ts_df))
         return ts_df
 
@@ -664,7 +687,7 @@ class MetaGeneAnalysis:
                 try:
                     bam_path = differential_binding.getBam(bam)
                     bam_paths[bam] = bam_path
-                    print(bam_path)
+                    print('Found bam path:', bam_path)
                 except ValueError:
                     raise ('Error: Bam file not found in the default locations:', bam)
             else:
@@ -672,7 +695,7 @@ class MetaGeneAnalysis:
                     try:
                         bam_path = differential_binding.getBam(ba)
                         bam_paths[ba] = bam_path
-                        print(bam_path)
+                        print('Found bam path:', bam_path)
                     except ValueError:
                         raise ('Error: Bam file not found in the default locations:', ba)
         return bam_paths
@@ -696,22 +719,22 @@ class MetaGeneAnalysis:
         distribution_df_norm = pd.DataFrame()
         #print(transDF.head())
         for ind, row in transDF.iterrows():  # reading peaksdf
-            strand = row['strand']
+            strand = row['Next transcript strand']
             list_sample = []
             list_sample_norm = []
-            Chr = str(row['chr'])
-            start = row['start']
-            stop = row['stop']
+            chr = str(row['chr'])
+            start = row['tstart']
+            stop = row['tstop']
             interval = math.ceil((stop-start)/100.0)
 
             # 500bp upstream in 10 bins
             hstart = start - (interval*10)
             hstop = hstart + interval
-            if start > 0:
+            if hstart > 0:
                 for i in range(0, 10):  # Please set based on distance on one side = s*distance/50
-                    seqcount = sample_bam.count(Chr, hstart, hstop)
-                    list_sample.append(seqcount)    # count real
-                    list_sample_norm.append((seqcount*(5.*10**6)/total_mapped))    # Normalized count per million
+                    seqcount = sample_bam.count(chr, hstart, hstop)
+                    list_sample.append(seqcount/interval)    # count real
+                    list_sample_norm.append(((seqcount/interval)/total_mapped)*(5.*10**6))    # Normalized count per million
                     hstart = hstop
                     hstop = hstart + interval  # divide peaks into length of 50 bp
 
@@ -720,9 +743,9 @@ class MetaGeneAnalysis:
             stop = start + interval
             if start > 0:
                 for i in range(0, 100):  # Please set based on distance on one side = s*distance/50
-                    seqcount = sample_bam.count(Chr, start, stop)
-                    list_sample.append(seqcount)    # count real
-                    list_sample_norm.append((seqcount*(5.*10**6)/total_mapped))    # Normalized count per million
+                    seqcount = sample_bam.count(chr, start, stop)
+                    list_sample.append(seqcount/interval)    # count real
+                    list_sample_norm.append(((seqcount/interval)/total_mapped)*(5.*10**6))    # Normalized count per million
                     start = stop
                     stop = start + interval  # divide peaks into length of 50 bp
 
@@ -731,15 +754,15 @@ class MetaGeneAnalysis:
             tstop = tstart + interval
             if start > 0:
                 for i in range(0, 10):  # Please set based on distance on one side = s*distance/50
-                    seqcount = sample_bam.count(Chr, tstart, tstop)
-                    list_sample.append(seqcount)    # count real
-                    list_sample_norm.append((seqcount*(5.*10**6)/total_mapped))    # Normalized count per million
+                    seqcount = sample_bam.count(chr, tstart, tstop)
+                    list_sample.append(seqcount/interval)    # count real
+                    list_sample_norm.append(((seqcount/interval)/total_mapped)*(5.*10**6))    # Normalized count per million
                     tstart = tstop
                     tstop = tstart + interval  # divide peaks into length of 50 bp
 
             # additional normalization based on permutation test
             if bam in self.external_sample_norm_factor.keys():
-                list_sample_norm = [x*self.external_sample_norm_factor.get(bam) for x in list_sample_norm]
+                list_sample = [x*self.external_sample_norm_factor.get(bam) for x in list_sample]
 
             if (strand == 1) or (strand == '+'):
                 distribution_df = distribution_df.append(pd.Series(list_sample), ignore_index=True)
@@ -750,7 +773,7 @@ class MetaGeneAnalysis:
                 distribution_df_norm = distribution_df_norm.append(pd.Series(list_sample_norm[::-1]), ignore_index=True)
 
             else:
-                print('Problem with gene strand information:', row['chr'], '-', row['start'])
+                print('Problem with gene strand information:', row['chr'], '-', row['tstart'])
         sample_bam.close()  # closing bam file
         return distribution_df, distribution_df_norm
 
@@ -762,8 +785,8 @@ def compare_bam_bai_creationtime(bam_path):
     bmtime = datetime.datetime.fromtimestamp(os.path.getmtime(bam_path))
     bmitime = datetime.datetime.fromtimestamp(os.path.getmtime(bam_path+'.bai'))
     difference = dateutil.relativedelta.relativedelta(bmitime, bmtime)
-    print(difference)
     if (difference.months <= 0) and (difference.days < 0):
+        print('Difference in creation time:', difference)
         return True
     else:
         return False

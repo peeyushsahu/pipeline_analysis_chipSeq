@@ -257,15 +257,17 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
             #print 'size of df2: ', len(df2)
             #print name1
     print('\n', name, 'vs', name1)
+    #print(df1.peaks.head())
     df1 = df1.peaks.sort_values(by='chr', ascending=True)
     df2 = df2.peaks.sort_values(by='chr', ascending=True)
     ### Method test PeakOverlaps
     start1 = timeit.default_timer()
     try:
         overlap_list = PeakOverlaps(df1, df2)
-    except:
+    except Exception as e:
         print('\nWarning: Dataframe does not contain all the columns required for overlap, '
               'switching to minimal column requirement.')
+        print(e)
         overlap_list = PeakOverlaps_concise(df1, df2)
     stop1 = timeit.default_timer()
     print("Time consumed by method PeakOverlaps:", stop1 - start1, 'sec')
@@ -356,23 +358,25 @@ def PeakOverlaps(df1, df2):
                           # it is an overlap 2
                           #
                           #
-                        overlaps = {'Next transcript strand':row['Next transcript strand'],
-                                    'chr':row['chr'],
-                                    'start':row['start'],
-                                    'stop':row['stop'],
-                                    'GenomicPosition TSS=1250 bp, upstream=5000 bp':row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
-                                    'Next transcript gene name':row['Next transcript gene name'],
-                                    'Next Transcript stable_id':row['Next Transcript stable_id'],
-                                    'Next Transcript tss distance':row['Next Transcript tss distance'],
-                                    'start1':row1['start'], 'stop1':row1['stop'],
-                                    'Next transcript gene name1':row1['Next transcript gene name'],
-                                    'Next Transcript stable_id1':row1['Next Transcript stable_id'],
-                                    'summit':row['summit'],
-                                    'summit1':row1['summit'],
-                                    'length':row1['length']}
+                        overlaps = {'Next transcript strand': row['Next transcript strand'],
+                                    'chr': row['chr'],
+                                    'start': row['start'],
+                                    'stop': row['stop'],
+                                    'Sample1_row': count,
+                                    'Sample2_row': count1,
+                                    'GenomicPosition TSS=1250 bp, upstream=5000 bp': row['GenomicPosition TSS=1250 bp, upstream=5000 bp'],
+                                    'Next transcript gene name': row['Next transcript gene name'],
+                                    'Next Transcript stable_id': row['Next Transcript stable_id'],
+                                    'Next Transcript tss distance': row['Next Transcript tss distance'],
+                                    'start1': row1['start'], 'stop1': row1['stop'],
+                                    'Next transcript gene name1': row1['Next transcript gene name'],
+                                    'Next Transcript stable_id1': row1['Next Transcript stable_id'],
+                                    'summit': row['summit'],
+                                    'summit1': row1['summit'],
+                                    'length': row1['length']}
                         overlap_list.append(overlaps)
                         num_overlap += 1
-                        #break
+                        break
     return overlap_list
 
 

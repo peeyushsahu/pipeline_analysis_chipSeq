@@ -11,6 +11,7 @@ def filterpeaks(peak_data, name, filtering=True):
     #print k, v.shape
     name = name
     df = peak_data
+    df['chr'] = df['chr'].astype('str')
     sample = name.split(' ')
     colnames = df.columns.values.tolist()
     if filtering:

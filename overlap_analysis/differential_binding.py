@@ -189,54 +189,51 @@ def getBam(name, path=None):
         'further_analysis/results/alignedLane']
     if path is not None:
         bam_path.append(path)
-    Dir = None
     file = None
     for Path in bam_path:
         path = os.path.join(basepath, Path)
-        bam_list = listdir(path)
-        for i in bam_list:
+        dir_list = listdir(path)
+        for i in dir_list:
             if name in i and 'dedup' in i:
-                filename = re.split('unique_|__aligned', i)
-                #print(i)
-                #print(filename)
-                if name in filename:
-                    if 'RA' in name and 'RA' in i:
-                        Dir = os.path.join(path, i)
-                        #print Dir
-                        for j in listdir(Dir):
-                            if j.endswith('.bam'):
-                                file = j
-                                print('\nBam file selected: '+j)
-                    if 'RA' not in name and 'RA' not in i:
-                        Dir = os.path.join(path, i)
-                        #print Dir
-                        for j in listdir(Dir):
-                            if j.endswith('.bam'):
-                                file = j
-                                print('\nBam file selected: '+j)
+                if 'RA' in name and 'RA' in i:
+                    #print(i)
+                    for j in listdir(os.path.join(path, i)):
+                        #print(j)
+                        if (name in j) and (j.endswith('.bam')) and (os.path.exists(os.path.join(path, i))):
+                            Dir = os.path.join(path, i)
+                            file = j
+                            print('\nBam file selected: '+j)
+                            return os.path.join(Dir, file)
+
+                if 'RA' not in name and 'RA' not in i:
+                    for j in listdir(os.path.join(path, i)):
+                        if (name in j) and (j.endswith('.bam')) and (os.path.exists(os.path.join(path, i))):
+                            Dir = os.path.join(path, i)
+                            file = j
+                            print('\nBam file selected: '+j)
+                            return os.path.join(Dir, file)
+
         if file is None:
-            for i in bam_list:
-                if name in i:
-                    if 'RA' in name and 'RA' in i:
-                        print('Warning: Bam found but bam file is not deduped', i)
-                        Dir = os.path.join(path, i)
-                        #print Dir
-                        for j in listdir(Dir):
-                            if j.endswith('.bam'):
-                                file = j
-                                print('\nBam file selected: '+j)
-                    if 'RA' not in name and 'RA' not in i:
-                        print('Warning: Bam found but bam file is not deduped', i)
-                        Dir = os.path.join(path, i)
-                        #print Dir
-                        for j in listdir(Dir):
-                            if j.endswith('.bam'):
-                                file = j
-                                print('\nBam file selected: '+j)
+            for i in dir_list:
+                if 'RA' in name and 'RA' in i:
+                    for j in listdir(os.path.join(path, i)):
+                        if (name in j) and (j.endswith('.bam')) and (os.path.exists(os.path.join(path, i))):
+                            Dir = os.path.join(path, i)
+                            file = j
+                            print('\nBam file selected: '+j)
+                            print('Warning: Bam found but bam file is not deduped - ', j)
+                            return os.path.join(Dir, file)
+
+                if 'RA' not in name and 'RA' not in i:
+                    for j in listdir(os.path.join(path, i)):
+                        if (name in j) and (j.endswith('.bam')) and (os.path.exists(os.path.join(path, i))):
+                            Dir = os.path.join(path, i)
+                            file = j
+                            print('\nBam file selected: '+j)
+                            print('Warning: Bam found but bam file is not deduped - ', j)
+                            return os.path.join(Dir, file)
     if file is None:
-        raise KeyError('Bam file cannot be found for '+name)
-    else:
-        return os.path.join(Dir, file)
+        raise KeyError('Bam file cannot be found for : ', name)
 
 
 def group_DF(dataframe, factor):
