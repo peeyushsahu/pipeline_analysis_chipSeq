@@ -9,10 +9,10 @@ import pysam
 class human_GRCh37_74():
     def __init__(self):
         self.name = 'GRCh37'
-        self.refindex = "/ps/imt/f/Genomes/Homo_sapiens/Ensembl/GRCh37/Sequence/Bowtie2Index/genome"
-        self.refgenome = "/ps/imt/f/Genomes/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/"
-        self.gtfFile = "/ps/imt/f/Genomes/Homo_sapiens/Ensembl/GRCh37/Annotation/Genes/genes.gtf"
-        self.genome = pysam.Fastafile('/ps/imt/f/Genomes/Homo_sapiens/Ensembl/GRCh37/Sequence/WholeGenomeFasta/genome.fa')
+        self.refindex = "/ps/imt/f/reference_genomes/Homo_sapiens/GRCh37/Sequence/Bowtie2Index/genome"
+        self.refgenome = "/ps/imt/f/reference_genomes/Homo_sapiens/GRCh37/Sequence/WholeGenomeFasta/"
+        self.gtfFile = "/ps/imt/f/reference_genomes/Homo_sapiens/GRCh37/Annotation/Genes/genes.gtf"
+        self.genome = pysam.Fastafile('/ps/imt/f/reference_genomes/Homo_sapiens/GRCh37/Sequence/WholeGenomeFasta/genome.fa')
 
 
     def get_chromosome_length(self, chr):

@@ -1,6 +1,5 @@
 
-import alignment.lanes
-import alignment.aligner
+import alignment as alignment
 import rna_seq.bam_processing as bamPrcessing
 
 genome = alignment.aligner.human_GRCh37_74()
@@ -20,17 +19,25 @@ raw_lanes = [
     #alignment.lanes.Lane('NT2D1_B6_2_RA', '/ps/imt/f/20160128_RNA/Sample_R21_B62_2p_141215'),
     #alignment.lanes.Lane('NT2D1_B6_3_RA', '/ps/imt/f/20160128_RNA/Sample_R22_B62_3p_141215'),
 
-    alignment.lanes.Lane('Histone_3_RA', '/ps/imt/f/20140114/Sample_H3+'),
+
 ]
 
 # Aliging read files with chosen aligner
 # Aligner = Bowtie2, Tophat2
+raw_lanes = dict((x.name, x) for x in raw_lanes)
+
 alignedLane = {}
 bamPaths = []
-for lanes in raw_lanes:
+for name, lanes in raw_lanes.items():
+    print('Currently processing:', name)
     lanes.join_multiple_fq()
-    lanes.do_alignment(genome, 'Bowtie2')
+    alignedLane[name] = lanes.do_alignment(genome, 'Bowtie2')
     bamPaths.append(lanes.bampath)
+
+
+for name, lane in alignedLane.items():
+    alignment.lanes.AlignedLaneDedup(lane).do_dedup(maximum_stackd_reads=7, maximum_stacks_allowed=2)
+
 
 # generating count for features from bam files
 

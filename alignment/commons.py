@@ -55,47 +55,77 @@ def peakdf_columns():
     ]
     return columns_2_select
 
-
+#'NT2D1_KO_H3R2me2a_-Doxy_R1': 'aligned_unique_H2R2me2a_B6_rescue__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_KO_H3R2me2a_+Doxy_R1': 'aligned_unique_H2R2me2a_B6_rescue_Dox__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_KO_H3R2me2a_-RA_R1': 'aligned_unique_H3R2me2a_r2_B6__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_KO_H3R2me2a_-Doxy_R2': 'aligned_unique_H3R2me2a_r2_B6_rescue__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_KO_H3R2me2a_+Doxy_R2': 'aligned_unique_H3R2me2a_r2_B6_rescue_Dox__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_CT_H3R2me2a_-RA_R1': 'aligned_unique_H3R2me2a_r2_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_CT_H3R2me2a_-Inh_R1': 'aligned_unique_H3R2me2a_r3_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_CT_H3R2me2a_+Inh_R1': 'aligned_unique_H3R2me2a_r3_E9_inh_16ug__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_KO_H3R2me2a_-RA_R2': 'aligned_unique_H3R2me2a_r4_B6__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_CT_H3R2me2a_-RA_R2': 'aligned_unique_H3R2me2a_r4_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_CT_H3R2me2a_-Inh_R2': 'aligned_unique_H3R2me2a_r4_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_CT_H3R2me2a_+Inh_R2': 'aligned_unique_H3R2me2a_r4_E9_inh_16ug__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_KO_KMT2D_-RA_abgent': 'aligned_unique_MLL4_abgen_B6__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_KO_KMT2D_+RA_abgent': 'aligned_unique_MLL4_abgen_B6_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_CT_KMT2D_-RA_abgent': 'aligned_unique_MLL4_abgen_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_CT_KMT2D_+RA_abgent': 'aligned_unique_MLL4_abgen_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'U2OS_CT_H3R2me2a': 'aligned_unique_U2OS_H3R2me2a_CT1__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'U2OS_KO_H3R2me2a': 'aligned_unique_U2OS_H3R2me2a_KO2__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_CT_KMT2D_-RA_santacruz': 'aligned_unique_MLL4_santac_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_CT_KMT2D_+RA_santacruz': 'aligned_unique_MLL4_santac_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_KO_KMT2D_-RA_santacruz': 'aligned_unique_MLL4_santac_B6__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_KO_KMT2D_+RA_santacruz': 'aligned_unique_MLL4_santac_B6_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_CT_H3K27me3_-RA': 'aligned_unique_H3K27me3_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_KO_H3K27me3_-RA': 'aligned_unique_H3K27me3_B6__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_CT_H3K27me3_+RA': 'aligned_unique_H3K27me3_E9_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
+#'NT2D1_KO_H3K27me3_+RA': 'aligned_unique_H3K27me3_B6_RA__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam',
 bam_files = {
-    #'H3K4me1_KO-2_-RA': '/ps/imt/e/GEO_dataDeposition/PRMT6_ChIPSeq/BAM/H3K4me1_B6__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup/aligned_unique_H3K4me1_B6__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_37_dedup.bam',
+    'NT2D1_CT_H3R2me2a_-RA_R2': '/ps/imt/e/20141009_AG_Bauer_peeyush_re_analysis/results/AlignedLane/H3R2me2a_r4_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup/aligned_unique_H3R2me2a_r4_E9__aligned_with_bowtie2_against_EnsemblGenome_Homo_sapiens_74_dedup.bam'
 }
 
 
-def bam_to_bigwig(bamfiles_dict, outpath='/ps/imt/e/GEO_dataDeposition/peeyushsahu_AML_ChIPseq/bedGraph'):
+def bam_to_bigwig(bamfiles_dict, outpath=None):
     '''
     Convert bam files to bigwig using deeptools.bamCoverage
     :return:
     '''
+
+    def run_cmd(cmd):
+        '''
+        Using subprocees
+        :param cmd:
+        :return:
+        '''
+        try:
+            proc = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
+            stdout, stdrr = proc.communicate()
+            print(stdrr)
+            print(stdout)
+        except Exception as e:
+            raise IOError('Subprocessexited with error:', e)
+
     for name, path in bamfiles_dict.items():
-        cmd = ['python']
-        cmd.extend(['/home/sahu/Documents/deepTools-2.5.4/bin/bamCoverage'])
+        cmd = ['python3']
+        cmd.extend(['/ps/imt/tools/deepTools-2.5.4/bin/bamCoverage'])
         cmd.extend(['-b', path])
-        cmd.extend(['-o', os.path.join(outpath, name+'.bw')])
-        cmd.extend(['-bs 50'])
-        cmd.extend(['-of bigwig']) # bedgraph or bigwig
+        cmd.extend(['-of bedgraph'])  # bedgraph or bigwig
+        cmd.extend(['--binSize 50'])
+        if 'santacruz' in name:
+            print('Here')
+            cmd.extend(['-o', os.path.join(outpath, name+'normCPM.bg')])
+            cmd.extend(['--normalizeUsing CPM'])
+            cmd.extend(['--effectiveGenomeSize 2864785220'])
+        else:
+            cmd.extend(['-o', os.path.join(outpath, name+'.bg')])
         #print(cmd)
         cmd = ' '.join(cmd)
         print(cmd)
         run_cmd(cmd)
 
 
-def run_cmd(cmd):
-    '''
-    Using subprocees
-    :param cmd:
-    :return:
-    '''
-    try:
-        proc = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
-        stdout, stdrr = proc.communicate()
-        print(stdrr)
-        print(stdout)
-        proc.wait()
-    except Exception as e:
-        raise IOError('Subprocessexited with error:', e)
-
-
-def ensembl_bedgraph_to_ucsc(folder_path):
+def ensembl_bedgraph_to_ucsc(folder_path, outpath=None):
     '''
     Add chr in chromosome names
     :return:
@@ -112,40 +142,39 @@ def ensembl_bedgraph_to_ucsc(folder_path):
         bedgraph_df = bedgraph_df.sort_values([0, 1], ascending=[True, True])
         print('Size of file after MT rem:', bedgraph_df.shape)
         print('###################################################')
-        bedgraph_df.to_csv(os.path.join('/ps/imt/e/GEO_dataDeposition/peeyushsahu_AML_ChIPseq/bedGraph_ucsc', name), header=False, index=False, sep='\t')
+        bedgraph_df.to_csv(os.path.join(outpath, name), header=False, index=False, sep='\t')
 
 
-
-def ucscbedGraph_to_ucscbigwig(folder_path, outpath='/ps/imt/e/GEO_dataDeposition/PRMT6_ChIPSeq/bigWig_ucsc'):
+def ucscbedGraph_to_ucscbigwig(folder_path, outpath=None):
     '''
     Convert bam files to bigwig using deeptools.bamCoverage
     :return:
     '''
+
+    def run_cmd1(cmd):
+        '''
+        Using subprocees
+        :param cmd:
+        :return:
+        '''
+        try:
+            proc = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
+            stdout, stdrr = proc.communicate()
+            print(stdrr)
+            print(stdout)
+            proc.wait()
+        except Exception as e:
+            raise IOError('Subprocessexited with error:', e)
+
     for name in os.listdir(folder_path):
         cmd = []
-        cmd.extend(['/home/sahu/Documents/bedgraph2bigwig/bedGraphToBigWig'])
+        cmd.extend(['/ps/imt/tools/bedgraph2bigwig/bedGraphToBigWig'])
         cmd.extend([os.path.join(folder_path, name)])
-        cmd.extend(['/home/sahu/Documents/bedgraph2bigwig/hg19.chrom.sizes'])
+        cmd.extend(['/ps/imt/tools/bedgraph2bigwig/hg19.chrom.sizes'])
         cmd.extend([os.path.join(outpath, str(name).split('.')[0] + '.bw')])
         cmd = ' '.join(cmd)
         print(cmd)
         run_cmd1(cmd)
-
-
-def run_cmd1(cmd):
-    '''
-    Using subprocees
-    :param cmd:
-    :return:
-    '''
-    try:
-        proc = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
-        stdout, stdrr = proc.communicate()
-        print(stdrr)
-        print(stdout)
-        proc.wait()
-    except Exception as e:
-        raise IOError('Subprocessexited with error:', e)
 
 
 def prepare_md5sum(folder_path, file_extention=None):
@@ -153,8 +182,9 @@ def prepare_md5sum(folder_path, file_extention=None):
     Write md5Sum for all files in a given folder
     '''
     folder_path = folder_path
+    #for f_name in os.listdir(folder_path):
     with open(os.path.join(folder_path, 'md5sum'), mode='a') as file:
-        for name in os.listdir(folder_path):
+        for name in os.listdir(os.path.join(folder_path)):
             file_path = os.path.join(folder_path, name)
             if os.path.isfile(file_path):
                 print(name)
@@ -178,5 +208,5 @@ def prepare_md5sum(folder_path, file_extention=None):
                     output = stdout.decode('ascii').split(' ')
                     file.write(name1+'\t'+name+'\t'+output[0]+'\n')
                     proc.wait()
-    file.close()
+        file.close()
 

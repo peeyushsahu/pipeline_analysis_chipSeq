@@ -205,6 +205,8 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     # print peak_df.head()
     big_df = pd.DataFrame()
     big_df_raw = pd.DataFrame()
+    ## Find if all bam names are found in database
+    bam_path = get_bampaths_4_sample(bam_name_list)
     for v in bam_name_list:
         print('Sample:'+v)
         bam_path = differential_binding.getBam(v)
@@ -264,9 +266,37 @@ def GR_heatmaps_DF_for_peaks(bam_name_list, peak_df, region=None, sort=False, so
     big_df = totaltagCountinPeak(big_df, bam_name_list)
     big_df_raw = totaltagCountinPeak(big_df_raw, bam_name_list)
 
-    big_df.to_csv(os.path.join(path, 'norm', 'tagcountDF_' + region + '_norm.txt'), sep="\t", encoding='utf-8')  # , ignore_index=True
-    big_df_raw.to_csv(os.path.join(path, 'raw', 'tagcountDF_' + region + '_raw.txt'), sep="\t", encoding='utf-8')  # , ignore_index=True
+    big_df.to_csv(os.path.join(path, 'norm', 'tagcountDF_' + region + '_norm.tsv'), sep="\t", encoding='utf-8')  # , ignore_index=True
+    big_df_raw.to_csv(os.path.join(path, 'raw', 'tagcountDF_' + region + '_raw.tsv'), sep="\t", encoding='utf-8')  # , ignore_index=True
     gc.collect()
+
+
+def get_bampaths_4_sample(bam_name):
+    '''
+    This will extract tag count matrix from bam files for all samples.
+    :param bamnames:
+    :param rna_bam:
+    :return:
+    '''
+    bam_paths = {}
+    # Check if all the bam file exist
+    for bam in bam_name:
+        if type(bam) is str:
+            try:
+                bam_path = differential_binding.getBam(bam)
+                bam_paths[bam] = bam_path
+                print('Found bam path:', bam_path)
+            except ValueError:
+                raise ('Error: Bam file not found in the default locations:', bam)
+        else:
+            for ba in bam[1]:
+                try:
+                    bam_path = differential_binding.getBam(ba)
+                    bam_paths[ba] = bam_path
+                    print('Found bam path:', bam_path)
+                except ValueError:
+                    raise ('Error: Bam file not found in the default locations:', ba)
+    return bam_paths
 
 
 def overlapping_peaks_distribution(bam_name, bam_path, overlap_df, path, dist4middle=3000, steps=60, bpdist=100):

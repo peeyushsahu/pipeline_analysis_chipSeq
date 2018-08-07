@@ -148,12 +148,13 @@ class Overlaps():
             whichsample += 1
             sample_bam.close()
         ## This will calculate the logFC
+        '''
         for ind, row in df.iterrows():
             control = sample_name[0]
             #print row
             for sample in sample_name[1:]:
                 df.loc[ind, 'log2FC_'+control+'_norm_vs_'+sample+'_norm'] = math.log(row[sample+'_norm_millon']/row[control+'_norm_millon'],2)
-
+        '''
         if outpath is not None:
             outpath = outpath
         else:
@@ -194,8 +195,10 @@ def getBam(name, path=None):
         path = os.path.join(basepath, Path)
         dir_list = listdir(path)
         for i in dir_list:
-            if name in i and 'dedup' in i:
-                if 'RA' in name and 'RA' in i:
+            file_name = i.split('__aligned')[0]
+            #print('file name:', file_name)
+            if (name == file_name) and ('dedup' in i):
+                if ('RA' in name and 'RA' in file_name) | ('Dox' in name and 'Dox' in file_name):
                     #print(i)
                     for j in listdir(os.path.join(path, i)):
                         #print(j)
@@ -205,7 +208,7 @@ def getBam(name, path=None):
                             print('\nBam file selected: '+j)
                             return os.path.join(Dir, file)
 
-                if 'RA' not in name and 'RA' not in i:
+                if ('RA' not in name and 'RA' not in file_name) and ('Dox' not in name and 'Dox' not in file_name):
                     for j in listdir(os.path.join(path, i)):
                         if (name in j) and (j.endswith('.bam')) and (os.path.exists(os.path.join(path, i))):
                             Dir = os.path.join(path, i)
@@ -215,7 +218,7 @@ def getBam(name, path=None):
 
         if file is None:
             for i in dir_list:
-                if 'RA' in name and 'RA' in i:
+                if ('RA' in name and 'RA' in i) | ('Dox' in name and 'Dox' in i):
                     for j in listdir(os.path.join(path, i)):
                         if (name in j) and (j.endswith('.bam')) and (os.path.exists(os.path.join(path, i))):
                             Dir = os.path.join(path, i)
@@ -224,7 +227,7 @@ def getBam(name, path=None):
                             print('Warning: Bam found but bam file is not deduped - ', j)
                             return os.path.join(Dir, file)
 
-                if 'RA' not in name and 'RA' not in i:
+                if ('RA' not in name and 'RA' not in i) and ('Dox' not in name and 'Dox' not in i):
                     for j in listdir(os.path.join(path, i)):
                         if (name in j) and (j.endswith('.bam')) and (os.path.exists(os.path.join(path, i))):
                             Dir = os.path.join(path, i)

@@ -75,7 +75,7 @@ def plotGenomicregions(GPcount, name):
             size[3] = b
         if a == 'upstream':
             size[4] = b
-    colors = ['yellowgreen', 'gold', 'lightskyblue', 'lightcoral', 'cyan']
+    colors = ['#9ACD32', '#FFD700', 'lightskyblue', 'lightcoral', 'cyan']
     explode = (0.1, 0, 0, 0, 0)  # only "explode" the 2nd slice
     plt.pie(size, explode=explode, labels=gr, colors=colors,
             autopct='%1.1f%%', shadow=True, startangle=90)
@@ -132,14 +132,14 @@ def stacke_plot_multiple(names_list, filtered_peaks, path, overlap=False):
     width = 0.40       # the width of the bars: can also be len(x) sequence
 
     fig, ax = plt.subplots(figsize=(4, 6))
-    p1 = plt.bar(ind, intergenic,   width, color='lightcoral')
-    p2 = plt.bar(ind, upstream, width, color='gold',
+    p1 = plt.bar(ind, intergenic,   width, color='#F08080')
+    p2 = plt.bar(ind, upstream, width, color='#FFD700',
                  bottom=intergenic)
-    p3 = plt.bar(ind, tss, width, color='skyblue',
+    p3 = plt.bar(ind, tss, width, color='#87ceeb',
                  bottom=sumzip(intergenic, upstream))
-    p4 = plt.bar(ind, exon, width, color='orchid',
+    p4 = plt.bar(ind, exon, width, color='#DA70D6',
                  bottom=sumzip(intergenic, upstream, tss))
-    p5 = plt.bar(ind, intron, width, color='yellowgreen',
+    p5 = plt.bar(ind, intron, width, color='#9ACD32',
                  bottom=sumzip(intergenic, upstream, tss, exon))
 
     def autolabel(rects, gr_list):
@@ -248,18 +248,10 @@ def OverlappingPeaks(dict_peaksdf, name, name1):
     """
     import timeit
     print('Check point: Overlapping analysis')
-    for k, v in dict_peaksdf.items():
-        if k == name:
-            df1 = v
-            #int name
-        if k == name1:
-            df2 = v
-            #print 'size of df2: ', len(df2)
-            #print name1
     print('\n', name, 'vs', name1)
     #print(df1.peaks.head())
-    df1 = df1.peaks.sort_values(by='chr', ascending=True)
-    df2 = df2.peaks.sort_values(by='chr', ascending=True)
+    df1 = dict_peaksdf[name].peaks.sort_values(by='chr', ascending=True)
+    df2 = dict_peaksdf[name1].peaks.sort_values(by='chr', ascending=True)
     ### Method test PeakOverlaps
     start1 = timeit.default_timer()
     try:
@@ -401,6 +393,7 @@ def get_unique_peaks(dataframe1, dataframe2, name, name1, overlapdf, dirpath):
     file.write('\nPeaks in overlap:'+str(len(overlapdf)))
     file.write('\nUnique peaks from dataframe1:'+str(len(uni_df1)))
     file.write('\nUnique peaks from dataframe2:'+str(len(uni_df2)))
+    print('Overlapping peaks:', len(overlapdf))
     return uni_df1, uni_df2
 
 
